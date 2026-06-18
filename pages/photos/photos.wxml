@@ -1,0 +1,57 @@
+<!-- ========== 我的电子照 ========== -->
+<view class="page">
+
+  <!-- 温馨提醒横幅 -->
+  <view class="reminder-banner">
+    <view class="reminder-icon-wrap">
+      <text class="reminder-icon">!</text>
+    </view>
+    <text class="reminder-text">
+      本应用不提供照片永久存储功能，后端处理图片将在24小时后自动删除，请及时保存到本地。
+    </text>
+  </view>
+
+  <!-- 照片列表 -->
+  <view class="photo-loading" wx:if="{{loading}}">
+    <text>正在读取您的电子照...</text>
+  </view>
+
+  <view class="photo-list" wx:if="{{!loading && photoList.length > 0}}">
+    <view wx:for="{{photoList}}" wx:key="id" wx:for-index="idx" class="photo-card">
+      <view class="photo-card-top" bindtap="previewPhoto" data-index="{{idx}}">
+        <image class="card-thumb" src="{{item.imagePath}}" mode="aspectFill" />
+        <view class="card-info">
+          <text class="card-name">{{item.specName || '证件照'}}</text>
+          <text class="card-size">{{item.sizeText || ''}}</text>
+          <text class="card-time">{{item.timeText || ''}}</text>
+        </view>
+      </view>
+      <view class="photo-card-actions">
+        <view class="card-btn" bindtap="saveToAlbum" data-index="{{idx}}">
+          <text>保存</text>
+        </view>
+        <view class="card-btn" bindtap="deletePhoto" data-index="{{idx}}">
+          <text>删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && photoList.length === 0}}">
+    <view class="empty-illustration">
+      <text class="empty-icon">照片</text>
+    </view>
+    <text class="empty-title">{{emptyTitle}}</text>
+    <text class="empty-desc">{{emptyDesc}}</text>
+  </view>
+
+  <!-- 立即拍摄按钮 -->
+  <view class="action-area">
+    <view class="btn-primary" bindtap="takePhotoNow">
+      <text class="btn-camera-icon">+</text>
+      <text class="btn-text">{{actionText}}</text>
+    </view>
+  </view>
+
+</view>

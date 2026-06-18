@@ -1,0 +1,6 @@
+{
+  "ID_PHOTO_RUNTIME_DIR": "C:\\apps\\id-photo\\shared",
+  "ID_PHOTO_ASSET_RETENTION_SECONDS": "86400",
+  "IOPAINT_URL": "http://127.0.0.1:8081",
+  "ENABLE_HD_REPAIR": "true"
+}

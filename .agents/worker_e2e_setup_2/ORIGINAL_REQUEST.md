@@ -1,0 +1,2 @@
+## 2026-06-18T01:40:11Z
+Please read and execute the tasks in C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\worker_e2e_setup_2\instructions.md. Your working directory is C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\worker_e2e_setup_2\. Keep progress.md updated. When done, write a handoff.md in your working directory and notify the parent orchestrator with a message.

@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="login-card">
+    <view class="avatar-wrap">
+      <button class="avatar-button" open-type="chooseAvatar" bindchooseavatar="chooseAvatar">
+        <image wx:if="{{userInfo && userInfo.avatarUrl}}" class="avatar-image" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+        <text wx:else class="avatar-placeholder">👤</text>
+      </button>
+    </view>
+    <input class="nickname-input" type="nickname" placeholder="填写微信昵称" value="{{userInfo && userInfo.nickName ? userInfo.nickName : ''}}" bindinput="onNicknameInput" />
+    <button class="login-button" loading="{{saving}}" disabled="{{saving}}" bindtap="saveProfile">完成授权</button>
+  </view>
+</view>

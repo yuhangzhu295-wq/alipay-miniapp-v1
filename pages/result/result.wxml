@@ -1,0 +1,102 @@
+<!-- 结果页：预览和保存 -->
+<view class="container">
+
+  <!-- 预览卡片 -->
+  <view class="preview-section">
+    <view class="preview-card">
+      <view class="preview-bg" style="background-color: {{bgColorHex}};">
+        <image class="preview-image" src="{{photoSrc}}" mode="aspectFit" />
+      </view>
+    </view>
+    <!-- 规格信息 -->
+    <view class="spec-info-bar">
+      <block wx:for="{{specTags}}" wx:for-index="index" wx:key="*this">
+        <view class="spec-tag">{{item}}</view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 操作选项 -->
+  <view class="actions-section">
+    
+    <!-- 底色切换 -->
+    <view class="card action-card">
+      <view class="action-header">
+        <text class="action-title">换底色</text>
+        <text class="action-desc">点击切换不同背景色</text>
+      </view>
+      <view class="color-bar">
+        <view 
+          wx:for="{{colors}}" 
+          wx:key="id"
+          class="color-dot {{selectedColorId === item.id ? 'color-dot-active' : ''}}"
+          style="background-color: {{item.hex}}; {{item.id === 'white' ? 'border: 2rpx solid #ddd;' : ''}}"
+          bindtap="changeColor"
+          data-color="{{item.id}}"
+        >
+          <text wx:if="{{selectedColorId === item.id}}" class="dot-check">✓</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 尺寸调整 -->
+    <view class="card action-card">
+      <view class="action-header">
+        <text class="action-title">换尺寸</text>
+        <text class="action-desc">选择其他证件照规格</text>
+      </view>
+      <scroll-view class="size-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view 
+          wx:for="{{allSpecs}}" 
+          wx:key="id"
+          class="size-item {{selectedSpecId === item.id ? 'size-item-active' : ''}}"
+          bindtap="changeSpec"
+          data-spec="{{item.id}}"
+        >
+          <text class="size-name">{{item.name}}</text>
+          <text class="size-detail">{{item.width}}×{{item.height}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 排版选项 -->
+    <view class="card action-card">
+      <view class="action-header">
+        <text class="action-title">排版打印</text>
+        <text class="action-desc">生成一版多张的排版照</text>
+      </view>
+      <view class="layout-options">
+        <view 
+          wx:for="{{layoutModes}}" 
+          wx:key="id"
+          class="layout-btn {{selectedLayout === item.id ? 'layout-btn-active' : ''}}"
+          bindtap="selectLayout"
+          data-layout="{{item.id}}"
+        >
+          <text class="layout-icon">{{item.icon}}</text>
+          <text class="layout-text">{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分享(预览)区域 -->
+    <view class="card share-card" wx:if="{{showPreview}}">
+      <image class="preview-full" src="{{previewSrc}}" mode="widthFix" />
+    </view>
+
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="bottom-actions">
+      <view class="bottom-btn btn-secondary" bindtap="goBack">
+        <text class="btn-label">重新制作</text>
+      </view>
+      <view class="bottom-btn btn-primary-small" bindtap="savePhoto">
+        <text class="btn-icon">💾</text>
+        <text class="btn-label">保存到相册</text>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,275 @@
+/* 结果页样式 */
+.container {
+  min-height: 100vh;
+  padding-bottom: 160rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* --- 预览区域 --- */
+.preview-section {
+  width: 100%;
+  padding: 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-card {
+  width: 480rpx;
+  height: 640rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 12rpx 48rpx rgba(0, 0, 0, 0.08);
+}
+
+.preview-bg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* --- 规格信息条 --- */
+.spec-info-bar {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.spec-tag {
+  padding: 8rpx 20rpx;
+  background: #f0f1f5;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: #666;
+}
+
+/* --- 操作卡片 --- */
+.actions-section {
+  width: 100%;
+  padding: 0 30rpx;
+}
+
+.action-card {
+  width: 100%;
+}
+
+.action-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.action-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.action-desc {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* 颜色切换条 */
+.color-bar {
+  display: flex;
+  gap: 24rpx;
+  padding: 8rpx 0;
+}
+
+.color-dot {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.color-dot:active {
+  transform: scale(0.9);
+}
+
+.color-dot-active {
+  transform: scale(1.15);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+}
+
+.dot-check {
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: bold;
+  text-shadow: 0 1rpx 4rpx rgba(0,0,0,0.2);
+}
+
+/* 尺寸滚动 */
+.size-scroll {
+  display: flex;
+  flex-direction: row;
+  white-space: nowrap;
+  padding: 8rpx 0;
+}
+
+.size-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 130rpx;
+  padding: 16rpx 20rpx;
+  margin-right: 16rpx;
+  background: #f5f6fa;
+  border-radius: 14rpx;
+  transition: all 0.2s;
+}
+
+.size-item:active {
+  transform: scale(0.95);
+}
+
+.size-item-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.3);
+}
+
+.size-name {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #444;
+}
+
+.size-item-active .size-name {
+  color: #fff;
+}
+
+.size-detail {
+  font-size: 18rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.size-item-active .size-detail {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 排版选项 */
+.layout-options {
+  display: flex;
+  gap: 20rpx;
+}
+
+.layout-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 24rpx 0;
+  background: #f5f6fa;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+
+.layout-btn:active {
+  transform: scale(0.95);
+}
+
+.layout-btn-active {
+  background: #fff;
+  border-color: #667eea;
+  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.15);
+}
+
+.layout-icon {
+  font-size: 40rpx;
+}
+
+.layout-text {
+  font-size: 22rpx;
+  color: #555;
+  font-weight: 500;
+}
+
+.layout-btn-active .layout-text {
+  color: #667eea;
+}
+
+/* 排版预览 */
+.share-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.preview-full {
+  width: 100%;
+  display: block;
+}
+
+/* --- 底部操作栏 --- */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx 30rpx calc(20rpx + env(safe-area-inset-bottom, 40rpx));
+  background: rgba(255, 255, 255, 0.95);
+
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.04);
+  z-index: 100;
+}
+
+.bottom-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.bottom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.btn-secondary {
+  flex: 1;
+  background: #f0f1f5;
+  color: #555;
+}
+
+.btn-secondary:active {
+  background: #e4e5ea;
+}
+
+.btn-primary-small {
+  flex: 2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary-small:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.btn-icon {
+  font-size: 32rpx;
+}

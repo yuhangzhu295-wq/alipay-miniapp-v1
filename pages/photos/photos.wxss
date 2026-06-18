@@ -1,0 +1,190 @@
+/* ====== 我的电子照样式 ====== */
+
+.page {
+  padding: 36rpx 30rpx calc(140rpx + env(safe-area-inset-bottom, 20rpx));
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.06) 0%, #f4f6fc 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* 提醒横幅 - 高级微渐变毛玻璃 */
+.reminder-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  background: linear-gradient(135deg, #fffbf0 0%, #fff7e6 100%);
+  border: 1rpx solid rgba(255, 152, 0, 0.15);
+  border-radius: 32rpx;
+  padding: 24rpx 30rpx;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 50rpx;
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reminder-icon-wrap {
+  width: 56rpx;
+  height: 56rpx;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 10rpx rgba(255, 152, 0, 0.25);
+}
+
+.reminder-icon { font-size: 26rpx; color: #ffffff; }
+.reminder-text { font-size: 24rpx; color: #e65100; line-height: 1.6; flex: 1; font-weight: 500; }
+
+/* 照片列表 */
+.photo-list { 
+  width: 100%; 
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.photo-loading {
+  width: 100%;
+  padding: 36rpx 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 26rpx;
+}
+
+.photo-card {
+  background: #ffffff; 
+  border: 1rpx solid var(--border-light);
+  border-radius: 32rpx; 
+  margin-bottom: 24rpx;
+  box-shadow: var(--shadow-sm); 
+  overflow: hidden; 
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.photo-card:active {
+  transform: translateY(-4rpx);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-card-top { 
+  display: flex; 
+  padding: 24rpx; 
+  gap: 24rpx; 
+}
+
+.card-thumb { 
+  width: 130rpx; 
+  height: 170rpx; 
+  border-radius: 16rpx; 
+  flex-shrink: 0; 
+  background: #f4f6fc; 
+  box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-info { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  gap: 8rpx; 
+}
+
+.card-name { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
+.card-size { font-size: 24rpx; color: var(--text-secondary); font-weight: 500; }
+.card-time { font-size: 22rpx; color: var(--text-light); font-weight: 400; }
+
+.photo-card-actions { 
+  display: flex; 
+  border-top: 1rpx solid var(--border-light); 
+  background: #fcfdfe;
+}
+
+.card-btn { 
+  flex: 1; 
+  padding: 24rpx 0; 
+  text-align: center; 
+  font-size: 26rpx; 
+  color: var(--primary); 
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.card-btn:active {
+  background-color: var(--primary-light);
+}
+
+.card-btn:not(:last-child) {
+  border-right: 1rpx solid var(--border-light);
+}
+
+/* 空状态 - 现代极简微渐变插图风格 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 50rpx;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.empty-illustration {
+  width: 300rpx;
+  height: 300rpx;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 48rpx;
+  box-shadow: 0 16rpx 40rpx rgba(102, 126, 234, 0.12);
+  border: 8rpx solid #ffffff;
+  animation: floatAnim 4s ease-in-out infinite;
+}
+
+.empty-icon { 
+  font-size: 110rpx; 
+  filter: drop-shadow(0 8rpx 16rpx rgba(0, 0, 0, 0.08));
+}
+
+.empty-icon-deco { position: absolute; top: 40rpx; right: 40rpx; font-size: 40rpx; animation: floatAnim 3s ease-in-out infinite; }
+.empty-icon-deco2 { position: absolute; bottom: 50rpx; right: 30rpx; font-size: 36rpx; animation: floatAnim 5s ease-in-out infinite; }
+
+.empty-title { font-size: 34rpx; font-weight: 800; color: var(--text-primary); margin-bottom: 16rpx; }
+.empty-desc { font-size: 26rpx; color: var(--text-secondary); text-align: center; line-height: 1.6; font-weight: 500; }
+
+/* 按钮区域 */
+.action-area {
+  width: 100%;
+  padding: 60rpx 0;
+  display: flex;
+  justify-content: center;
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+.btn-primary {
+  width: 520rpx;
+  height: 96rpx;
+  background: var(--gradient-main);
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  box-shadow: 0 12rpx 36rpx rgba(102, 126, 234, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 2rpx;
+}
+
+.btn-primary:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.2);
+  opacity: 0.95;
+}
+
+.btn-camera-icon { font-size: 38rpx; }
+.btn-text { font-size: 30rpx; color: #ffffff; font-weight: 700; }
