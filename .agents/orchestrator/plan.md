@@ -1,29 +1,21 @@
-# Project Plan: Fix ID Photo Quality & Mainland China Standards
+# Project Plan: Frontend Layout Download Option
 
 ## Objectives
-1. Implement anti-aliased high-resolution alpha in `alpha_cleanup.py`.
-2. Implement Mainland China ID photo cropping standard in `crop.py`.
-3. Ensure strict isolation: all modifications inside `server/id_photo_engine_minimal`.
-4. Validate edge quality, proportions, and run all regression verification scripts.
+Implement a download option in the ID photo frontend to allow users to choose between downloading a single ID photo or a 6-inch layout photo, when the backend returns a `layoutUrl`.
 
 ## Milestones
-### Milestone 1: Environment Audit & Initial Verification
-- Run current regression test suite to establish a baseline.
-- Audit if the service on port 8000 is running and how it behaves.
-- **Verification**: Command outputs from worker indicating current status.
 
-### Milestone 2: Anti-Aliased High-Resolution Alpha (`alpha_cleanup.py`)
-- Modify `alpha_cleanup.py` to preserve soft alpha edges from the matting model.
-- Filter out isolated noise and disconnected background components using connected components, without hard-binarizing.
-- **Verification**: Programmatic verify of non-binary alpha gradients (values between 10 and 245) and visually smooth hair/shoulder edges.
+### Milestone 1: Backend API Extension
+- Modify `/api/id-photo/compose` in `server/main.py` to return the `layoutUrl` field in the success response.
+- **Verification**: Programmatic API check shows `layoutUrl` in response when compose endpoint is called.
 
-### Milestone 3: Mainland China ID Photo Cropping Standard (`crop.py`)
-- Modify `crop.py` using MediaPipe/OpenCV landmarks (from `detect_face` output).
-- Scale/crop photo so face is horizontally centered and head height (chin to crown) is approximately 2/3 of the total height.
-- Ensure shoulders are naturally visible.
-- **Verification**: Visual alignment check and programmatic head ratio check.
+### Milestone 2: Frontend API & Page Integration
+- Update `utils/aiImageApi.js` to parse and return `layoutUrl` from compose and generate responses.
+- Modify `pages/generate/generate.js` to store `layoutUrl` and display a `wx.showActionSheet` choice between "下载单张照片" and "下载六寸排版照" when `layoutUrl` is available.
+- Modify `pages/result/result.js` to load `layoutUrl` and provide the same action sheet download flow.
+- **Verification**: Frontend Javascript files successfully handle `layoutUrl` and trigger downloading/saving correctly.
 
-### Milestone 4: Final Testing & Regression Verification
-- Run `npm run verify:full-business-flow` (which calls `verify_id_photo_full_business_flow.py`) and other regression tests.
-- Ensure no regressions across other tools.
-- **Verification**: Regression test logs passing 100%.
+### Milestone 3: Automated Verification & Regression Testing
+- Update `server/scripts/verify_frontend_ui.py` to assert that the `savePhoto` flow triggers `wx.showActionSheet` with the single and layout download options when `layoutUrl` is present.
+- Run `npm run verify:frontend-ui` and other regression tests (`npm run verify:full-business-flow`, `node server/scripts/verify_devtools_business_flow.js`) to confirm all checks pass.
+- **Verification**: All verify tests pass.

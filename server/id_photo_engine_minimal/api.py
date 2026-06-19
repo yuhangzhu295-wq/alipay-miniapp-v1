@@ -35,6 +35,9 @@ def generate_id_photo_v2(
     height_px=None,
     width_mm=None,
     height_mm=None,
+    kb_size=0,
+    model: str = None,
+    hair_retouch: bool = False,
 ):
     from services.id_photo_specs import get_spec
     spec = get_spec(spec_id, purpose)
@@ -42,9 +45,24 @@ def generate_id_photo_v2(
     h = int(height_px) if height_px else spec.get("height", 579)
 
     validate_input(img_bytes)
-    rgba, alpha = perform_matting(img_bytes)
+    rgba, alpha, model_used = perform_matting(img_bytes, model=model)
+    alpha = alpha.copy()
+    
+    # Dual-model fallback for flowing hair / internal gaps
+    # For 2C4G servers, we must run this sequentially to prevent OOM (Out of Memory)
+    bypass_hole_filling = False
+    if model_used == "birefnet-v1-lite" and hair_retouch:
+        try:
+            _, fallback_alpha, _ = perform_matting(img_bytes, model="modnet_photographic_portrait_matting")
+            # Only punch holes where modnet is very confident it's background
+            modnet_holes = fallback_alpha < 50
+            alpha[modnet_holes] = fallback_alpha[modnet_holes]
+            bypass_hole_filling = True
+        except Exception as e:
+            print(f"Fallback matting failed: {e}")
+            
     check_quality(alpha, stage="alpha_gate")
-    rgba = cleanup_alpha(rgba, alpha)
+    rgba = cleanup_alpha(rgba, alpha, bypass_hole_filling=bypass_hole_filling)
     face_res = detect_face(img_bytes)
     cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res)
     final_img = compose_background(cropped_rgba, bg_color)
@@ -52,8 +70,32 @@ def generate_id_photo_v2(
     
     suffix = ".jpg" if output_type.lower() in ("jpg", "jpeg") else ".png"
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
-    final_img.convert("RGB").save(tmp, format="JPEG" if suffix == ".jpg" else "PNG", quality=95)
+    
+    if suffix == ".jpg":
+        import io
+        img_rgb = final_img.convert("RGB")
+        target_bytes = int(kb_size) * 1024 if kb_size else 0
+        if target_bytes > 0:
+            best_quality = 95
+            for q in range(95, 14, -5):
+                buf = io.BytesIO()
+                img_rgb.save(buf, format="JPEG", quality=q, dpi=(300, 300))
+                if buf.tell() <= target_bytes:
+                    best_quality = q
+                    break
+            img_rgb.save(tmp, format="JPEG", quality=best_quality, dpi=(300, 300))
+        else:
+            img_rgb.save(tmp, format="JPEG", quality=95, dpi=(300, 300))
+    else:
+        final_img.convert("RGBA").save(tmp, format="PNG", dpi=(300, 300))
+        
     tmp.flush()
+    
+    from .layout import generate_layout_photo
+    layout_img = generate_layout_photo(final_img, dpi=300)
+    layout_tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    layout_img.save(layout_tmp, format="JPEG", quality=95, dpi=(300, 300))
+    layout_tmp.flush()
     
     spec_payload = dict(spec)
     spec_payload["width"] = w
@@ -61,6 +103,7 @@ def generate_id_photo_v2(
     
     return {
         "path": tmp.name,
+        "layoutPath": layout_tmp.name,
         "mode": mode,
         "imageType": image_type or "real_person",
         "spec": spec_payload,
@@ -82,6 +125,8 @@ def prepare_id_photo_v2(
     width_mm=None,
     height_mm=None,
     request_id="",
+    model: str = None,
+    hair_retouch: bool = False,
 ):
     from services.id_photo_specs import get_spec
     spec = get_spec(spec_id, purpose)
@@ -89,9 +134,24 @@ def prepare_id_photo_v2(
     h = int(height_px) if height_px else spec.get("height", 579)
 
     validate_input(img_bytes)
-    rgba, alpha = perform_matting(img_bytes)
+    rgba, alpha, model_used = perform_matting(img_bytes, model=model)
+    alpha = alpha.copy()
+    
+    # Dual-model fallback for flowing hair / internal gaps
+    # For 2C4G servers, we must run this sequentially to prevent OOM (Out of Memory)
+    bypass_hole_filling = False
+    if model_used == "birefnet-v1-lite" and hair_retouch:
+        try:
+            _, fallback_alpha, _ = perform_matting(img_bytes, model="modnet_photographic_portrait_matting")
+            # Only punch holes where modnet is very confident it's background
+            modnet_holes = fallback_alpha < 50
+            alpha[modnet_holes] = fallback_alpha[modnet_holes]
+            bypass_hole_filling = True
+        except Exception as e:
+            print(f"Fallback matting failed: {e}")
+            
     check_quality(alpha, stage="alpha_gate")
-    rgba = cleanup_alpha(rgba, alpha)
+    rgba = cleanup_alpha(rgba, alpha, bypass_hole_filling=bypass_hole_filling)
     face_res = detect_face(img_bytes)
     cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res)
 
@@ -116,7 +176,7 @@ def prepare_id_photo_v2(
         "quality": {},
     }, {"matting_ms": 10}
 
-def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output_type="jpg", request_id=""):
+def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output_type="jpg", kb_size=0, request_id=""):
     item = PREPARE_CACHE.get(prepared_id)
     if not item:
         raise Exception("PREPARED_NOT_FOUND")
@@ -126,8 +186,32 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     
     suffix = ".jpg" if output_type.lower() in ("jpg", "jpeg") else ".png"
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
-    final_img.convert("RGB").save(tmp, format="JPEG" if suffix == ".jpg" else "PNG", quality=95)
+    
+    if suffix == ".jpg":
+        import io
+        img_rgb = final_img.convert("RGB")
+        target_bytes = int(kb_size) * 1024 if kb_size else 0
+        if target_bytes > 0:
+            best_quality = 95
+            for q in range(95, 14, -5):
+                buf = io.BytesIO()
+                img_rgb.save(buf, format="JPEG", quality=q, dpi=(300, 300))
+                if buf.tell() <= target_bytes:
+                    best_quality = q
+                    break
+            img_rgb.save(tmp, format="JPEG", quality=best_quality, dpi=(300, 300))
+        else:
+            img_rgb.save(tmp, format="JPEG", quality=95, dpi=(300, 300))
+    else:
+        final_img.convert("RGBA").save(tmp, format="PNG", dpi=(300, 300))
+        
     tmp.flush()
+    
+    from .layout import generate_layout_photo
+    layout_img = generate_layout_photo(final_img, dpi=300)
+    layout_tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    layout_img.save(layout_tmp, format="JPEG", quality=95, dpi=(300, 300))
+    layout_tmp.flush()
     
     spec_payload = dict(item["spec"])
     spec_payload["width"] = item["w"]
@@ -135,6 +219,7 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     
     return {
         "path": tmp.name,
+        "layoutPath": layout_tmp.name,
         "mode": item["mode"],
         "imageType": item["imageType"],
         "spec": spec_payload,

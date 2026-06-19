@@ -1,0 +1,46 @@
+2026-06-19 01:39:16.612 | INFO     | iopaint.runtime:setup_model_dir:81 - Model directory: C:\Users\zyu33\.cache
+C:\Users\zyu33\AppData\Local\Programs\Python\Python313\Lib\site-packages\iopaint\model\ldm.py:279: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  @torch.cuda.amp.autocast()
+[W619 01:39:35.000000000 init.cpp:773] Warning: nvfuser is no longer supported in torch script, use _jit_set_nvfuser_enabled is deprecated and a no-op (function operator ())
+2026-06-19 01:39:35.131 | INFO     | iopaint.model_manager:init_model:47 - Loading model: lama
+2026-06-19 01:39:35.132 | INFO     | iopaint.helper:load_jit_model:107 - Loading model from: C:\Users\zyu33\.cache\torch\hub\checkpoints\big-lama.pt
+INFO:     Started server process [41888]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2026-06-19 01:44:59.226 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 01:45:03.591 | INFO     | iopaint.api:api_inpaint:285 - process time: 4362.25ms
+2026-06-19 01:45:03.983 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 01:45:07.560 | INFO     | iopaint.api:api_inpaint:285 - process time: 3576.92ms
+2026-06-19 01:45:07.931 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 01:45:11.467 | INFO     | iopaint.api:api_inpaint:285 - process time: 3535.80ms
+2026-06-19 14:48:36.290 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:39.696 | INFO     | iopaint.api:api_inpaint:285 - process time: 3395.66ms
+2026-06-19 14:48:43.432 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:45.470 | INFO     | iopaint.api:api_inpaint:285 - process time: 2037.11ms
+2026-06-19 14:48:46.561 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:48.616 | INFO     | iopaint.api:api_inpaint:285 - process time: 2053.75ms
+2026-06-19 14:48:49.631 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:51.673 | INFO     | iopaint.api:api_inpaint:285 - process time: 2041.70ms
+2026-06-19 14:48:52.626 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:54.955 | INFO     | iopaint.api:api_inpaint:285 - process time: 2327.91ms
+2026-06-19 14:48:55.999 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:48:57.832 | INFO     | iopaint.api:api_inpaint:285 - process time: 1832.08ms
+2026-06-19 14:48:58.369 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:00.018 | INFO     | iopaint.api:api_inpaint:285 - process time: 1648.48ms
+2026-06-19 14:49:00.521 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:02.124 | INFO     | iopaint.api:api_inpaint:285 - process time: 1602.12ms
+2026-06-19 14:49:03.084 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:05.081 | INFO     | iopaint.api:api_inpaint:285 - process time: 1996.52ms
+2026-06-19 14:49:06.117 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:08.428 | INFO     | iopaint.api:api_inpaint:285 - process time: 2310.59ms
+2026-06-19 14:49:09.046 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:11.000 | INFO     | iopaint.api:api_inpaint:285 - process time: 1953.69ms
+2026-06-19 14:49:11.514 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:13.403 | INFO     | iopaint.api:api_inpaint:285 - process time: 1887.79ms
+2026-06-19 14:49:14.549 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:16.871 | INFO     | iopaint.api:api_inpaint:285 - process time: 2320.75ms
+2026-06-19 14:49:19.452 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:24.635 | INFO     | iopaint.api:api_inpaint:285 - process time: 5182.10ms
+2026-06-19 14:49:27.410 | INFO     | iopaint.api:api_inpaint:274 - image ext: png
+2026-06-19 14:49:32.096 | INFO     | iopaint.api:api_inpaint:285 - process time: 4685.38ms

@@ -224,7 +224,8 @@ function generateIdPhotoV2(imagePath, options) {
       mode: options.mode || 'official',
       composition: options.composition || '',
       enhanceLevel: options.enhanceLevel || 'standard',
-      outputType: options.outputType || 'jpg'
+      outputType: options.outputType || 'jpg',
+      hairRetouch: options.hairRetouch ? 'true' : 'false'
     };
     console.log('[id-photo-api] API_BASE_URL:', config.API_BASE_URL);
     console.log('[id-photo-api] endpoint:', endpoint);
@@ -306,7 +307,8 @@ function prepareIdPhotoV2(imagePath, options) {
       heightMm: options.heightMm ? String(options.heightMm) : '',
       imageType: options.imageType || '',
       mode: options.mode || 'official',
-      composition: options.composition || ''
+      composition: options.composition || '',
+      hairRetouch: options.hairRetouch ? 'true' : 'false'
     };
     console.log('[id-photo-api] prepare endpoint:', endpoint);
     console.log('[id-photo-fe] prepare endpoint=' + endpoint);

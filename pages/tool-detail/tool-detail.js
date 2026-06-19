@@ -64,6 +64,7 @@ Page({
     idPhotoSpecName: '一寸照',
     idPhotoComposition: 'head_shoulder',
     idPhotoEnhance: 'standard',
+    hairRetouch: false,
     idPhotoOutfit: 'preserve_original',
     customBgHex: '#1a73e8',
     imageTypeInfo: null,
@@ -724,6 +725,9 @@ Page({
   setIdPhotoEnhance: function(e) {
     this.setData({ idPhotoEnhance: e.currentTarget.dataset.id });
   },
+  onToggleHairRetouch: function() {
+    this.setData({ hairRetouch: !this.data.hairRetouch });
+  },
   setIdPhotoOutfit: function(e) {
     this.setData({ idPhotoOutfit: 'preserve_original' });
     wx.showToast({ title: '一键换装已移除', icon: 'none' });
@@ -808,7 +812,8 @@ Page({
       composition: this.data.idPhotoComposition,
       outfit: this.data.advancedOutfitEnabled === true ? this.data.idPhotoOutfit : 'preserve_original',
       enhanceLevel: this.data.idPhotoEnhance,
-      outputType: 'jpg'
+      outputType: 'jpg',
+      hairRetouch: this.data.hairRetouch || false
     };
   },
   getBgColorName: function() {

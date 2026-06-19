@@ -23,6 +23,7 @@ Page({
     currentSpecId: '',
     availableColors: [],
     fileText: '',
+    hairRetouch: false,
     outputTab: 'photo',
     generating: false,
     canDownload: false,
@@ -357,7 +358,8 @@ Page({
       mode: 'official',
       composition: requestSpec.backendComposition || requestSpec.composition || 'head_shoulder',
       enhanceLevel: 'standard',
-      outputType: 'jpg'
+      outputType: 'jpg',
+      hairRetouch: that.data.hairRetouch || false
     };
     var requestToken = Date.now() + '_' + requestBgColorId;
     var prepareKey = [
@@ -365,7 +367,8 @@ Page({
       requestPayload.specId,
       requestPayload.widthPx,
       requestPayload.heightPx,
-      requestPayload.composition
+      requestPayload.composition,
+      requestPayload.hairRetouch
     ].join('|');
     var hasPrepared = that.data.preparedId && that.data.preparedKey === prepareKey;
     var currentRoute = that.getCurrentRouteForLog();
@@ -374,7 +377,7 @@ Page({
     that.setData({
       generating: true,
       processState: hasPrepared ? 'composing' : 'preparing',
-      statusText: hasPrepared ? (statusText || '换底中...') : '制作中...',
+      statusText: hasPrepared ? ((typeof statusText === 'string' ? statusText : null) || '换底中...') : '制作中...',
       resultImage: '',
       resultPreviewSrc: '',
       resultRemoteUrl: '',
@@ -383,7 +386,7 @@ Page({
       layoutColorId: '',
       canDownload: false
     });
-    that.startProcessTimer(hasPrepared ? 10000 : 35000);
+    that.startProcessTimer(hasPrepared ? 10000 : 90000);
     console.log('[id-photo-generate] API_BASE_URL:', apiConfig.API_BASE_URL);
     console.log('[id-photo-generate] prepare endpoint:', prepareEndpoint);
     console.log('[id-photo-generate] compose endpoint:', composeEndpoint);
@@ -565,13 +568,34 @@ Page({
       });
   },
 
-  primaryAction: function() {
+  onToggleHairRetouch: function() {
+    this.setData({ hairRetouch: !this.data.hairRetouch });
+    if (this.data.photoSrc && !this.data.generating) {
+      this.primaryAction('换底中...');
+    }
+  },
+
+  primaryAction: function(statusText) {
+    var that = this;
     if (this.data.generating) {
       wx.showToast({ title: '正在制作中', icon: 'none' });
       return;
     }
     if (this.data.resultImage && this.data.canDownload) {
-      this.savePhoto();
+      wx.showActionSheet({
+        itemList: ['下载单张电子照', '下载六寸排版照'],
+        success: function(res) {
+          if (res.tapIndex === 0) {
+            that.setData({ outputTab: 'photo' }, function() {
+              that.savePhoto();
+            });
+          } else if (res.tapIndex === 1) {
+            that.setData({ outputTab: 'layout' }, function() {
+              that.savePhoto();
+            });
+          }
+        }
+      });
     } else {
       this.generatePhoto();
     }
@@ -590,13 +614,31 @@ Page({
       return;
     }
     if (that.data.outputTab === 'layout' && that.data.layoutColorId !== that.data.bgColorId) {
-      that.generateLayoutPhoto();
-      wx.showToast({ title: '正在生成当前底色排版照', icon: 'none' });
+      wx.showLoading({ title: '正在生成排版照' });
+      imageUtil.generateLayoutPhoto(that.data.resultImage, that.data.currentSpec, 4, 2, '#ffffff')
+        .then(function(path) {
+          wx.hideLoading();
+          that.setData({ layoutImage: path, layoutColorId: that.data.resultColorId }, function() {
+            that.savePhoto();
+          });
+        }).catch(function(err) {
+          wx.hideLoading();
+          wx.showToast({ title: '排版照生成失败', icon: 'none' });
+        });
       return;
     }
     if (that.data.outputTab === 'layout' && !saveSrc && that.data.resultImage) {
-      that.generateLayoutPhoto();
-      wx.showToast({ title: '正在生成排版照', icon: 'none' });
+      wx.showLoading({ title: '正在生成排版照' });
+      imageUtil.generateLayoutPhoto(that.data.resultImage, that.data.currentSpec, 4, 2, '#ffffff')
+        .then(function(path) {
+          wx.hideLoading();
+          that.setData({ layoutImage: path, layoutColorId: that.data.resultColorId }, function() {
+            that.savePhoto();
+          });
+        }).catch(function(err) {
+          wx.hideLoading();
+          wx.showToast({ title: '排版照生成失败', icon: 'none' });
+        });
       return;
     }
     if (!saveSrc) {

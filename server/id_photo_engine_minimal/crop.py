@@ -6,9 +6,6 @@ def crop_id_photo(rgba: Image.Image, width_px: int, height_px: int, face_res: di
     if not width_px or not height_px:
         return rgba, {}
         
-    # We must ensure we don't chop off clothes arbitrarily.
-    # Rule 11: Base crop on face box and shoulder width.
-    
     # Handle border conditions safely by padding the image with transparent pixels prior to cropping,
     # ensuring no awkward cuts of shoulders or head.
     orig_w, orig_h = rgba.size
@@ -34,60 +31,102 @@ def crop_id_photo(rgba: Image.Image, width_px: int, height_px: int, face_res: di
             if face_box["x"] is not None and face_box["y"] is not None and face_box["width"] is not None and face_box["height"] is not None:
                 has_facebox = True
                 
-    if has_landmarks:
-        # If landmarks (leftEye, rightEye) are available, calculate face center and estimate head scale.
-        landmarks = face_res["landmarks"]
-        left_eye_x = landmarks["leftEye"]["x"] + pad_x
-        left_eye_y = landmarks["leftEye"]["y"] + pad_y
-        right_eye_x = landmarks["rightEye"]["x"] + pad_x
-        right_eye_y = landmarks["rightEye"]["y"] + pad_y
+    if has_landmarks or has_facebox:
+        # Extract base coordinates and sizes in padded coordinate space
+        if has_landmarks:
+            landmarks = face_res["landmarks"]
+            left_eye_x = landmarks["leftEye"]["x"] + pad_x
+            left_eye_y = landmarks["leftEye"]["y"] + pad_y
+            right_eye_x = landmarks["rightEye"]["x"] + pad_x
+            right_eye_y = landmarks["rightEye"]["y"] + pad_y
+            
+            face_cx = (left_eye_x + right_eye_x) / 2.0
+            eye_center_y = (left_eye_y + right_eye_y) / 2.0
+            eye_dist = np.hypot(left_eye_x - right_eye_x, left_eye_y - right_eye_y)
+            
+            landmark_head_height = eye_dist * 3.8
+            landmark_head_top = eye_center_y - 0.45 * landmark_head_height
+            chin_y = eye_center_y + 0.55 * landmark_head_height
+            face_w = eye_dist * 2.0
+            search_limit_y = int(eye_center_y)
+        else:
+            face_box = face_res["faceBox"]
+            bx = face_box["x"] + pad_x
+            by = face_box["y"] + pad_y
+            bw = face_box["width"]
+            bh = face_box["height"]
+            
+            face_cx = bx + bw / 2.0
+            landmark_head_height = bh * 1.4
+            landmark_head_top = by - 0.3 * bh
+            chin_y = landmark_head_top + landmark_head_height
+            face_w = bw
+            search_limit_y = int(by + bh / 2)
+            
+        # 1. Hair Volume Detection using Foreground Mask (alpha channel)
+        # Convert the alpha channel of the padded image to numpy array
+        padded_alpha = np.array(padded_rgba.getchannel("A"))
         
-        face_cx = (left_eye_x + right_eye_x) / 2.0
-        eye_center_y = (left_eye_y + right_eye_y) / 2.0
+        # Define search boundaries horizontally centered around face_cx
+        x_min_search = max(0, int(face_cx - 1.0 * face_w))
+        x_max_search = min(padded_alpha.shape[1], int(face_cx + 1.0 * face_w))
         
-        eye_dist = np.hypot(left_eye_x - right_eye_x, left_eye_y - right_eye_y)
-        head_height = eye_dist * 3.8
+        mask_head_top = None
+        min_pixels = max(3, int(face_w * 0.05)) # Avoid noise / single hair strands
         
-        # Eyes are at about 0.55 of head height (chin to crown) from the chin.
-        # Crown is at head_top = eye_center_y - 0.45 * head_height.
-        head_top = eye_center_y - 0.45 * head_height
+        # Scan from top of the image to search_limit_y to find the true top of hair/head
+        search_limit_y = min(padded_alpha.shape[0], max(0, int(search_limit_y)))
+        for y in range(0, search_limit_y):
+            row_alpha = padded_alpha[y, x_min_search:x_max_search]
+            if np.sum(row_alpha > 50) >= min_pixels:
+                mask_head_top = y
+                break
+                
+        # Determine the final true head top using mask and landmark estimates
+        if mask_head_top is not None:
+            # Prefer the mask top, but bound it to prevent noise from taking over
+            head_top = min(mask_head_top, landmark_head_top)
+            # Limit the deviation to 35% of the standard head height above standard crown
+            head_top = max(head_top, landmark_head_top - 0.35 * landmark_head_height)
+        else:
+            head_top = landmark_head_top
+            
+        # Physical head height including voluminous hair
+        H_head = chin_y - head_top
         
-        # Crop the subject so the face is horizontally centered, and the head height (chin to crown)
-        # occupies approximately 2/3 of the total photo height.
-        target_photo_height = head_height * 1.5
+        # 2. Dynamic 66.7% (2/3) Head Ratio and Shoulder Visibility Constraints
+        # Let ratio = H_head / H_photo
+        # Starting with the target 66.7% head ratio
+        ratio = 0.667
+        H_photo = H_head / ratio
         
-        # We place the crown at 10% from the top of the photo.
-        crop_top = head_top - 0.10 * target_photo_height
-        crop_bottom = crop_top + target_photo_height
+        # Ensure shoulders/clavicle are visible by enforcing a minimum bottom crop
+        # Clavicle/shoulders line starts around 0.28 * landmark_head_height below the chin
+        min_shoulder_space = 0.28 * landmark_head_height
+        required_bottom = chin_y + min_shoulder_space
         
-        target_photo_width = target_photo_height * (width_px / height_px)
-        crop_left = face_cx - target_photo_width / 2.0
-        crop_right = face_cx + target_photo_width / 2.0
+        # We need crop_bottom = head_top + 0.90 * H_photo >= required_bottom
+        # So: H_photo >= (required_bottom - head_top) / 0.90
+        current_bottom = head_top + 0.90 * H_photo
+        if current_bottom < required_bottom:
+            needed_H_photo = (required_bottom - head_top) / 0.90
+            needed_ratio = H_head / needed_H_photo
+            # Limit the ratio dynamically to the [0.60, 0.70] range (around 0.667)
+            ratio = np.clip(needed_ratio, 0.60, 0.70)
+            H_photo = H_head / ratio
+            
+        # 3. Calculate Crop Box Coordinates
+        # Top gap is exactly 10% of the photo height (0.10 * H_photo)
+        crop_top = head_top - 0.10 * H_photo
+        crop_bottom = crop_top + H_photo
         
-    elif has_facebox:
-        # Else if only faceBox is available, calculate based on faceBox center and scale.
-        face_box = face_res["faceBox"]
-        bx = face_box["x"] + pad_x
-        by = face_box["y"] + pad_y
-        bw = face_box["width"]
-        bh = face_box["height"]
-        
-        face_cx = bx + bw / 2.0
-        # Head height is approximately 1.4 * faceBox height
-        head_height = bh * 1.4
-        # Top of the head is about 0.3 * faceBox height above faceBox top
-        head_top = by - 0.3 * bh
-        
-        target_photo_height = head_height * 1.5
-        crop_top = head_top - 0.10 * target_photo_height
-        crop_bottom = crop_top + target_photo_height
-        
-        target_photo_width = target_photo_height * (width_px / height_px)
+        # Centering horizontally perfectly
+        target_photo_width = H_photo * (width_px / height_px)
         crop_left = face_cx - target_photo_width / 2.0
         crop_right = face_cx + target_photo_width / 2.0
         
     else:
-        # Else fall back to standard bounding box cropping.
+        # Fall back to standard bounding box cropping if no face is detected
         arr = np.array(rgba)
         alpha = arr[:, :, 3]
         y_indices, x_indices = np.where(alpha > 0)
@@ -103,7 +142,7 @@ def crop_id_photo(rgba: Image.Image, width_px: int, height_px: int, face_res: di
         sub_h = ymax - ymin
         
         target_aspect = width_px / height_px
-        sub_aspect = sub_w / sub_h
+        sub_aspect = sub_w / max(1, sub_h)
         
         if sub_aspect > target_aspect:
             new_h = int(sub_w / target_aspect)
@@ -127,8 +166,10 @@ def crop_id_photo(rgba: Image.Image, width_px: int, height_px: int, face_res: di
     crop_right = int(round(crop_right))
     crop_bottom = int(round(crop_bottom))
     
+    # Crop from padded image and resize to specifications
     cropped = padded_rgba.crop((crop_left, crop_top, crop_right, crop_bottom))
     final_img = cropped.resize((width_px, height_px), Image.Resampling.LANCZOS)
     
     return final_img, {"cropBox": [int(crop_left - pad_x), int(crop_top - pad_y), int(crop_right - pad_x), int(crop_bottom - pad_y)]}
+
 

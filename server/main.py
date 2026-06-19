@@ -1015,6 +1015,7 @@ async def id_photo_generate_v2(
     outfit: str = Form("preserve_original"),
     enhanceLevel: str = Form("standard"),
     outputType: str = Form("jpg"),
+    hairRetouch: bool = Form(False),
 ):
     """证件照 / 职业形象照统一生成 v2。"""
     upload = image or file
@@ -1052,6 +1053,7 @@ async def id_photo_generate_v2(
             height_px=heightPx or None,
             width_mm=widthMm or None,
             height_mm=heightMm or None,
+            hair_retouch=hairRetouch,
         )
         with open(result["path"], "rb") as f:
             out_bytes = f.read()
@@ -1135,6 +1137,7 @@ async def id_photo_prepare(
     mode: str = Form("official"),
     composition: str = Form(""),
     outfit: str = Form("preserve_original"),
+    hairRetouch: bool = Form(False),
 ):
     request_id = uuid.uuid4().hex[:10]
     started = time.perf_counter()
@@ -1165,8 +1168,9 @@ async def id_photo_prepare(
                 width_mm=widthMm or None,
                 height_mm=heightMm or None,
                 request_id=request_id,
+                hair_retouch=hairRetouch,
             ),
-            timeout=30,
+            timeout=90,
         )
         for key, value in costs.items():
             print(f"[id-photo] requestId={request_id} step={key.replace('_ms', '')} cost={value}ms")

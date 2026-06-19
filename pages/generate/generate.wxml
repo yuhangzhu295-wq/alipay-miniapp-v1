@@ -56,6 +56,11 @@
         <text>{{item.name}}</text>
       </view>
     </view>
+    <view class="section-title" style="margin-top: 16px;">边缘处理</view>
+    <view style="display:flex; align-items:center; margin-bottom:12px; margin-left: 2px;" bindtap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchtap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
+    </view>
   </view>
 
   <view class="action-card">

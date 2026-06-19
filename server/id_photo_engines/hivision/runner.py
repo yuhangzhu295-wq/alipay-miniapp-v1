@@ -19,10 +19,10 @@ ASCII_BASE = Path(tempfile.gettempdir()) / "idphoto_hivision_ascii"
 ASCII_ROOT = ASCII_BASE / "HivisionIDPhotos"
 ASCII_RUNTIME_DIR = ASCII_BASE / "runtime"
 MODEL_ORDER = [
-    "rmbg-1.4",
     "birefnet-v1-lite",
-    "modnet_photographic_portrait_matting",
     "hivision_modnet",
+    "modnet_photographic_portrait_matting",
+    "rmbg-1.4",
 ]
 
 
@@ -79,7 +79,7 @@ def _model_order() -> list[str]:
     return [model for model in ordered if not installed or model in installed]
 
 
-def run_human_matting(image: Image.Image, request_id: str = "", timeout: int = 180) -> dict[str, Any]:
+def run_human_matting(image: Image.Image, model: str = None, request_id: str = "", timeout: int = 180) -> dict[str, Any]:
     ready, reason = production_ready()
     debug: dict[str, Any] = {
         "ready": ready,
@@ -108,7 +108,11 @@ def run_human_matting(image: Image.Image, request_id: str = "", timeout: int = 1
     input_path = ASCII_RUNTIME_DIR / f"{safe_token}-input.png"
     image.convert("RGB").save(input_path, format="PNG")
 
-    models = _model_order()
+    if model:
+        models = [model]
+    else:
+        models = _model_order()
+    
     if not models:
         return {
             "success": False,

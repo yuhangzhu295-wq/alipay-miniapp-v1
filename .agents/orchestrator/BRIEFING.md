@@ -1,21 +1,21 @@
-# BRIEFING — 2026-06-18T20:23:49+08:00
+# BRIEFING — 2026-06-19T14:48:00+08:00
 
 ## Mission
-Fix ID photo generation quality (aliasing/jagged edges) and enforce Mainland China ID photo standards.
+Implement the frontend layout download option when backend compose API returns layoutUrl, ensuring high resolution 6-inch layout photos can be saved.
 
 ## 🔒 My Identity
 - Archetype: Project Orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\orchestrator
 - Original parent: main agent
-- Original parent conversation ID: 11037240-ffd6-401e-83a1-c956dc4a1ba7
+- Original parent conversation ID: 3d9de227-9dd3-40df-bff1-93bf67da853d
 
 ## 🔒 My Workflow
 - **Pattern**: Project
 - **Scope document**: C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\PROJECT.md
-1. **Decompose**: Decompose the quality improvement and standard enforcement work into focused milestones.
-2. **Dispatch & Execute**:
-   - **Direct (iteration loop)**: Spawn Explorer to analyze the issues, Worker to implement changes, Reviewer to check logic/regression, Challenger to empirically verify, and Auditor to perform final integrity check.
+1. **Decompose**: Decompose the request into Milestones: Backend API Extension, Frontend API & Page Integration, and Automated Verification & Regression Testing.
+2. **Dispatch & Execute** (pick ONE):
+   - **Direct (iteration loop)**: Run direct loop: Explorer -> Worker -> Reviewer -> Challenger -> Auditor.
 3. **On failure** (in this order):
    - Retry: nudge stuck agent or re-send task
    - Replace: spawn fresh agent with partial progress
@@ -25,45 +25,47 @@ Fix ID photo generation quality (aliasing/jagged edges) and enforce Mainland Chi
    - Escalate: report to parent (sub-orchestrators only, last resort)
 4. **Succession**: Self-succeed at spawn count 16. On succession, write handoff.md, spawn successor.
 - **Work items**:
-  1. Decompose & Audit current status [pending]
-  2. Implement anti-aliasing & cleanup [pending]
-  3. Implement Mainland China cropping standard [pending]
-  4. Run E2E and regression testing [pending]
+  1. Backend API Extension [pending]
+  2. Frontend API & Page Integration [pending]
+  3. Automated Verification & Regression Testing [pending]
 - **Current phase**: 1
-- **Current focus**: Decompose & Audit current status
+- **Current focus**: Backend API Extension and Frontend Design
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
 - NEVER run build/test commands yourself — require workers to do so.
 - You MAY use file-editing tools ONLY for metadata/state files (.md) in your .agents/ folder.
-- Never reuse a subagent after it has delivered its handoff — always spawn fresh.
+- Never reuse a subagent after it has delivered its handoff — always spawn fresh
 
 ## Current Parent
-- Conversation ID: 11037240-ffd6-401e-83a1-c956dc4a1ba7
+- Conversation ID: 3d9de227-9dd3-40df-bff1-93bf67da853d
 - Updated: not yet
 
 ## Key Decisions Made
-- [TBD]
+- Initiated plan for layout download option.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_audit_1 | teamwork_preview_explorer | Environment audit & initial verification | completed | 1af8929d-575a-47c1-bf59-b77209769d7a |
-| worker_implement_1 | teamwork_preview_worker | Implement anti-aliasing & Mainland China cropping | completed | fee055c1-6d75-4a10-91d7-b9b0a12868c9 |
-| reviewer_1 | teamwork_preview_reviewer | Run full verification and review code correctness | in-progress | 6c11666a-d6ac-42f3-9452-b68a60dfe12a |
+| explorer_layout_download_1 | teamwork_preview_explorer | Explore and design layout download option | completed | d726c89f-8093-4bd4-86b8-43a40ed492ff |
+| explorer_layout_download_2 | teamwork_preview_explorer | Explore and design layout download option | completed | fb41c2b9-be8e-4948-beed-4a89d0e13071 |
+| explorer_layout_download_3 | teamwork_preview_explorer | Explore and design layout download option | completed | 0649e8b4-2439-402a-b7ea-0691fe494f33 |
+| worker_layout_download_1 | teamwork_preview_worker | Implement backend response, frontend API, pages and tests | in-progress | b9f440dd-d2ae-4eb3-9e52-9b242fbc5119 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 3 / 16
-- Pending subagents: 6c11666a-d6ac-42f3-9452-b68a60dfe12a
+- Spawn count: 14 / 16
+- Pending subagents: [b9f440dd-d2ae-4eb3-9e52-9b242fbc5119]
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-23
-- Safety timer: none
+- Heartbeat cron: 5f758f22-cb05-4822-bdcd-35b830bf9313/task-153
+- Safety timer: 5f758f22-cb05-4822-bdcd-35b830bf9313/task-207
 - On succession: kill all timers before spawning successor
 - On context truncation: run `manage_task(Action="list")` — re-create if missing
 
 ## Artifact Index
 - C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\orchestrator\ORIGINAL_REQUEST.md — Verbatim user request record.
+- C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\orchestrator\plan.md — Project plan.
+- C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\.agents\orchestrator\progress.md — Progress tracker.

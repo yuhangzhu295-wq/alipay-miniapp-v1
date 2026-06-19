@@ -1,14 +1,13 @@
 # Progress Tracking
 
 ## Current Status
-Last visited: 2026-06-18T21:00:00+08:00
-- [ ] Initial audit and environment check [in-progress]
-- [ ] Milestone 1: Anti-Aliased High-Resolution Alpha [pending]
-- [ ] Milestone 2: Mainland China ID Photo Cropping Standard [pending]
-- [ ] Milestone 3: E2E and regression testing [pending]
+Last visited: 2026-06-19T14:50:00+08:00
+- [ ] Milestone 1: Backend API Extension [in-progress]
+- [ ] Milestone 2: Frontend API & Page Integration [in-progress]
+- [ ] Milestone 3: Automated Verification & Regression Testing [in-progress]
 
 ## Iteration Status
-Current iteration: 0 / 32
+Current iteration: 1 / 32
 
 ## Retrospective Notes
-- No notes yet.
+- Heartbeat: Worker is currently writing backend, frontend changes and running automated tests.

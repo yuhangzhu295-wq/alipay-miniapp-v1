@@ -161,6 +161,11 @@
     <view class="chips-row">
       <view wx:for="{{idPhotoEnhanceOptions}}" wx:key="id" class="chip {{idPhotoEnhance === item.id ? 'chip-active' : ''}}" bindtap="setIdPhotoEnhance" data-id="{{item.id}}">{{item.name}}</view>
     </view>
+    <view class="section-title">边缘处理</view>
+    <view style="display:flex; align-items:center; margin-bottom:12px;" bindtap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchtap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
+    </view>
     <text class="colorize-note">官方规格版按所选规格裁切；创意版、二次元创意版仅适合头像、展示、简历美化等场景。</text>
     <view class="btn-primary" bindtap="doChangeBg" wx:if="{{photoSrc && !processing}}">生成证件照</view>
     <view class="action-row-btns" wx:if="{{resultImage}}">
@@ -437,6 +442,11 @@
     <view class="section-title">增强等级</view>
     <view class="chips-row">
       <view wx:for="{{idPhotoEnhanceOptions}}" wx:key="id" class="chip {{idPhotoEnhance === item.id ? 'chip-active' : ''}}" bindtap="setIdPhotoEnhance" data-id="{{item.id}}">{{item.name}}</view>
+    </view>
+    <view class="section-title">边缘处理</view>
+    <view style="display:flex; align-items:center; margin-bottom:12px;" bindtap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchtap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
     </view>
     <text class="colorize-note">创意版和二次元创意版不保证官方审核通过；官方用途请使用真人正面照片。</text>
     <view class="btn-primary" bindtap="doProfessional" wx:if="{{photoSrc && !processing}}">生成形象照</view>

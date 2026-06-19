@@ -8,3 +8,4 @@ venv/
 scratch/
 outputs/
 uploads/
+node_modules

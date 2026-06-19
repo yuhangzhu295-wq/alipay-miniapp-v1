@@ -1,0 +1,1743 @@
+INFO:     Started server process [45548]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1781804085.635247   26676 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E0000 00:00:1781804206.552108   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804266.565687   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804326.577139   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804386.585550   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804446.597901   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804506.606553   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804566.624479   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804626.643136   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804686.643673   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804746.656324   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804806.667976   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804866.685433   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804926.697849   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781804986.702768   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T17:50:46.544281463+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805167.565325   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805227.578943   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805287.590491   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805347.600170   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805407.607400   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805467.624186   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805527.642384   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805587.651610   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805647.657947   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805707.664531   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805767.681859   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805827.693463   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805887.703319   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-18T18:05:47.539242+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781805954.596005   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 3, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806041.494729   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 4, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806106.540096   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 5, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806172.230287   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 6, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806238.990148   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 7, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806326.091105   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 8, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806392.491246   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 9, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806479.974072   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 10, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806547.198482   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 11, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806613.363973   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 12, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806700.968767   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 13, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806766.485490   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 14, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806832.718037   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 15, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806898.755160   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 16, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781806963.065794   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 17, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807028.177111   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 18, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807116.172291   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 19, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807183.108023   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 20, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807270.722019   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 21, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807336.041558   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 22, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807403.179334   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 23, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807467.294743   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 24, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807553.347825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 25, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807639.870891   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 26, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807706.303350   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 27, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807773.444228   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 28, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807839.111491   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 29, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807905.955627   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 30, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781807971.574108   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 31, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808036.772824   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 32, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808122.709019   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 33, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808188.037803   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 34, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808254.647434   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 35, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808321.157005   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 36, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808386.931974   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 37, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808451.755487   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 38, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808518.321783   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 39, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808584.159581   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 40, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808651.451275   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 41, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808738.833996   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 42, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808805.811067   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 43, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808873.247876   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 44, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781808939.483326   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 45, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809005.808300   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 46, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809092.363823   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 47, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809158.084351   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 48, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809225.570601   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 49, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809312.807825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 50, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809379.221143   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 51, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809445.239658   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 52, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809511.075295   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 53, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809577.676669   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 54, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809643.421273   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 55, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809707.281141   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 56, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809772.543759   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 57, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809838.412691   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 58, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809903.575407   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 59, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781809990.877825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 60, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810057.961883   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 61, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810124.027640   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 62, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810188.456250   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 63, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810255.556459   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 64, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810321.422433   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 65, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810388.190861   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 66, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810454.862301   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 67, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810520.745140   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 68, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810607.121994   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 69, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810674.861401   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 70, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810762.990199   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 71, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810828.333394   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 72, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810895.484601   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 73, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781810960.917399   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 74, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811027.764273   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 75, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811093.208529   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 76, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811158.468953   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 77, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811246.103205   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 78, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811312.924991   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 79, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811379.297645   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 80, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811445.181287   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 81, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811510.870398   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 82, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811575.405659   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 83, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811641.064420   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 84, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811743.175502   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 85, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811824.210594   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 86, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811890.747001   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 87, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781811954.969966   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 88, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812060.564029   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 89, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812127.251882   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 90, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812193.627121   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 91, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812259.165406   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 92, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812325.242695   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 93, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812413.328187   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 94, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812477.843103   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 95, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812544.031139   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 96, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812609.831615   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 97, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812675.829333   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 98, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812741.752747   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 99, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812807.139363   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 100, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812874.142414   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 101, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781812963.490849   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 102, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781813052.373466   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 103, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781813140.347205   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 104, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820126.125626   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 105, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820192.448745   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 106, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820257.340524   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 107, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820341.780746   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 108, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820407.012603   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 109, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820473.080363   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 110, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820539.575243   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 111, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820606.287590   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 112, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820672.476410   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 113, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820738.825861   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 114, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820804.556050   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 115, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820872.072412   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 116, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781820938.142046   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 117, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821003.639784   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 118, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821070.055993   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 119, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821134.926243   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 120, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821201.039487   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 121, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821287.870270   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 122, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821353.152133   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 123, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821419.031524   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 124, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821484.876583   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 125, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821549.330316   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 126, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821615.440546   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 127, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821702.257961   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 128, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821789.406442   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 129, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821855.172245   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 130, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781821942.718227   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 131, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822029.853676   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 132, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822094.605797   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 133, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822160.407370   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 134, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822225.803095   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 135, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822292.422243   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 136, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822359.687991   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 137, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822447.527326   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 138, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822512.568277   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 139, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822579.271577   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 140, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822644.876207   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 141, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822711.690900   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 142, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822799.178843   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 143, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822886.218057   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 144, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781822974.576939   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 145, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823041.415425   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 146, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823108.593554   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 147, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823196.811889   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 148, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823283.726224   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 149, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823371.319999   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 150, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823437.431279   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 151, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823502.400312   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 152, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823589.379751   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 153, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823655.721595   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 154, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823721.541323   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 155, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823788.878580   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 156, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823896.182018   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 157, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781823983.913022   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 158, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824051.147629   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 159, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824117.440824   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 160, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824181.570450   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 161, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824246.293695   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 162, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824333.115923   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 163, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824399.325694   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 164, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824466.062339   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 165, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824532.457121   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 166, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824598.248535   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 167, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824664.728704   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 168, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824752.455465   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 169, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824818.140825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 170, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824884.973215   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 171, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781824970.086714   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 172, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825036.627144   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 173, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825103.942021   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 174, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825169.501466   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 175, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825235.587692   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 176, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825301.760511   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 177, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825390.372605   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 178, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825454.146825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 179, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825520.578246   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 180, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825586.402219   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 181, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825652.363708   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 182, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825718.021897   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 183, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825805.771542   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 184, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825871.029365   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 185, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781825936.650305   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 186, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826003.505737   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 187, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826069.144331   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 188, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826135.621539   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 189, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826202.350798   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 190, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826267.826673   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 191, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826333.804944   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 192, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826399.034611   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 193, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826463.907986   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 194, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826530.360454   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 195, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826597.523434   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 196, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826664.117266   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 197, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826749.793400   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 198, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826836.709934   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 199, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826902.552726   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 200, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781826968.616049   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 201, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827070.704486   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 202, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827136.888886   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 203, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827203.217023   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 204, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827268.020853   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 205, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827333.889388   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 206, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827399.478418   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 207, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827486.509305   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 208, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827553.416059   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 209, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827619.259784   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 210, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827685.713788   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 211, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827750.678515   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 212, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827818.199692   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 213, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827884.033674   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 214, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781827970.573130   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 215, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828036.592817   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 216, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828102.691888   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 217, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828168.477522   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 218, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828235.996418   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 219, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828301.114685   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 220, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828366.831239   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 221, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828434.229603   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 222, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828500.674889   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 223, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828567.096194   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 224, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828634.272894   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 225, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828700.467092   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 226, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828767.738804   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 227, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828833.510354   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 228, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828899.611235   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 229, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781828966.190303   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 230, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829031.755668   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 231, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829097.133500   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 232, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829162.997780   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 233, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829265.087004   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 234, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829351.683865   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 235, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829416.340252   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 236, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829482.232542   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 237, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829547.614042   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 238, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829613.303674   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 239, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829679.104416   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 240, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829746.205308   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 241, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829811.239703   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 242, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829877.181908   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 243, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781829943.308097   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 244, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830009.283263   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 245, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830096.954805   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 246, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830184.026999   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 247, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830251.155973   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 248, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830317.440226   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 249, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830384.779254   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 250, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830451.062555   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 251, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830517.104528   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 252, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830603.654552   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 253, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830670.521311   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 254, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830736.750735   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 255, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830802.683914   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 256, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830868.871868   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 257, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781830955.492884   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 258, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831041.136594   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 259, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831106.925571   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 260, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831171.849035   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 261, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831236.744045   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 262, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831302.694793   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 263, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831369.028382   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 264, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831435.248813   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 265, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831500.802192   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 266, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831566.695579   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 267, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831654.169989   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 268, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831720.028981   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 269, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831786.939875   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 270, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831853.098443   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 271, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831918.955173   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 272, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781831985.982573   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 273, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832052.562197   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 274, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832116.864951   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 275, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832183.299490   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 276, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832248.413766   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 277, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832335.047913   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 278, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832401.372877   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 279, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832466.491325   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 280, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832553.998795   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 281, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832618.462159   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 282, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832684.385084   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 283, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832749.953730   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 284, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832816.025004   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 285, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832882.785709   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 286, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781832948.822159   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 287, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833014.705356   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 288, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833081.494900   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 289, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833147.269510   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 290, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833212.657609   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 291, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833299.696185   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 292, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833386.483765   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 293, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833453.186232   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 294, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833519.577961   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 295, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833605.755374   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 296, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833731.889845   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 297, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833798.137250   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 298, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833864.621836   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 299, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781833930.945954   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 300, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834018.504909   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 301, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834084.778847   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 302, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834150.040672   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 303, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834237.597936   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 304, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834302.795050   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 305, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834368.701135   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 306, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834456.148096   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 307, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834520.486829   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 308, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834586.592823   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 309, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834652.196791   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 310, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834739.928041   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 311, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834806.340610   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 312, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834872.571401   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 313, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781834937.234910   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 314, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835002.210748   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 315, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835069.124428   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 316, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835156.606560   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 317, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835265.152329   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 318, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835330.843999   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 319, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835396.967872   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 320, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835463.217266   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 321, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835529.572000   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 322, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835596.329469   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 323, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835662.531179   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 324, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835749.963335   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 325, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835816.499918   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 326, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835882.659534   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 327, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781835948.371270   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 328, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836015.414838   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 329, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836081.868648   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 330, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836148.245250   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 331, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836214.632387   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 332, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836279.271119   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 333, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836345.571851   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 334, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836411.050221   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 335, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836476.472854   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 336, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836541.768162   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 337, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836607.721183   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 338, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836674.754813   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 339, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836741.291396   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 340, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836806.936545   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 341, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836873.506700   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 342, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781836960.289337   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 343, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837027.642224   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 344, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837092.628255   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 345, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837158.807145   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 346, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837225.355637   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 347, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837291.931417   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 348, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837357.745825   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 349, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837424.529983   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 350, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837491.613032   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 351, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837556.644991   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 352, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837621.905965   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 353, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837727.746463   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 354, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837793.571499   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 355, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837858.991080   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 356, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781837961.094740   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 357, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838027.849142   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 358, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838115.177511   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 359, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838179.660504   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 360, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838246.081828   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 361, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838313.570623   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 362, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838400.186399   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 363, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838465.535034   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 364, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838530.940360   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 365, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838596.971972   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 366, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838684.823529   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 367, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838751.861064   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 368, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838817.624156   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 369, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838884.167395   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 370, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781838950.328588   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 371, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839015.498839   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 372, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839082.824097   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 373, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839149.232324   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 374, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839214.925879   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 375, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839281.762149   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 376, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839347.875438   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 377, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839434.647971   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 378, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839499.933785   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 379, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839566.861957   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 380, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839633.901262   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 381, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839699.657925   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 382, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839765.385697   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 383, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839830.440528   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 384, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839896.807900   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 385, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781839962.775690   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 386, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840050.172724   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 387, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840115.741269   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 388, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840181.945955   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 389, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840269.056782   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 390, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840336.855376   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 391, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840402.507476   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 392, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840467.050068   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 393, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840534.404268   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 394, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840600.920659   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 395, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840668.139316   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 396, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840734.658517   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 397, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840800.441959   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 398, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840886.179504   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 399, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781840972.905119   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 400, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841038.255980   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 401, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841103.675247   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 402, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841190.558167   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 403, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841278.635951   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 404, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841344.001242   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 405, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841410.340685   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 406, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841477.384550   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 407, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841542.713971   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 408, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841608.175631   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 409, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841675.146961   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 410, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841762.856045   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 411, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841828.358236   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 412, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841914.379790   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 413, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781841980.000633   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 414, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842046.459197   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 415, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842112.047063   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 416, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842199.374442   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 417, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842265.361618   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 418, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842331.878285   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 419, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842395.500219   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 420, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842461.414074   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 421, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842528.445959   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 422, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842614.157982   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 423, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842698.999595   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 424, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842785.428440   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 425, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842851.078549   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 426, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842918.142313   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 427, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781842984.383375   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 428, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843051.821801   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 429, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843118.170129   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 430, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843184.455142   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 431, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843270.586900   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 432, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843336.800056   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 433, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843400.879027   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 434, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843464.072601   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 435, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843573.715327   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 436, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843639.617837   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 437, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843704.749029   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 438, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843771.291136   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 439, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843836.793774   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 440, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843903.700418   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 441, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781843990.729086   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 442, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844056.236817   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 443, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844121.854835   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 444, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844188.675690   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 445, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844252.874511   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 446, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844319.197012   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 447, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844383.926641   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 448, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844449.558209   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 449, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844515.423433   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 450, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844581.467136   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 451, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844647.315801   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 452, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844733.817157   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 453, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844799.186249   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 454, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844886.597427   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 455, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781844953.006106   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 456, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845019.822490   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 457, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845108.026618   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 458, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845174.406512   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 459, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845241.844786   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 460, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845330.079600   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 461, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845395.814808   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 462, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845462.974431   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 463, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845528.672435   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 464, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845595.196453   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 465, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845662.128645   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 466, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845729.560657   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 467, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845796.526758   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 468, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845862.117460   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 469, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845929.024137   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 470, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781845995.152206   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 471, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846083.139250   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 472, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846169.428291   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 473, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846234.062459   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 474, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846299.193697   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 475, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846366.129753   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 476, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846432.352466   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 477, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846499.941179   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 478, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846565.368191   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 479, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846629.562776   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 480, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846696.219522   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 481, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846782.472855   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 482, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846884.570319   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 483, type: 0, code: 2, description: "Status_ConnectFailed: 12002", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781846965.637603   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 484, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847031.822613   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 485, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847097.961376   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 486, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847163.523493   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 487, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847229.385730   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 488, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847293.852815   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 489, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847359.996480   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 490, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847426.546671   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 491, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847492.679327   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 492, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847579.522900   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 493, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781847645.875867   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: INTERNAL: ResponseInfo[id: 494, type: 0, code: 2, description: "Status_ConnectFailed: 12029", headers: ]
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/ion_http_client.cc:44
+E0000 00:00:1781848488.853446   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T05:56:46.737874+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848548.860290   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T05:56:46.737874+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848669.749512   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848729.763697   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848789.797760   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848849.805395   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848909.824949   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781848969.840303   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849029.850019   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849089.865792   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849149.870984   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849209.876665   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849269.892776   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849329.910493   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849389.923397   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781849449.938130   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:11:49.741014+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781850170.958727   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:26:50.868248+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781850230.976353   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:26:50.868248+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781850290.989573   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:26:50.868248+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781850351.006973   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:26:50.868248+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851074.197508   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:41:54.097798+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851134.219602   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:41:54.097798+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851194.238882   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:41:54.097798+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851254.252012   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:41:54.097798+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851615.562277   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851675.583680   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851735.598947   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851795.608246   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851855.623298   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851915.627394   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781851975.628784   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852035.641514   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852095.663675   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852155.670925   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T06:56:55.543835+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852277.014393   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852337.021354   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852397.041599   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852457.047506   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852517.050698   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852577.053226   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852637.068911   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852697.073301   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852757.157025   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852817.161157   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852877.181215   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852937.194402   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781852997.195101   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781853057.218174   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T07:11:56.983288898+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781880062.474341   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T14:44:02.382574+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781880122.486390   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T14:44:02.382574+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781880182.492949   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T14:44:02.382574+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781882945.161044   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883005.168616   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883065.171734   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883125.198671   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883185.227239   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883245.253857   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883305.291852   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883365.912804   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180
+E0000 00:00:1781883426.515445   57980 portable_clearcut_uploader.cc:90] Failed to send to clearcut: FAILED_PRECONDITION: Not valid for uploading until: 2026-06-19T15:43:05.156949196+00:00
+=== Source Location Trace: === 
+wireless/android/play/playlog/cplusplus/portable_clearcut_uploader.cc:180

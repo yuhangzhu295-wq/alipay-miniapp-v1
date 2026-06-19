@@ -154,3 +154,61 @@ Modifications must be isolated to the minimal ID photo engine (`server/id_photo_
 
 ### Regression Verification
 - [ ] The existing test suite (`npm run verify` / `verify_id_photo_full_business_flow.py`) passes without regressions.
+
+## Follow-up — 2026-06-18T16:12:29Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Ready for launch — awaiting user approval
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+
+Rebuild the cropping algorithm for the ID photo generation pipeline to strictly comply with the Chinese mainland official ID photo standards, ensuring precise head-to-photo proportions and correct shoulder retention.
+
+Working directory: C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器
+Integrity mode: demo
+
+## Requirements
+
+### R1. Dynamic 70% Head Ratio & Hair Volume Detection
+The cropping algorithm (`server/id_photo_engine_minimal/crop.py`) must dynamically calculate the bounding box such that the vertical head height occupies strictly between **65% and 75%** (ideally 70%) of the total photo height. 
+**Crucially**, the agent must dynamically calculate the hair volume based on the actual foreground mask (rather than solely relying on facial landmarks) to accurately determine the true "top of the head", even for voluminous hairstyles (e.g., JK uniform long hair, curly hair).
+
+### R2. Top and Bottom Margins
+- **Top Margin**: Must leave a visible gap between the top of the hair and the top edge of the photo (roughly 3-5mm on a 35mm height photo, i.e., ~10% of the photo height). It must never touch the top edge.
+- **Bottom Margin & Shoulders**: Both shoulders and the clavicle area must be completely visible. The crop must not prematurely truncate the subject's torso or leave the head floating too low in the frame.
+
+### R3. Horizontal Centering
+The face must be perfectly centered horizontally, with equal empty space on both sides.
+
+### R4. Adaptive to Specifications
+The crop logic must adapt seamlessly to any requested specification (e.g., 295x413 for 1-inch, 358x441 for ID card), maintaining the same 65-75% ratio rule without hardcoding absolute pixel values.
+
+## Acceptance Criteria
+
+### Crop Quality
+- [ ] For a test set of 10 diverse images (including large hair volume, close-ups, and wide shots), the output images have a head height that is exactly 65-75% of the total height.
+- [ ] For the same test set, the top of the hair does not touch the upper boundary.
+- [ ] For the same test set, both shoulders remain visible at the bottom of the frame (no truncation of the chest/shoulders if they exist in the original image).
+
+## Follow-up — 2026-06-19T06:43:25Z
+
+# Teamwork Project Prompt
+
+> Goal: Implement a download option in the ID photo frontend to allow users to choose between downloading a single ID photo or a 6-inch layout photo.
+
+Working directory: `C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器`
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Frontend Layout Download Option
+Modify the frontend "下载证件照" (Download ID Photo) UI flow in the WeChat Mini Program (likely `pages/result/result.wxml` and `pages/result/result.js`). When the user clicks download, if the backend returned a `layoutUrl`, present an option (e.g., a modal, an action sheet, or distinct buttons) to let the user select between downloading the "单张照片" (Single Photo) and "六寸排版照" (6-inch Layout Photo).
+
+## Acceptance Criteria
+
+### Frontend Integration
+- [ ] The download UI accurately presents the option to download the layout photo.
+- [ ] Clicking the layout photo download button successfully downloads the layout image from `layoutUrl`.
+- [ ] The existing single photo download functionality remains intact.
+
+

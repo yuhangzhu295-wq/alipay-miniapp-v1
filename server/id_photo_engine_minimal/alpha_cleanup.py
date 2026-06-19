@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-def cleanup_alpha(rgba: Image.Image, alpha: np.ndarray) -> Image.Image:
+def cleanup_alpha(rgba: Image.Image, alpha: np.ndarray, bypass_hole_filling: bool = False) -> Image.Image:
     # Rule 10: Lightweight cleanup (remove isolated noise, separate background pieces, light feathering)
     binary = (alpha > 127).astype(np.uint8) * 255
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary, 8)
@@ -15,24 +15,25 @@ def cleanup_alpha(rgba: Image.Image, alpha: np.ndarray) -> Image.Image:
         clean_mask = np.zeros_like(binary)
         clean_mask[labels == max_label] = 255
         
-        # Safe hole filling: only fill holes that are < 0.5% of image area
-        h, w = clean_mask.shape
-        floodfilled = clean_mask.copy()
-        mask = np.zeros((h+2, w+2), np.uint8)
-        for pt in [(0,0), (w-1,0), (0,h-1), (w-1,h-1)]:
-            if floodfilled[pt[1], pt[0]] == 0:
-                cv2.floodFill(floodfilled, mask, pt, 255)
-        holes = cv2.bitwise_not(floodfilled)
-        
-        # Filter holes by size
-        num_holes, hole_labels, hole_stats, _ = cv2.connectedComponentsWithStats(holes, 8)
-        max_hole_size = max(100, int(h * w * 0.005))
-        safe_holes = np.zeros_like(holes)
-        for i in range(1, num_holes):
-            if hole_stats[i, cv2.CC_STAT_AREA] < max_hole_size:
-                safe_holes[hole_labels == i] = 255
-                
-        clean_mask = cv2.bitwise_or(clean_mask, safe_holes)
+        if not bypass_hole_filling:
+            # Safe hole filling: only fill holes that are < 0.5% of image area
+            h, w = clean_mask.shape
+            floodfilled = clean_mask.copy()
+            mask = np.zeros((h+2, w+2), np.uint8)
+            for pt in [(0,0), (w-1,0), (0,h-1), (w-1,h-1)]:
+                if floodfilled[pt[1], pt[0]] == 0:
+                    cv2.floodFill(floodfilled, mask, pt, 255)
+            holes = cv2.bitwise_not(floodfilled)
+            
+            # Filter holes by size
+            num_holes, hole_labels, hole_stats, _ = cv2.connectedComponentsWithStats(holes, 8)
+            max_hole_size = max(100, int(h * w * 0.005))
+            safe_holes = np.zeros_like(holes)
+            for i in range(1, num_holes):
+                if hole_stats[i, cv2.CC_STAT_AREA] < max_hole_size:
+                    safe_holes[hole_labels == i] = 255
+                    
+            clean_mask = cv2.bitwise_or(clean_mask, safe_holes)
         
         # Light feathering
         clean_mask = cv2.GaussianBlur(clean_mask, (3, 3), 0)
