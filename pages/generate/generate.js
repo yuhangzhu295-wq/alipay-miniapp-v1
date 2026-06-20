@@ -529,6 +529,8 @@ Page({
           message = '制作时间较长，请稍后重试或重新上传。';
         } else if (err && err.message && err.message.indexOf('未检测到') >= 0) {
           message = err.message;
+        } else if (err && err.message) {
+          message = "错误: " + err.message;
         }
         that.setData({
           generating: false,

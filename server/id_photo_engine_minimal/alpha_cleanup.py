@@ -27,7 +27,7 @@ def cleanup_alpha(rgba: Image.Image, alpha: np.ndarray, bypass_hole_filling: boo
             
             # Filter holes by size
             num_holes, hole_labels, hole_stats, _ = cv2.connectedComponentsWithStats(holes, 8)
-            max_hole_size = max(100, int(h * w * 0.005))
+            max_hole_size = max(100, int(h * w * 0.05))
             safe_holes = np.zeros_like(holes)
             for i in range(1, num_holes):
                 if hole_stats[i, cv2.CC_STAT_AREA] < max_hole_size:

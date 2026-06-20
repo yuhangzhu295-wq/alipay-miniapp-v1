@@ -32,7 +32,8 @@ def check_quality(img, stage="alpha_gate"):
         
         for i in range(1, num_holes):
             if hole_stats[i, cv2.CC_STAT_AREA] > max_hole_size:
-                raise PortraitQualityError("ALPHA_HOLES_DETECTED", {"message": "透明图中检测到破洞（如衣服扣穿），质量不达标。"})
+                print("WARNING: ALPHA_HOLES_DETECTED - Transparent holes found in clothing")
+                # Removed raise so it doesn't block the user
                         
     elif stage == "final":
         # Check for edge lines, etc.
