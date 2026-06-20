@@ -9,6 +9,7 @@ def perform_matting(img_bytes, model=None):
     hivision = run_human_matting(image, model=model)
     if not hivision.get("success"):
         raise PortraitQualityError("MATTING_FAILED", {"message": f"抠图引擎失败: {hivision.get('message')}"})
+    print("MATTING DEBUG:", hivision.get("debug"))
     
     rgba = hivision["rgba"]
     alpha = np.asarray(rgba)[:, :, 3]

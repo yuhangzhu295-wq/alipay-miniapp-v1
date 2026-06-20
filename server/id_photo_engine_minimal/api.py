@@ -45,6 +45,11 @@ def generate_id_photo_v2(
     h = int(height_px) if height_px else spec.get("height", 579)
 
     validate_input(img_bytes)
+    
+    # 4C8G Fast Tier Optimization
+    primary_model = "birefnet-v1-lite" if hair_retouch else "hivision_modnet"
+    if model is None: model = primary_model
+
     rgba, alpha, model_used = perform_matting(img_bytes, model=model)
     alpha = alpha.copy()
     
@@ -134,6 +139,11 @@ def prepare_id_photo_v2(
     h = int(height_px) if height_px else spec.get("height", 579)
 
     validate_input(img_bytes)
+    
+    # 4C8G Fast Tier Optimization: Use lightweight model when hair retouch is OFF
+    primary_model = "birefnet-v1-lite" if hair_retouch else "hivision_modnet"
+    if model is None: model = primary_model
+    
     rgba, alpha, model_used = perform_matting(img_bytes, model=model)
     alpha = alpha.copy()
     
