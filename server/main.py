@@ -1243,14 +1243,14 @@ async def id_photo_prepare(
             "requestId": request_id,
             "templateId": te.template_id
         })
-    except Exception:
+    except Exception as e:
         print(f"[id-photo] requestId={request_id} prepare error")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={
             "success": False,
             "code": "PREPARE_FAILED",
             "requestId": request_id,
-            "message": "人像预处理失败，请重新上传清晰正面照片。"
+            "message": f"人像预处理失败，请重新上传清晰正面照片。错误：{str(e)[:50]}"
         })
 
 
