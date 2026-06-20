@@ -14,7 +14,13 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[3]
 REPORT_DIR = ROOT / "reports" / "id-photo-multi-engine-reset"
 HIVISION_ROOT = ROOT / "third_party" / "HivisionIDPhotos"
-VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+import sys
+import platform
+
+if platform.system() == "Windows":
+    VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+else:
+    VENV_PYTHON = Path(sys.executable)
 ASCII_BASE = Path(tempfile.gettempdir()) / "idphoto_hivision_ascii"
 ASCII_ROOT = ASCII_BASE / "HivisionIDPhotos"
 ASCII_RUNTIME_DIR = ASCII_BASE / "runtime"
@@ -35,7 +41,7 @@ def production_ready() -> tuple[bool, str]:
         return False, "disabled by ID_PHOTO_DISABLE_HIVISION"
     if not (HIVISION_ROOT / "inference.py").exists():
         return False, "Hivision inference.py not found"
-    if not VENV_PYTHON.exists():
+    if platform.system() == "Windows" and not Path(VENV_PYTHON).exists():
         return False, "Hivision venv python not found"
     if os.environ.get("ID_PHOTO_FORCE_HIVISION", "").strip().lower() in {"1", "true", "yes"}:
         return True, "forced by ID_PHOTO_FORCE_HIVISION"
@@ -53,14 +59,24 @@ def _ensure_ascii_root() -> dict[str, Any]:
     ASCII_BASE.mkdir(parents=True, exist_ok=True)
     if ASCII_ROOT.exists():
         return {"path": str(ASCII_ROOT), "created": False, "returncode": 0, "outputTail": "existing"}
-    proc = subprocess.run(
-        ["cmd", "/c", "mklink", "/J", str(ASCII_ROOT), str(HIVISION_ROOT)],
-        cwd=str(ASCII_BASE),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        shell=False,
-    )
+    if platform.system() == "Windows":
+        proc = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(ASCII_ROOT), str(HIVISION_ROOT)],
+            cwd=str(ASCII_BASE),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=False,
+        )
+    else:
+        proc = subprocess.run(
+            ["ln", "-s", str(HIVISION_ROOT), str(ASCII_ROOT)],
+            cwd=str(ASCII_BASE),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=False,
+        )
     return {
         "path": str(ASCII_ROOT),
         "created": proc.returncode == 0,

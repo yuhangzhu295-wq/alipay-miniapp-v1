@@ -43,7 +43,8 @@ function getApiBaseUrl() {
   if (envVersion === 'release' || envVersion === 'trial') {
     return CLOUD_API_BASE_URL;
   }
-  return LOCAL_API_BASE_URL;
+  // 强制默认使用云端接口（方便本地开发者工具测试）
+  return CLOUD_API_BASE_URL;
 }
 
 var API_BASE_URL = getApiBaseUrl();
