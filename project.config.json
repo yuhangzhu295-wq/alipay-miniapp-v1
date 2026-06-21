@@ -38,13 +38,13 @@
       "disablePlugins": [],
       "outputPath": ""
     },
-    "condition": false,
-    "compileWorklet": false,
+    "condition": true,
+    "compileWorklet": true,
     "localPlugins": false,
     "disableUseStrict": false,
     "useCompilerPlugins": false,
-    "swc": false,
-    "disableSWC": true
+    "swc": true,
+    "disableSWC": false
   },
   "appid": "touristappid",
   "projectname": "证件照生成器",
@@ -55,6 +55,58 @@
       {
         "value": "server",
         "type": "folder"
+      },
+      {
+        "value": "third_party",
+        "type": "folder"
+      },
+      {
+        "value": "logs",
+        "type": "folder"
+      },
+      {
+        "value": "backups",
+        "type": "folder"
+      },
+      {
+        "value": "reports",
+        "type": "folder"
+      },
+      {
+        "value": "mockups",
+        "type": "folder"
+      },
+      {
+        "value": "deploy",
+        "type": "folder"
+      },
+      {
+        "value": "scratch",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
+        "value": ".agents",
+        "type": "folder"
+      },
+      {
+        "value": ".openclaw",
+        "type": "folder"
+      },
+      {
+        "value": "*.py",
+        "type": "suffix"
+      },
+      {
+        "value": "*.bat",
+        "type": "suffix"
+      },
+      {
+        "value": "*.md",
+        "type": "suffix"
       }
     ],
     "include": []

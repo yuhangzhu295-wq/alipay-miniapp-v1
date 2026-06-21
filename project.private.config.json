@@ -14,7 +14,7 @@
     "compileHotReLoad": true,
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true,
-    "bigPackageSizeSupport": false,
+    "bigPackageSizeSupport": true,
     "useIsolateContext": true
   },
   "libVersion": "3.16.1",
