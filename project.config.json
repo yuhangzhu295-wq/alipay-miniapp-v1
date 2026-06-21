@@ -46,7 +46,7 @@
     "swc": true,
     "disableSWC": false
   },
-  "appid": "touristappid",
+  "appid": "wx8026aeed4929d381",
   "projectname": "证件照生成器",
   "libVersion": "3.7.9",
   "srcMiniprogramRoot": "",
