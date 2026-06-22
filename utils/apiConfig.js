@@ -12,7 +12,7 @@
  */
 
 var LOCAL_API_BASE_URL = 'http://127.0.0.1:8000';
-var CLOUD_API_BASE_URL = 'http://114.67.73.44:8000';
+var CLOUD_API_BASE_URL = 'http://42.192.107.208:8000';
 var API_TARGET_STORAGE_KEY = 'ID_PHOTO_API_TARGET';
 
 function getRuntimeEnvVersion() {
