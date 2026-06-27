@@ -1275,11 +1275,11 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
     fh = float(face_box["height"])
     face_cx = fx + fw / 2.0
 
-    side_expand = 1.28 if composition != "half_body" else 1.7
+    side_expand = 2.50 if composition != "half_body" else 2.50
     crop_left = max(0, int(face_cx - fw * side_expand))
-    crop_top = max(0, int(fy - fh * 0.9))
+    crop_top = max(0, int(fy - fh * 1.50))
     crop_right = min(cutout.width, int(face_cx + fw * side_expand))
-    crop_bottom = min(cutout.height, int(fy + fh * (2.30 if composition != "half_body" else 4.2)))
+    crop_bottom = min(cutout.height, int(fy + fh * (4.50 if composition != "half_body" else 4.50)))
     if crop_right <= crop_left or crop_bottom <= crop_top:
         crop_left, crop_top, crop_right, crop_bottom = 0, 0, cutout.width, cutout.height
 
@@ -1288,12 +1288,12 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
     if composition != "half_body" and crop_w > 24:
         alpha = cropped_person.getchannel("A")
         cropped_person.putalpha(alpha.filter(ImageFilter.GaussianBlur(radius=0.28)))
-    face_height_ratio = 0.39 if composition != "half_body" else 0.26
+    face_height_ratio = 0.28 if composition != "half_body" else 0.26
     target_face_h = target_h * face_height_ratio
     scale_by_face = target_face_h / max(1.0, fh)
     scale_by_width = target_w * (1.46 if composition != "half_body" else 1.12) / max(1.0, crop_w)
     scale_by_height = target_h * (1.24 if composition != "half_body" else 1.08) / max(1.0, crop_h)
-    scale = min(scale_by_face, scale_by_width, scale_by_height)
+    scale = scale_by_face
 
     def render_with_scale(render_scale):
         new_w = max(1, int(crop_w * render_scale))
