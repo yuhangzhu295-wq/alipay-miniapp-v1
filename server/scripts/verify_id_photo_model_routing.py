@@ -53,6 +53,7 @@ def main() -> int:
         "detailUsesBirefnet": routing["detail"] == "birefnet-v1-lite",
         "standardFallbacksRemain": standard_order[:3] == ["birefnet-v1-lite", "hivision_modnet", "rmbg-1.4"],
         "detailFallbacksRemain": detail_order[:3] == ["birefnet-v1-lite", "hivision_modnet", "rmbg-1.4"],
+        "inferenceIsSerialized": hasattr(runner, "_INFERENCE_LOCK"),
         "prepareAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "prepare_id_photo_v2"),
         "prepareCutoutAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "_prepare_cutout"),
         "generateAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "generate_id_photo_v2"),

@@ -14,18 +14,22 @@ const ROOT = path.resolve(__dirname, '..', '..')
 const FINAL = path.join(ROOT, 'reports', 'final')
 const REPORT_JSON = path.join(FINAL, 'devtools-business-flow-report.json')
 const REPORT_MD = path.join(FINAL, 'devtools-business-flow-report.md')
+const SCREENSHOT_DIR = path.join(ROOT, 'reports', '20260803-cloud-repair', 'devtools-screenshots')
 const ID_REPORT = path.join(FINAL, 'id-photo-validation-report.json')
 const CURRENT_FIX_ID_REPORT = path.join(ROOT, 'reports', 'current-fixes', 'final', 'id-photo-sample-validation-report.json')
 const RUN_ID = process.env.RUN_ID || 'cloud-deploy-e2e-20260605-232848'
 const CLOUD_FLOW_REPORT = process.env.CLOUD_FLOW_REPORT ||
   path.join(ROOT, 'reports', 'cloud-deploy-e2e', RUN_ID, 'cloud-tests', 'cloud-real-business-flow-hd.json')
-const CLI_PATH = 'C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.bat'
-const CLI_NODE_PATH = 'C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\node.exe'
-const CLI_JS_PATH = 'C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.js'
+const DEVTOOLS_HOME = process.env.WECHAT_DEVTOOLS_HOME ||
+  path.join('C:\\Program Files (x86)', 'Tencent', '微信web开发者工具')
+const CLI_PATH = process.env.WECHAT_CLI_PATH || path.join(DEVTOOLS_HOME, 'cli.bat')
+const CLI_NODE_PATH = path.join(DEVTOOLS_HOME, 'node.exe')
+const CLI_JS_PATH = path.join(DEVTOOLS_HOME, 'cli.js')
 let AUTO_PORT = Number(process.env.WECHAT_AUTOMATOR_PORT || 9430)
 const BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8000'
 
 fs.mkdirSync(FINAL, { recursive: true })
+fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
 
 const results = []
 const runtime = {
@@ -52,6 +56,18 @@ function check(name, passed, details = {}) {
   results.push(item)
   console.log(`[devtools-flow] ${item.passed ? 'PASS' : 'FAIL'} ${name}`)
   return item.passed
+}
+
+async function capture(miniProgram, name) {
+  const outputPath = path.join(SCREENSHOT_DIR, `${name}.png`)
+  try {
+    await timeout(`capture ${name}`, miniProgram.screenshot({ path: outputPath }), 3000)
+    runtime.screenshots = runtime.screenshots || []
+    runtime.screenshots.push(outputPath)
+  } catch (error) {
+    runtime.screenshotLimitations = runtime.screenshotLimitations || []
+    runtime.screenshotLimitations.push({ name, error: error.message })
+  }
 }
 
 async function step(name, fn) {
@@ -237,6 +253,19 @@ async function route(miniProgram, url, method = 'reLaunch') {
 }
 
 function loadIdSample() {
+  if (process.env.DEVTOOLS_PREPARED_ID && process.env.DEVTOOLS_BLUE_URL) {
+    return {
+      report: { status: 'PASS', source: 'current cloud repair run' },
+      sample: {
+        sample_id: process.env.DEVTOOLS_SAMPLE_ID || 'cloud-repair-S07',
+        prepared_id: process.env.DEVTOOLS_PREPARED_ID,
+        input_path: process.env.DEVTOOLS_INPUT_PATH || '',
+        compose_results: {
+          blue: { finalImageUrl: process.env.DEVTOOLS_BLUE_URL },
+        },
+      },
+    }
+  }
   if (fs.existsSync(CURRENT_FIX_ID_REPORT)) {
     const currentReport = JSON.parse(fs.readFileSync(CURRENT_FIX_ID_REPORT, 'utf8'))
     const sample = currentReport && Array.isArray(currentReport.samples)
@@ -347,6 +376,7 @@ async function main() {
     })
 
     let page = await route(miniProgram, '/pages/index/index')
+    await capture(miniProgram, '01-home')
     check('Home route opens', page.path === 'pages/index/index', { path: page.path })
     check('Home search entry exists', (await elementCount(page, '.search-bar')) === 1)
     check('Home hot specifications render', (await elementCount(page, '.hot-card')) >= 4, {
@@ -469,6 +499,7 @@ async function main() {
       295,
       413,
       'head_shoulder',
+      false,
     ].join('|')
     await page.setData({
       photoSrc: effectivePhotoSrc,
@@ -517,10 +548,11 @@ async function main() {
       resultColorId: await page.data('resultColorId'),
       canDownload: await page.data('canDownload'),
     })
+    await capture(miniProgram, '02-id-photo-red-result')
 
     await miniProgram.mockWxMethod('saveImageToPhotosAlbum', { errMsg: 'saveImageToPhotosAlbum:ok' })
     const savedBefore = (await miniProgram.callWxMethod('getStorageSync', 'myPhotos')) || []
-    await timeout('invoke primary download action', page.callMethod('primaryAction'), 10000)
+    await timeout('invoke generator save action', page.callMethod('savePhoto'), 30000)
     const savedAfter = await waitForStorageLength(miniProgram, 'myPhotos', savedBefore.length + 1, 20000)
     check('Download business action keeps preview/download consistent', Boolean(
       (await page.data('resultImage')) === redResult &&
@@ -532,6 +564,47 @@ async function main() {
       resultImage: await page.data('resultImage'),
     })
     await miniProgram.restoreWxMethod('saveImageToPhotosAlbum')
+
+    const testUserId = `devtools_${Date.now()}`
+    const testAuth = {
+      userId: testUserId,
+      token: `devtools-test-token-${Date.now()}`,
+      provider: 'devtools-test',
+      userInfo: { nickName: 'DevTools verification' },
+    }
+    await miniProgram.callWxMethod('setStorageSync', 'userAuth', testAuth)
+    await miniProgram.callWxMethod('setStorageSync', `myPhotos:${testUserId}`, savedAfter.slice(0, 1))
+    page = await route(miniProgram, '/pages/photos/photos', 'switchTab')
+    await waitForData(page, 'loading', (value) => value === false, 20000)
+    const photoListBeforeDelete = (await page.data('photoList')) || []
+    check('My photos displays the newly saved result', Boolean(
+      photoListBeforeDelete.length === 1 &&
+      (photoListBeforeDelete[0].imagePath || photoListBeforeDelete[0].imageUrl)
+    ), { count: photoListBeforeDelete.length })
+    await capture(miniProgram, '03-my-photos-saved')
+
+    await miniProgram.mockWxMethod('previewImage', { errMsg: 'previewImage:ok' })
+    await timeout('preview newly saved photo', page.callMethod('previewPhoto', {
+      currentTarget: { dataset: { index: 0 } },
+    }), 10000)
+    check('My photos preview action completes', true, { recordId: photoListBeforeDelete[0] && photoListBeforeDelete[0].id })
+    await miniProgram.restoreWxMethod('previewImage')
+
+    await miniProgram.mockWxMethod('showModal', { confirm: true, cancel: false, errMsg: 'showModal:ok' })
+    await timeout('delete newly saved test photo', page.callMethod('deletePhoto', {
+      currentTarget: { dataset: { index: 0 } },
+    }), 10000)
+    await page.waitFor(1800)
+    await timeout('reload photos after delete', page.callMethod('loadPhotos'), 10000)
+    await waitForData(page, 'loading', (value) => value === false, 20000)
+    const photoListAfterDelete = (await page.data('photoList')) || []
+    check('My photos deletes only the newly created test record', photoListAfterDelete.length === 0, {
+      before: photoListBeforeDelete.length,
+      after: photoListAfterDelete.length,
+    })
+    await miniProgram.restoreWxMethod('showModal')
+    await miniProgram.callWxMethod('removeStorageSync', `myPhotos:${testUserId}`)
+    await miniProgram.callWxMethod('removeStorageSync', 'userAuth')
 
     const tabChecks = [
       ['/pages/index/index', '.search-bar', 'Home TabBar'],
@@ -598,17 +671,18 @@ async function main() {
     await page.callMethod('setWmQuality', { currentTarget: { dataset: { quality: 'fast' } } })
     const fastUrl = await page.data('wmUploadUrl')
     const fastQuality = await page.data('wmQuality')
-    check('Watermark HD and normal modes use distinct real endpoints', Boolean(
+    check('Watermark modes use the unified stroke-transport endpoint', Boolean(
       hdQuality === 'hd' &&
       fastQuality === 'fast' &&
-      hdUrl.endsWith('/api/watermark/hd-remove') &&
-      fastUrl.endsWith('/api/watermark/quick-remove') &&
-      hdUrl !== fastUrl
+      hdUrl.endsWith('/api/watermark/remove-v2') &&
+      fastUrl.endsWith('/api/watermark/remove-v2') &&
+      hdUrl === fastUrl
     ), { hdUrl, fastUrl, hdQuality, fastQuality })
     await page.callMethod('onWmUndo')
     await page.callMethod('onWmRedo')
     await page.callMethod('onWmClear')
     check('Watermark undo/redo/clear actions do not throw', (await page.data('wmHasMask')) === false)
+    await capture(miniProgram, '04-watermark-controls')
 
     page = await route(miniProgram, '/pages/generate/generate?specId=yicun')
     const outfitGridCount = await elementCount(page, '.outfit-grid')
@@ -648,7 +722,7 @@ async function main() {
     })
     await miniProgram.mockWxMethod('saveImageToPhotosAlbum', { errMsg: 'saveImageToPhotosAlbum:ok' })
     const noOutfitSavedBefore = (await miniProgram.callWxMethod('getStorageSync', 'myPhotos')) || []
-    await timeout('invoke generator download after outfit removal', page.callMethod('primaryAction'), 10000)
+    await timeout('invoke generator download after outfit removal', page.callMethod('savePhoto'), 30000)
     const noOutfitSavedAfter = await waitForStorageLength(miniProgram, 'myPhotos', noOutfitSavedBefore.length + 1, 20000)
     check('Generator download still works after outfit removal', Boolean(
       noOutfitSavedAfter.length > noOutfitSavedBefore.length &&

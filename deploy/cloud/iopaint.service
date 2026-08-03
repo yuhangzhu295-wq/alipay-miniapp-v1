@@ -1,0 +1,17 @@
+[Unit]
+Description=IOPaint LaMa inpainting service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/photo-generator/server
+Environment=PYTHONUNBUFFERED=1
+Environment=TORCH_HOME=/root/.cache/torch
+ExecStart=/opt/iopaint-venv/bin/iopaint start --model=lama --device=cpu --port=8081
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target

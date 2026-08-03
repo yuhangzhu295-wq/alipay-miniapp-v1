@@ -1,0 +1,19 @@
+[Unit]
+Description=Photo Generator FastAPI backend
+After=network-online.target iopaint.service
+Wants=network-online.target iopaint.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/photo-generator/server
+Environment=PYTHONUNBUFFERED=1
+Environment=IOPAINT_URL=http://127.0.0.1:8081
+Environment=ENABLE_HD_REPAIR=true
+Environment=HD_REPAIR_ENGINE=lama
+ExecStart=/root/photo-generator/server/.venv/bin/python3 /root/photo-generator/server/main.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

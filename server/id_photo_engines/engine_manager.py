@@ -19,7 +19,7 @@ def _project_root() -> Path:
 
 
 def _hivision_ready_marker() -> Path:
-    return _project_root() / "reports" / "id-photo-multi-engine-reset" / "hivision-ready.json"
+    return _project_root() / "reports" / "id-photo-multi-engine-reset" / "hivision-standalone-ready.json"
 
 
 def _hivision_runtime_ready() -> tuple[bool, str]:

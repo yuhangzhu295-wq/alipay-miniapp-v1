@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ MODEL_ORDER = [
     "modnet_photographic_portrait_matting",
     "rmbg-1.4",
 ]
+_INFERENCE_LOCK = threading.Lock()
 
 
 def _ready_marker() -> Path:
@@ -192,35 +194,55 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
             model,
         ]
         started = time.time()
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=str(ASCII_ROOT),
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                timeout=remaining,
-                shell=False,
-            )
-            attempt = {
+        queue_started = time.time()
+        acquired = _INFERENCE_LOCK.acquire(timeout=max(5, remaining))
+        queue_wait_seconds = round(time.time() - queue_started, 3)
+        if not acquired:
+            debug["attempts"].append({
                 "model": model,
-                "cmd": cmd,
-                "returncode": proc.returncode,
-                "seconds": round(time.time() - started, 2),
-                "outputPath": str(output_path),
-                "outputExists": output_path.exists(),
-                "outputTail": (proc.stdout or "")[-4000:],
-            }
-        except Exception as exc:
-            attempt = {
-                "model": model,
-                "cmd": cmd,
                 "returncode": -1,
-                "seconds": round(time.time() - started, 2),
+                "seconds": 0,
+                "queueWaitSeconds": queue_wait_seconds,
                 "outputPath": str(output_path),
                 "outputExists": False,
-                "outputTail": repr(exc),
-            }
+                "outputTail": "Timed out waiting for the serialized Hivision inference slot",
+            })
+            debug["timeoutBudgetExhausted"] = True
+            break
+        try:
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    cwd=str(ASCII_ROOT),
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    timeout=max(5, int(deadline - time.monotonic())),
+                    shell=False,
+                )
+                attempt = {
+                    "model": model,
+                    "cmd": cmd,
+                    "returncode": proc.returncode,
+                    "seconds": round(time.time() - started, 2),
+                    "queueWaitSeconds": queue_wait_seconds,
+                    "outputPath": str(output_path),
+                    "outputExists": output_path.exists(),
+                    "outputTail": (proc.stdout or "")[-4000:],
+                }
+            except Exception as exc:
+                attempt = {
+                    "model": model,
+                    "cmd": cmd,
+                    "returncode": -1,
+                    "seconds": round(time.time() - started, 2),
+                    "queueWaitSeconds": queue_wait_seconds,
+                    "outputPath": str(output_path),
+                    "outputExists": False,
+                    "outputTail": repr(exc),
+                }
+        finally:
+            _INFERENCE_LOCK.release()
         debug["attempts"].append(attempt)
         if attempt["returncode"] != 0 or not output_path.exists():
             continue

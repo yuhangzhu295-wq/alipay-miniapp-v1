@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import platform
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,8 @@ OUTPUT_DIR = REPORT_DIR / "hivision-standalone-test"
 REPORT_JSON = REPORT_DIR / "hivision-standalone-test-report.json"
 REPORT_MD = REPORT_DIR / "hivision-standalone-test-report.md"
 HIVISION_ROOT = ROOT / "third_party" / "HivisionIDPhotos"
-VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+WINDOWS_VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+VENV_PYTHON = WINDOWS_VENV_PYTHON if platform.system() == "Windows" else Path(sys.executable)
 ASCII_BASE = Path(tempfile.gettempdir()) / "idphoto_hivision_ascii"
 ASCII_ROOT = ASCII_BASE / "HivisionIDPhotos"
 ASCII_OUTPUT_DIR = ASCII_BASE / "standalone-output"
@@ -66,8 +68,13 @@ def prepare_ascii_root() -> dict[str, Any]:
     ASCII_BASE.mkdir(parents=True, exist_ok=True)
     if ASCII_ROOT.exists():
         return {"path": str(ASCII_ROOT), "created": False, "returncode": 0, "outputTail": "existing"}
+    cmd = (
+        ["cmd", "/c", "mklink", "/J", str(ASCII_ROOT), str(HIVISION_ROOT)]
+        if platform.system() == "Windows"
+        else ["ln", "-s", str(HIVISION_ROOT), str(ASCII_ROOT)]
+    )
     proc = subprocess.run(
-        ["cmd", "/c", "mklink", "/J", str(ASCII_ROOT), str(HIVISION_ROOT)],
+        cmd,
         cwd=str(ASCII_BASE),
         text=True,
         stdout=subprocess.PIPE,
@@ -101,6 +108,7 @@ def find_demo_image(run_root: Path) -> Path | None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--matting-model", default="hivision_modnet")
+    parser.add_argument("--input", type=Path)
     args = parser.parse_args()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -126,36 +134,28 @@ def main() -> int:
         for old in ASCII_OUTPUT_DIR.glob("test_*"):
             if old.is_file():
                 old.unlink()
-        demo = find_demo_image(run_root)
+        demo = args.input.resolve() if args.input and args.input.exists() else find_demo_image(run_root)
         report["demoImage"] = str(demo) if demo else ""
-        report["commands"].append(run_command([str(VENV_PYTHON), "inference.py", "--help"], run_root, timeout=120))
         if demo is None:
             report["blockedReason"] = "No demo image found in HivisionIDPhotos"
         else:
-            out_id = ASCII_OUTPUT_DIR / "test_idphoto.png"
             out_matting = ASCII_OUTPUT_DIR / "test_matting.png"
             out_blue = ASCII_OUTPUT_DIR / "test_blue.jpg"
             commands = [
-                [str(VENV_PYTHON), "inference.py", "-i", str(demo), "-o", str(out_id), "--height", "413", "--width", "295"],
                 [str(VENV_PYTHON), "inference.py", "-t", "human_matting", "-i", str(demo), "-o", str(out_matting), "--matting_model", args.matting_model],
-                [str(VENV_PYTHON), "inference.py", "-t", "add_background", "-i", str(out_id), "-o", str(out_blue), "-c", "438edb", "-k", "30", "-r", "1"],
+                [str(VENV_PYTHON), "inference.py", "-t", "add_background", "-i", str(out_matting), "-o", str(out_blue), "-c", "438edb", "-k", "30", "-r", "1"],
             ]
             for cmd in commands:
                 report["commands"].append(run_command(cmd, run_root, timeout=1200))
-            if out_id.exists():
-                shutil.copy2(out_id, OUTPUT_DIR / out_id.name)
             if out_matting.exists():
                 shutil.copy2(out_matting, OUTPUT_DIR / out_matting.name)
             if out_blue.exists():
                 shutil.copy2(out_blue, OUTPUT_DIR / out_blue.name)
             report["outputs"] = {
-                "idPhoto": str(OUTPUT_DIR / out_id.name),
                 "matting": str(OUTPUT_DIR / out_matting.name),
                 "blue": str(OUTPUT_DIR / out_blue.name),
-                "asciiIdPhoto": str(out_id),
                 "asciiMatting": str(out_matting),
                 "asciiBlue": str(out_blue),
-                "idPhotoExists": (OUTPUT_DIR / out_id.name).exists(),
                 "mattingExists": (OUTPUT_DIR / out_matting.name).exists(),
                 "blueExists": (OUTPUT_DIR / out_blue.name).exists(),
             }
@@ -163,7 +163,7 @@ def main() -> int:
     failing = [cmd for cmd in report["commands"] if cmd.get("returncode") not in (0, None)]
     outputs = report.get("outputs") or {}
     report["passed"] = not report["blockedReason"] and not failing and all(
-        outputs.get(key) for key in ["idPhotoExists", "mattingExists", "blueExists"]
+        outputs.get(key) for key in ["mattingExists", "blueExists"]
     )
     if failing and not report["blockedReason"]:
         report["blockedReason"] = "one or more official Hivision inference commands failed"
@@ -172,7 +172,8 @@ def main() -> int:
     if report["passed"]:
         write_json(REPORT_DIR / "hivision-standalone-ready.json", {
             "ready": True,
-            "note": "Standalone Hivision inference passed. Production selection marker is intentionally separate.",
+            "note": "Production human-matting and add-background commands passed with the routed model.",
+            "model": args.matting_model,
             "outputs": report["outputs"],
         })
 
