@@ -18,15 +18,16 @@ import sys
 import platform
 
 if platform.system() == "Windows":
-    VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+    _hivision_python = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
+    VENV_PYTHON = _hivision_python if _hivision_python.exists() else Path(sys.executable)
 else:
     VENV_PYTHON = Path(sys.executable)
 ASCII_BASE = Path(tempfile.gettempdir()) / "idphoto_hivision_ascii"
 ASCII_ROOT = ASCII_BASE / "HivisionIDPhotos"
 ASCII_RUNTIME_DIR = ASCII_BASE / "runtime"
 MODEL_ORDER = [
-    "birefnet-v1-lite",
     "hivision_modnet",
+    "birefnet-v1-lite",
     "modnet_photographic_portrait_matting",
     "rmbg-1.4",
 ]
@@ -41,8 +42,8 @@ def production_ready() -> tuple[bool, str]:
         return False, "disabled by ID_PHOTO_DISABLE_HIVISION"
     if not (HIVISION_ROOT / "inference.py").exists():
         return False, "Hivision inference.py not found"
-    if platform.system() == "Windows" and not Path(VENV_PYTHON).exists():
-        return False, "Hivision venv python not found"
+    if not Path(VENV_PYTHON).exists():
+        return False, "Hivision Python runtime not found"
     if os.environ.get("ID_PHOTO_FORCE_HIVISION", "").strip().lower() in {"1", "true", "yes"}:
         return True, "forced by ID_PHOTO_FORCE_HIVISION"
     if _ready_marker().exists():
@@ -85,14 +86,47 @@ def _ensure_ascii_root() -> dict[str, Any]:
     }
 
 
-def _model_order() -> list[str]:
-    requested = os.environ.get("ID_PHOTO_HIVISION_MODEL", "").strip()
+def get_model_routing() -> dict[str, Any]:
     installed = available_models()
+    standard_requested = os.environ.get("ID_PHOTO_HIVISION_STANDARD_MODEL", "birefnet-v1-lite").strip()
+    detail_requested = os.environ.get("ID_PHOTO_HIVISION_DETAIL_MODEL", "birefnet-v1-lite").strip()
+
+    def resolve(requested: str) -> str:
+        if requested in installed:
+            return requested
+        return installed[0] if installed else ""
+
+    return {
+        "standard": resolve(standard_requested),
+        "detail": resolve(detail_requested),
+        "standardRequested": standard_requested,
+        "detailRequested": detail_requested,
+        "installed": installed,
+    }
+
+
+def _model_order(preferred_model: str = "") -> list[str]:
+    installed = available_models()
+    requested = preferred_model or get_model_routing().get("standard") or os.environ.get("ID_PHOTO_HIVISION_MODEL", "").strip()
     ordered = []
     if requested:
         ordered.append(requested)
     ordered.extend(model for model in MODEL_ORDER if model not in ordered)
     return [model for model in ordered if not installed or model in installed]
+
+
+def _alpha_metrics(alpha: Image.Image) -> dict[str, Any]:
+    histogram = alpha.histogram()
+    total = max(1, sum(histogram))
+    transparent = sum(histogram[:8])
+    transition = sum(histogram[8:248])
+    foreground = sum(histogram[13:])
+    return {
+        "alphaExtrema": alpha.getextrema(),
+        "transparentRatio": round(transparent / total, 6),
+        "transitionRatio": round(transition / total, 6),
+        "foregroundRatio": round(foreground / total, 6),
+    }
 
 
 def run_human_matting(image: Image.Image, model: str = None, request_id: str = "", timeout: int = 180) -> dict[str, Any]:
@@ -103,6 +137,8 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
         "hivisionRoot": str(HIVISION_ROOT),
         "venvPython": str(VENV_PYTHON),
         "asciiRoot": str(ASCII_ROOT),
+        "requestedModel": model or "",
+        "modelRouting": get_model_routing(),
         "attempts": [],
     }
     if not ready:
@@ -124,10 +160,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
     input_path = ASCII_RUNTIME_DIR / f"{safe_token}-input.png"
     image.convert("RGB").save(input_path, format="PNG")
 
-    if model:
-        models = [model]
-    else:
-        models = _model_order()
+    models = _model_order(model or "")
     
     if not models:
         return {
@@ -137,7 +170,12 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
             "debug": debug,
         }
 
+    deadline = time.monotonic() + max(10, int(timeout))
     for model in models:
+        remaining = int(deadline - time.monotonic())
+        if remaining < 5:
+            debug["timeoutBudgetExhausted"] = True
+            break
         output_path = ASCII_RUNTIME_DIR / f"{safe_token}-{model}.png"
         if output_path.exists():
             output_path.unlink()
@@ -161,7 +199,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                timeout=timeout,
+                timeout=remaining,
                 shell=False,
             )
             attempt = {
@@ -189,10 +227,13 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
         try:
             rgba = Image.open(output_path).convert("RGBA")
             alpha = rgba.getchannel("A")
-            extrema = alpha.getextrema()
-            if extrema[1] <= 4:
-                attempt["alphaExtrema"] = extrema
+            alpha_metrics = _alpha_metrics(alpha)
+            attempt.update(alpha_metrics)
+            if alpha_metrics["alphaExtrema"][1] <= 4:
                 attempt["rejected"] = "empty alpha"
+                continue
+            if alpha_metrics["transparentRatio"] < 0.005 or alpha_metrics["foregroundRatio"] > 0.96:
+                attempt["rejected"] = "opaque output without a usable transparency mask"
                 continue
             return {
                 "success": True,
@@ -203,8 +244,10 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                     **debug,
                     "selectedModel": model,
                     "selectedOutputPath": str(output_path),
-                    "alphaExtrema": extrema,
+                    **alpha_metrics,
+                    "trustedAlpha": True,
                     "fallbackWithinHivision": model != models[0],
+                    "modelRoute": "detail" if model == get_model_routing().get("detail") else "standard",
                 },
             }
         except Exception as exc:

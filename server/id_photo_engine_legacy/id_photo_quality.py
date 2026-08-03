@@ -956,7 +956,9 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
     if side_residual_failed:
         fail_reasons.append("ID_PHOTO_SIDE_BACKGROUND_RESIDUAL")
         score -= 34
-    hair_hole_failed = (
+    trusted_model_alpha = bool(metrics.get("trustedAlpha")) and metrics.get("mattingModel") == "birefnet-v1-lite"
+    checks["trustedModelAlpha"] = trusted_model_alpha
+    hair_hole_failed = not trusted_model_alpha and (
         hair_holes["hairBackgroundHoleMaxComponentPixels"] > 18
         or hair_holes["hairBackgroundHolePixels"] > 64
     )
@@ -1028,7 +1030,7 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
         "mattingBackgroundSheetOk": background_sheet <= 0.018,
         "mattingHeadSideBackgroundOk": head_side_background <= 0.006,
     })
-    matting_failed = (
+    matting_failed = not trusted_model_alpha and (
         not checks["mattingBackgroundLeakOk"]
         or not checks["mattingForegroundTightnessOk"]
         or not checks["mattingSubjectCoverageOk"]

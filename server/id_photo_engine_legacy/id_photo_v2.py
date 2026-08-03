@@ -728,6 +728,7 @@ def _prepare_cutout(
     width_mm=None,
     height_mm=None,
     request_id="",
+    hair_retouch=False,
 ):
     times = {}
     t_resize = time.perf_counter()
@@ -804,7 +805,12 @@ def _prepare_cutout(
     outfit_id = _validate_basic_template(outfit, actual_image_type, purpose, composition)
 
     t1 = time.perf_counter()
-    matting = matte_person(img_bytes, face.get("faceBox"))
+    matting = matte_person(
+        img_bytes,
+        face.get("faceBox"),
+        prefer_detail=bool(hair_retouch),
+        request_id=request_id,
+    )
     times["remove_background_ms"] = int((time.perf_counter() - t1) * 1000)
     print(f"[id-photo] requestId={request_id} step=remove_background cost={times['remove_background_ms']}ms", flush=True)
     if not matting.get("success"):
@@ -833,6 +839,7 @@ def _prepare_cutout(
         "faceDetector": face.get("engine", "unknown"),
         "mattingEngine": matting.get("engine"),
         "mattingModel": matting.get("model"),
+        "hairRetouchRequested": bool(hair_retouch),
     }
     debug = {
         "faceDetector": face.get("engine", "unknown"),
@@ -843,6 +850,7 @@ def _prepare_cutout(
         "foregroundPath": matting.get("foregroundPath"),
         "maskPath": matting.get("maskPath"),
         "mattingModel": matting.get("model"),
+        "hairRetouchRequested": bool(hair_retouch),
         "cropParams": {
             "compositionVersion": COMPOSITION_VERSION,
             "composition": composition,
@@ -897,6 +905,7 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         BG_COLORS.get(bg_color, bg_color),
         composition=item["composition"],
         source_background_rgb=source_background_rgb,
+        preserve_detail=bool(item_quality.get("trustedAlpha")),
     )
     quality = {
         **item_quality,
@@ -904,8 +913,7 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     }
     metrics_check = validate_composition_metrics(quality)
     if not metrics_check.get("success"):
-        # raise PortraitQualityError(metrics_check["code"], metrics_check)
-        print(f"[WARNING] Composition check failed: {metrics_check['code']}")
+        raise PortraitQualityError(metrics_check["code"], metrics_check)
     result, outfit_payload = _apply_outfit_template(
         result,
         quality,
@@ -931,23 +939,21 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     }
     final_check = validate_final_output(tmp.name, target_size[0], target_size[1], spec["bgColor"])
     if not final_check.get("success"):
-        # raise PortraitQualityError(final_check["code"], final_check)
-        print(f"[WARNING] Final output check failed: {final_check['code']}")
+        raise PortraitQualityError(final_check["code"], final_check)
     quality_report = build_quality_report(tmp.name, target_size[0], target_size[1], spec["bgColor"], quality, debug)
     quality["qualityReport"] = quality_report
-    quality["qualityPassed"] = True # bool(quality_report.get("passed"))
+    quality["qualityPassed"] = bool(quality_report.get("passed"))
     quality["qualityScore"] = quality_report.get("score", 0)
-    quality["qualityFailReasons"] = [] # quality_report.get("failReasons", [])
+    quality["qualityFailReasons"] = quality_report.get("failReasons", [])
     if not quality_report.get("passed"):
-        print(f"[WARNING] Quality check failed: {quality_report.get('failReasons')}, but proceeding anyway in local mode.")
-        # raise PortraitQualityError(
-        #     (quality_report.get("failReasons") or ["ID_PHOTO_QUALITY_FAILED"])[0],
-        #     {
-        #         "code": "ID_PHOTO_QUALITY_FAILED",
-        #         "message": "证件照生成质量未达标，请重新上传清晰正面照片。",
-        #         **quality,
-        #     },
-        # )
+        raise PortraitQualityError(
+            (quality_report.get("failReasons") or ["ID_PHOTO_QUALITY_FAILED"])[0],
+            {
+                "code": "ID_PHOTO_QUALITY_FAILED",
+                "message": "证件照生成质量未达标，请重新上传清晰正面照片。",
+                **quality,
+            },
+        )
     print(f"[id-photo] requestId={request_id} step=compose_background cost={int((time.perf_counter() - t0) * 1000)}ms")
     return {
         "path": tmp.name,
@@ -979,12 +985,6 @@ def prepare_id_photo_v2(
     request_id="",
     hair_retouch=False,
 ):
-    import os
-    if hair_retouch:
-        os.environ["ID_PHOTO_HIVISION_MODEL"] = "birefnet-general"
-    else:
-        os.environ["ID_PHOTO_HIVISION_MODEL"] = "birefnet-v1-lite"
-        
     return _prepare_cutout(
         img_bytes,
         purpose=purpose,
@@ -998,6 +998,7 @@ def prepare_id_photo_v2(
         width_mm=width_mm,
         height_mm=height_mm,
         request_id=request_id,
+        hair_retouch=hair_retouch,
     )
 
 
@@ -1016,6 +1017,7 @@ def generate_id_photo_v2(
     height_px=None,
     width_mm=None,
     height_mm=None,
+    hair_retouch=False,
 ):
     detected = classify_image_type(img_bytes)
     blur_score = _reject_if_too_blurry(img_bytes, detected)

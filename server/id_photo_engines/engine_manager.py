@@ -53,10 +53,13 @@ def get_engine_info() -> dict[str, Any]:
     birefnet_ok, birefnet_reason = birefnet_available()
 
     requested = os.environ.get("ID_PHOTO_ENGINE", "auto").strip().lower() or "auto"
+    from .hivision.runner import get_model_routing
+
+    model_routing = get_model_routing()
     if requested in {"hivision", "auto"} and hivision_ok and hivision_ready:
         selected = {
             "engine": "hivision",
-            "selectedModel": os.environ.get("ID_PHOTO_HIVISION_MODEL", "rmbg-1.4"),
+            "selectedModel": model_routing.get("standard") or "",
             "loaded": True,
             "selectionReason": hivision_ready_reason,
         }
@@ -82,6 +85,7 @@ def get_engine_info() -> dict[str, Any]:
         "selectedModel": selected["selectedModel"],
         "loaded": selected["loaded"],
         "selectionReason": selected["selectionReason"],
+        "modelRouting": model_routing,
         "availableEngines": ["hivision", "rembg", "modnet", "birefnet"],
         "candidates": {
             "hivision": {
@@ -101,8 +105,8 @@ def get_engine_info() -> dict[str, Any]:
             "birefnet": {"available": birefnet_ok, "reason": birefnet_reason},
         },
         "python": python_path(),
-        "legacyDisabled": selected["engine"] == "hivision",
-        "legacyNote": "Legacy rembg matting is disabled for current requests when engine=hivision; local compose/quality modules remain in use.",
+        "legacyDisabled": False,
+        "legacyNote": "Legacy compose and quality modules remain active; Hivision supplies the routed foreground mask.",
         "currentRuntimeFiles": _runtime_files(),
     }
 

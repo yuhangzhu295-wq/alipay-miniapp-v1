@@ -431,10 +431,10 @@ def get_headshot_crop_box(image_size, face_box):
     fh = int(face_box["height"])
     face_center_x = fx + fw / 2.0
 
-    left = face_center_x - fw * 2.50
-    right = face_center_x + fw * 2.50
-    top = fy - fh * 1.50
-    bottom = fy + fh * 4.50
+    left = face_center_x - fw * 1.65
+    right = face_center_x + fw * 1.65
+    top = fy - fh * 1.15
+    bottom = fy + fh * 2.75
 
     left = _clamp_int(left, 0, image_w - 1)
     right = _clamp_int(right, left + 1, image_w)
@@ -481,7 +481,7 @@ def get_portrait_crop_box(image_size, face_box, composition="head_shoulder"):
     return get_headshot_crop_box(image_size, face_box)
 
 
-def compose_headshot(cutout, quality, background, target_size=(413, 579), face_height_ratio=0.28, composition="head_shoulder"):
+def compose_headshot(cutout, quality, background, target_size=(413, 579), face_height_ratio=0.36, composition="head_shoulder"):
     """
     将 RGBA 人像合成为标准头肩证件照/职业头像照。
 
@@ -510,14 +510,11 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
 
     target_face_h = target_h * face_height_ratio
     scale_by_face = target_face_h / max(1, fh)
-    
-    if composition == "head_shoulder":
-        scale = scale_by_face
-    else:
-        width_factor = 1.12 if composition == "half_body" else 1.34
-        scale_by_width = target_w * width_factor / max(1, crop_w)
-        scale_by_height = target_h * 1.06 / max(1, crop_h)
-        scale = min(scale_by_face, scale_by_width, scale_by_height)
+    # 头肩照允许肩线自然贴近画布边缘，宽度不再把人像压得过小。
+    width_factor = 1.12 if composition == "half_body" else (1.34 if composition == "square_avatar" else 1.45)
+    scale_by_width = target_w * width_factor / max(1, crop_w)
+    scale_by_height = target_h * 1.06 / max(1, crop_h)
+    scale = min(scale_by_face, scale_by_width, scale_by_height)
 
     new_w = max(1, int(crop_w * scale))
     new_h = max(1, int(crop_h * scale))

@@ -905,7 +905,36 @@ def clean_bottom_right_watermark(binary, face_box, image=None):
     return binary_clean
 
 
-def postprocess_alpha(alpha, face_box=None, image=None, return_debug=False):
+def _postprocess_trusted_alpha(alpha, face_box=None, return_debug=False):
+    arr = np.asarray(alpha.convert("L"))
+    binary = np.where(arr > 12, 255, 0).astype("uint8")
+    binary = _remove_small_components(binary, face_box)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=1)
+
+    # Preserve the model's soft boundary while removing pixels belonging to
+    # detached components. Large transparent gaps between limbs stay intact.
+    refined = arr.copy()
+    refined[binary == 0] = 0
+    added = (binary > 0) & (refined <= 12)
+    refined[added] = 180
+    feather = cv2.GaussianBlur(refined, (3, 3), 0)
+    allowed, _, prior_debug = _subject_prior(binary.shape, face_box, extra_dilate=9)
+    debug = {
+        **prior_debug,
+        **_matting_leak_metrics(binary, face_box, allowed),
+        "trustedAlphaPath": True,
+        "trustedAlphaAddedPixels": int(np.count_nonzero(added)),
+        "rawMaskNonZeroRatio": round(float(np.count_nonzero(arr > 12)) / float(max(1, arr.size)), 6),
+        "refinedMaskNonZeroRatio": round(float(np.count_nonzero(binary)) / float(max(1, arr.size)), 6),
+    }
+    if return_debug:
+        return Image.fromarray(feather, "L"), binary, debug
+    return Image.fromarray(feather, "L"), binary
+
+
+def postprocess_alpha(alpha, face_box=None, image=None, return_debug=False, preserve_detail=False):
+    if preserve_detail:
+        return _postprocess_trusted_alpha(alpha, face_box=face_box, return_debug=return_debug)
     arr = np.asarray(alpha.convert("L"))
     binary = np.where(arr > 12, 255, 0).astype("uint8")
     raw_component = _remove_small_components(binary, face_box)
@@ -969,11 +998,17 @@ def postprocess_alpha(alpha, face_box=None, image=None, return_debug=False):
         removed_from_raw = float(np.count_nonzero((raw_component > 0) & (binary == 0))) / float(raw_area)
     raw_ratio = raw_area / float(max(1, arr.shape[0] * arr.shape[1]))
     refined_ratio_before_erode = refined_area_before_erode / float(max(1, arr.shape[0] * arr.shape[1]))
+    background_sheet_evidence = bool(
+        float(sheet_debug.get("backgroundSheetCandidateRatio") or 0) > 0.01
+        or float(sheet_debug.get("remainingBackgroundSheetRatio") or 0) > 0.008
+        or float(sheet_debug.get("remainingHeadSideBackgroundRatio") or 0) > 0.008
+    )
     overtrim_fallback = bool(
         raw_area > 0
         and 0.08 <= raw_ratio <= 0.72
         and removed_from_raw > 0.30
         and refined_ratio_before_erode < 0.16
+        and not background_sheet_evidence
     )
     if overtrim_fallback:
         binary = cv2.morphologyEx(raw_component, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8), iterations=1)
@@ -1124,13 +1159,26 @@ def _modnet_available():
 
 
 def _finalize_matting_rgba(rgba, face_box, image, engine, model, matting_mode, extra_debug=None, alpha_error=None):
-    alpha, binary, refine_debug = postprocess_alpha(rgba.getchannel("A"), face_box, image=image, return_debug=True)
+    trusted_alpha = bool((extra_debug or {}).get("trustedAlpha"))
+    alpha, binary, refine_debug = postprocess_alpha(
+        rgba.getchannel("A"),
+        face_box,
+        image=image,
+        return_debug=True,
+        preserve_detail=trusted_alpha,
+    )
     rgba.putalpha(alpha)
     quality = _quality(binary, face_box)
     quality["mattingRefine"] = refine_debug
     if extra_debug:
         quality["mattingRefine"]["engineDebug"] = extra_debug
-    rgba, foreground_debug = clean_refined_foreground_rgba(rgba, face_box, image=image)
+    if trusted_alpha:
+        foreground_debug = {
+            "foregroundRgbCleanedPixels": 0,
+            "foregroundRgbCleanupSkipped": "trusted model alpha preserves headwear and fine edges",
+        }
+    else:
+        rgba, foreground_debug = clean_refined_foreground_rgba(rgba, face_box, image=image)
     quality["mattingRefine"].update(foreground_debug)
     quality.update({
         key: refine_debug[key]
@@ -1157,9 +1205,24 @@ def _finalize_matting_rgba(rgba, face_box, image, engine, model, matting_mode, e
     quality["alphaMattingMode"] = matting_mode
     quality["mattingEngine"] = engine
     quality["mattingModel"] = model
+    quality["trustedAlpha"] = trusted_alpha
     if alpha_error:
         quality["alphaMattingFallbackReason"] = alpha_error
-    if quality["maskNonZeroRatio"] < 0.025 or not quality["faceInsideMask"]:
+    fail_reasons = []
+    if quality["maskNonZeroRatio"] < 0.025:
+        fail_reasons.append("mask_too_small")
+    if not quality["faceInsideMask"]:
+        fail_reasons.append("face_missing_from_mask")
+    if not trusted_alpha and float(quality.get("remainingBackgroundSheetRatio") or 0) > 0.035:
+        fail_reasons.append("background_sheet_retained")
+    if not trusted_alpha and (
+        float(quality.get("invalidBackgroundRetentionScore") or 0) > 0.32
+        and float(quality.get("edgeLeakScore") or 0) > 0.12
+    ):
+        fail_reasons.append("background_leak_too_large")
+    quality["mattingPassed"] = not fail_reasons
+    quality["mattingFailReasons"] = fail_reasons
+    if fail_reasons:
         return {
             "success": False,
             "code": "MASK_QUALITY_FAILED",
@@ -1183,14 +1246,16 @@ def _finalize_matting_rgba(rgba, face_box, image, engine, model, matting_mode, e
     }
 
 
-def matte_person(image_input, face_box=None):
+def matte_person(image_input, face_box=None, prefer_detail=False, request_id=""):
     image = _read_rgba(image_input)
     fallback_debug = None
 
     try:
-        from id_photo_engines.hivision.runner import run_human_matting
+        from id_photo_engines.hivision.runner import get_model_routing, run_human_matting
 
-        hivision = run_human_matting(image)
+        routing = get_model_routing()
+        requested_model = routing.get("detail" if prefer_detail else "standard") or None
+        hivision = run_human_matting(image, model=requested_model, request_id=request_id)
         if hivision.get("success"):
             return _finalize_matting_rgba(
                 hivision["rgba"],
@@ -1199,7 +1264,11 @@ def matte_person(image_input, face_box=None):
                 "hivision",
                 hivision.get("model") or "hivision_modnet",
                 "hivision_human_matting",
-                extra_debug=hivision.get("debug"),
+                extra_debug={
+                    **(hivision.get("debug") or {}),
+                    "preferDetail": bool(prefer_detail),
+                    "requestedModel": requested_model,
+                },
             )
         fallback_debug = hivision.get("debug") or {"error": hivision.get("message")}
         print(f"[id-photo] Hivision matting fallback: {hivision.get('code')} {hivision.get('message')}", flush=True)

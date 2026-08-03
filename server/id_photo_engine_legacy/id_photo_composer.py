@@ -1263,7 +1263,15 @@ def _repair_lower_shoulder_gaps(result, layer, bg_rgb, face_box):
     }
 
 
-def compose_id_photo(foreground_path, face_box, target_size, bg_color, composition="head_shoulder", source_background_rgb=None):
+def compose_id_photo(
+    foreground_path,
+    face_box,
+    target_size,
+    bg_color,
+    composition="head_shoulder",
+    source_background_rgb=None,
+    preserve_detail=False,
+):
     target_w, target_h = int(target_size[0]), int(target_size[1])
     cutout = Image.open(foreground_path).convert("RGBA")
     bg_rgb = _hex_to_rgb(bg_color)
@@ -1275,11 +1283,22 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
     fh = float(face_box["height"])
     face_cx = fx + fw / 2.0
 
-    side_expand = 2.50 if composition != "half_body" else 2.50
+    side_expand = 1.65 if composition != "half_body" else 1.9
     crop_left = max(0, int(face_cx - fw * side_expand))
-    crop_top = max(0, int(fy - fh * 1.50))
+    crop_top = max(0, int(fy - fh * 1.15))
     crop_right = min(cutout.width, int(face_cx + fw * side_expand))
-    crop_bottom = min(cutout.height, int(fy + fh * (4.50 if composition != "half_body" else 4.50)))
+    crop_bottom = min(cutout.height, int(fy + fh * (2.75 if composition != "half_body" else 4.2)))
+    if composition != "half_body":
+        alpha_arr = np.asarray(cutout.getchannel("A"))
+        head_x1 = max(0, int(face_cx - fw * 2.0))
+        head_x2 = min(cutout.width, int(face_cx + fw * 2.0))
+        head_y2 = min(cutout.height, int(fy + fh * 1.15))
+        head_region = alpha_arr[:head_y2, head_x1:head_x2] > 24
+        ys, xs = np.where(head_region)
+        if xs.size:
+            crop_left = max(0, min(crop_left, head_x1 + int(xs.min()) - 3))
+            crop_right = min(cutout.width, max(crop_right, head_x1 + int(xs.max()) + 4))
+            crop_top = max(0, min(crop_top, int(ys.min()) - 3))
     if crop_right <= crop_left or crop_bottom <= crop_top:
         crop_left, crop_top, crop_right, crop_bottom = 0, 0, cutout.width, cutout.height
 
@@ -1288,12 +1307,12 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
     if composition != "half_body" and crop_w > 24:
         alpha = cropped_person.getchannel("A")
         cropped_person.putalpha(alpha.filter(ImageFilter.GaussianBlur(radius=0.28)))
-    face_height_ratio = 0.28 if composition != "half_body" else 0.26
+    face_height_ratio = 0.36 if composition != "half_body" else 0.26
     target_face_h = target_h * face_height_ratio
     scale_by_face = target_face_h / max(1.0, fh)
-    scale_by_width = target_w * (1.46 if composition != "half_body" else 1.12) / max(1.0, crop_w)
-    scale_by_height = target_h * (1.24 if composition != "half_body" else 1.08) / max(1.0, crop_h)
-    scale = scale_by_face
+    scale_by_width = target_w * (1.90 if composition != "half_body" else 1.12) / max(1.0, crop_w)
+    scale_by_height = target_h * (1.38 if composition != "half_body" else 1.08) / max(1.0, crop_h)
+    scale = min(scale_by_face, scale_by_width, scale_by_height)
 
     def render_with_scale(render_scale):
         new_w = max(1, int(crop_w * render_scale))
@@ -1373,8 +1392,17 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
         "width": fw * scale,
         "height": fh * scale,
     }
-    layer, edge_cleanup = _clean_edge_halo(layer, bg_rgb, pre_clean_face_box, source_background_rgb)
-    layer, dark_panel_cleanup = _remove_dark_back_panel(layer, pre_clean_face_box)
+    if preserve_detail:
+        edge_cleanup = {
+            "trustedAlphaCompositionPath": True,
+            "edgeHaloPixelsCleaned": 0,
+            "decontaminatedPixels": 0,
+            "trimmedLowAlphaHaloPixels": 0,
+        }
+        dark_panel_cleanup = {"darkBackPanelRemovedPixels": 0, "darkBackPanelMaxComponent": 0}
+    else:
+        layer, edge_cleanup = _clean_edge_halo(layer, bg_rgb, pre_clean_face_box, source_background_rgb)
+        layer, dark_panel_cleanup = _remove_dark_back_panel(layer, pre_clean_face_box)
     clean_bbox = layer.getbbox()
     if clean_bbox and clean_bbox[1] < int(round(target_h * 0.071)):
         dy = int(round(target_h * 0.084 - clean_bbox[1]))
@@ -1388,92 +1416,47 @@ def compose_id_photo(foreground_path, face_box, target_size, bg_color, compositi
     face_left_out = px + (fx - crop_left) * scale
     
     result = Image.alpha_composite(bg, layer).convert("RGB")
-    result, composed_residue_cleanup = _remove_composed_side_residue(
-        result,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-        source_background_rgb or edge_cleanup.get("estimatedSourceBackgroundRgb"),
-    )
-    result, layer, body_hole_repair = _repair_composed_body_holes(
-        result,
-        layer,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, layer, hair_hole_repair = _repair_composed_hair_holes(
-        result,
-        layer,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, layer, hair_side_block_cleanup = _remove_composed_hair_side_blocks(
-        result,
-        layer,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, dark_line_cleanup = _remove_composed_dark_line_artifacts(
-        result,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, layer, lower_shoulder_gap_repair = _repair_lower_shoulder_gaps(
-        result,
-        layer,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, late_dark_line_cleanup = _remove_composed_dark_line_artifacts(
-        result,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-    )
-    result, late_side_residue_cleanup = _remove_composed_side_residue(
-        result,
-        bg_rgb,
-        {
-            "x": face_left_out,
-            "y": face_top_out,
-            "width": fw * scale,
-            "height": face_h_out,
-        },
-        source_background_rgb or edge_cleanup.get("estimatedSourceBackgroundRgb"),
-    )
+    cleanup_face_box = {
+        "x": face_left_out,
+        "y": face_top_out,
+        "width": fw * scale,
+        "height": face_h_out,
+    }
+    if preserve_detail:
+        composed_residue_cleanup = {"composedSideResiduePixels": 0, "composedSideResidueMaxComponent": 0}
+        body_hole_repair = {"composedBodyHoleRepairedPixels": 0, "composedBodyHoleMaxComponent": 0}
+        hair_hole_repair = {"composedHairHoleRepairedPixels": 0, "composedHairHoleMaxComponent": 0}
+        hair_side_block_cleanup = {"composedHairSideBlockRemovedPixels": 0, "composedHairSideBlockMaxComponent": 0}
+        late_hair_hole_repair = {"composedHairHoleRepairedPixels": 0, "composedHairHoleMaxComponent": 0}
+    else:
+        result, composed_residue_cleanup = _remove_composed_side_residue(
+            result, bg_rgb, cleanup_face_box, source_background_rgb or edge_cleanup.get("estimatedSourceBackgroundRgb")
+        )
+        result, layer, body_hole_repair = _repair_composed_body_holes(result, layer, bg_rgb, cleanup_face_box)
+        result, layer, hair_hole_repair = _repair_composed_hair_holes(result, layer, bg_rgb, cleanup_face_box)
+        result, layer, hair_side_block_cleanup = _remove_composed_hair_side_blocks(result, layer, bg_rgb, cleanup_face_box)
+        result, layer, late_hair_hole_repair = _repair_composed_hair_holes(result, layer, bg_rgb, cleanup_face_box)
+    hair_hole_repair = {
+        "composedHairHoleRepairedPixels": int(hair_hole_repair.get("composedHairHoleRepairedPixels") or 0)
+        + int(late_hair_hole_repair.get("composedHairHoleRepairedPixels") or 0),
+        "composedHairHoleMaxComponent": max(
+            int(hair_hole_repair.get("composedHairHoleMaxComponent") or 0),
+            int(late_hair_hole_repair.get("composedHairHoleMaxComponent") or 0),
+        ),
+        "composedLateHairHoleRepairedPixels": int(late_hair_hole_repair.get("composedHairHoleRepairedPixels") or 0),
+    }
+    if preserve_detail:
+        dark_line_cleanup = {"composedDarkLineRemovedPixels": 0, "composedDarkLineMaxComponent": 0, "composedSideBoundaryLineRemovedPixels": 0}
+        lower_shoulder_gap_repair = {"lowerShoulderGapRepairedPixels": 0, "lowerShoulderGapMaxComponent": 0}
+        late_dark_line_cleanup = dark_line_cleanup.copy()
+        late_side_residue_cleanup = composed_residue_cleanup.copy()
+    else:
+        result, dark_line_cleanup = _remove_composed_dark_line_artifacts(result, bg_rgb, cleanup_face_box)
+        result, layer, lower_shoulder_gap_repair = _repair_lower_shoulder_gaps(result, layer, bg_rgb, cleanup_face_box)
+        result, late_dark_line_cleanup = _remove_composed_dark_line_artifacts(result, bg_rgb, cleanup_face_box)
+        result, late_side_residue_cleanup = _remove_composed_side_residue(
+            result, bg_rgb, cleanup_face_box, source_background_rgb or edge_cleanup.get("estimatedSourceBackgroundRgb")
+        )
     composed_residue_cleanup = {
         "composedSideResiduePixels": int(composed_residue_cleanup.get("composedSideResiduePixels") or 0)
         + int(late_side_residue_cleanup.get("composedSideResiduePixels") or 0),
