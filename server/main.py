@@ -31,6 +31,7 @@ from services.professional import do_professional_photo
 from services.manual_inpaint import do_manual_inpaint, do_quick_inpaint
 from services.scan_template import do_scan_template
 from services.hd_inpaint import HdInpaintError, do_hd_inpaint, get_hd_status
+from services.stroke_inpaint import process_stroke_inpaint
 from services.id_photo_v2 import (
     TemplateError,
     compose_prepared_id_photo,
@@ -778,6 +779,9 @@ def _watermark_health_payload():
         "fallbackAvailable": fallback_available,
         "fallbackEngine": hd_status.get("fallbackEngine", "opencv_hd_fallback"),
         "iopaintUrl": hd_status["url"],
+        "removeV2": "/api/watermark/remove-v2",
+        "maskTransport": "normalized_strokes_json",
+        "base64MaskAccepted": False,
     }
 
 
@@ -1689,7 +1693,6 @@ async def verify_photo(
 async def watermark_manual_remove(
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
-    maskBase64: str = Form(None),
     mode: str = Form("manual"),
     quality: str = Form("manual"),
     engine: str = Form("opencv_manual"),
@@ -1700,11 +1703,6 @@ async def watermark_manual_remove(
         img_bytes = await image.read()
         if mask:
             mask_bytes = await mask.read()
-        elif maskBase64:
-            import base64
-            if "," in maskBase64:
-                maskBase64 = maskBase64.split(",")[1]
-            mask_bytes = base64.b64decode(maskBase64)
         else:
             raise ValueError("未提供 Mask 遮罩数据")
             
@@ -1741,7 +1739,6 @@ async def watermark_manual_remove(
 async def watermark_quick_remove(
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
-    maskBase64: str = Form(None),
     mode: str = Form("quick"),
     quality: str = Form("quick"),
     engine: str = Form("opencv_quick"),
@@ -1752,11 +1749,6 @@ async def watermark_quick_remove(
         img_bytes = await image.read()
         if mask:
             mask_bytes = await mask.read()
-        elif maskBase64:
-            import base64
-            if "," in maskBase64:
-                maskBase64 = maskBase64.split(",")[1]
-            mask_bytes = base64.b64decode(maskBase64)
         else:
             raise ValueError("未提供 Mask 遮罩数据")
 
@@ -1793,7 +1785,6 @@ async def watermark_quick_remove(
 async def watermark_hd_remove(
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
-    maskBase64: str = Form(None),
     mode: str = Form("hd"),
     strength: str = Form("medium"),
     preserveDetail: str = Form("true")
@@ -1803,11 +1794,6 @@ async def watermark_hd_remove(
         img_bytes = await image.read()
         if mask:
             mask_bytes = await mask.read()
-        elif maskBase64:
-            import base64
-            if "," in maskBase64:
-                maskBase64 = maskBase64.split(",")[1]
-            mask_bytes = base64.b64decode(maskBase64)
         else:
             raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
 
@@ -1856,6 +1842,77 @@ async def watermark_hd_remove(
                 "fallbackAvailable": True,
             }
         )
+
+
+@app.post("/api/watermark/remove-v2")
+async def watermark_remove_v2(
+    image: UploadFile = File(...),
+    strokesJson: str = Form(...),
+    originalWidth: int = Form(...),
+    originalHeight: int = Form(...),
+    displayWidth: float = Form(...),
+    displayHeight: float = Form(...),
+    quality: str = Form("quick"),
+    strength: str = Form("medium"),
+    preserveDetail: str = Form("true"),
+):
+    """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
+    try:
+        payload = json.loads(strokesJson)
+        if not isinstance(payload, dict):
+            raise ValueError("strokesJson must be an object")
+        payload.update({
+            "originalWidth": int(originalWidth),
+            "originalHeight": int(originalHeight),
+            "displayWidth": float(displayWidth),
+            "displayHeight": float(displayHeight),
+        })
+        normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        image_bytes = await image.read()
+        preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
+        result = await asyncio.to_thread(
+            process_stroke_inpaint,
+            image_bytes,
+            normalized_json,
+            quality,
+            strength,
+            preserve_detail,
+        )
+        saved = save_watermark_output(result["bytes"], result["mode"], result.get("suffix") or ".png")
+        debug = result.get("debug") or {}
+        debug.update({"resultUrl": saved["url"], "outputPath": saved["path"], "fileHash": saved["hash"]})
+        return {
+            "success": True,
+            "imageUrl": saved["url"],
+            "resultUrl": saved["url"],
+            "outputPath": saved["path"],
+            "fileHash": saved["hash"],
+            "mode": result["mode"],
+            "engine": result["engine"],
+            "fallbackUsed": result["fallbackUsed"],
+            "backendMode": result["backendMode"],
+            "message": result["message"],
+            "debug": debug,
+        }
+    except HdInpaintError as exc:
+        return JSONResponse(status_code=exc.status_code, content={
+            "success": False,
+            "message": str(exc),
+            "fallbackAvailable": exc.fallback_available,
+            "debug": exc.debug,
+        })
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "message": str(exc),
+            "debug": getattr(exc, "debug", {}),
+        })
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "message": f"watermark processing failed: {str(exc)}",
+            "debug": getattr(exc, "debug", {}),
+        })
 
 
 @app.post("/api/watermark/scan-template")

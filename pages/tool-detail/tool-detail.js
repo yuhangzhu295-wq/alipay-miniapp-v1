@@ -120,7 +120,7 @@ Page({
     wmHdEnabled: watermarkApi.isHdRepairEnabled(),
     wmHdAvailable: false,
     wmHdStatus: '未检测',
-    wmUploadUrl: watermarkApi.getBaseUrl() + '/api/watermark/quick-remove',
+    wmUploadUrl: watermarkApi.getBaseUrl() + '/api/watermark/remove-v2',
     wmLastError: '-',
     wmResultQuality: '',
     wmResultModeLabel: '',
@@ -227,7 +227,7 @@ Page({
     var baseUrl = watermarkApi.getBaseUrl();
     that.setData({
       wmApiBaseUrl: baseUrl,
-      wmUploadUrl: baseUrl + '/api/watermark/quick-remove',
+      wmUploadUrl: baseUrl + '/api/watermark/remove-v2',
       wmHealthStatus: '检测中...'
     });
     watermarkApi.checkHealth().then(function(res) {
@@ -507,7 +507,7 @@ Page({
       success: function(res) {
         var path = res.tempFiles[0].tempFilePath;
         that._wmLastMaskInfo = null;
-        that._wmLastMaskBase64 = '';
+        that._wmLastStrokeInfo = null;
         that.setData({ 
           photoSrc: path, 
           resultImage: '', 
@@ -1276,7 +1276,7 @@ Page({
         var wmCanvas = require('../../utils/watermarkCanvas.js');
         wmCanvas.clearAll();
         that._wmLastMaskInfo = null;
-        that._wmLastMaskBase64 = '';
+        that._wmLastStrokeInfo = null;
         that.setData({
           wmHasMask: false,
           wmMaskPreview: '',
@@ -1363,7 +1363,8 @@ Page({
             displayCanvas: displayCanvas,
             imagePath: that.data.photoSrc,
             containerWidth: displayContainerW,
-            dpr: dpr
+            dpr: dpr,
+            strokeTransportOnly: true
           }).then(function(canvasInfo) {
             console.log('[watermark] initCanvases resolved successfully:', canvasInfo);
             wx.hideLoading();
@@ -1439,9 +1440,7 @@ Page({
       }
     }
     quality = quality === 'hd' ? 'hd' : 'fast';
-    var endpoint = quality === 'hd'
-      ? '/api/watermark/hd-remove'
-      : '/api/watermark/quick-remove';
+    var endpoint = '/api/watermark/remove-v2';
     this.setData({
       wmQuality: quality,
       wmUploadUrl: watermarkApi.getBaseUrl() + endpoint
@@ -1472,17 +1471,18 @@ Page({
       return;
     }
 
-    wmCanvas.exportValidatedMask().then(function(maskInfo) {
+    try {
+      var maskInfo = wmCanvas.getStrokeTransportPayload();
       that.setData({
         wmHasMask: true,
-        wmMaskPreview: maskInfo.previewPath,
+        wmMaskPreview: '',
         wmMaskWidth: maskInfo.width,
         wmMaskHeight: maskInfo.height,
         wmMaskNonZeroPixels: maskInfo.nonZeroPixels,
         wmMaskRatio: (maskInfo.maskRatio * 100).toFixed(2),
         wmMaskRatioValue: maskInfo.maskRatio
       });
-    }).catch(function(err) {
+    } catch (err) {
       console.warn('[watermark] refresh mask debug failed:', err);
       that.setData({
         wmHasMask: false,
@@ -1493,7 +1493,7 @@ Page({
         wmMaskRatio: '0.00',
         wmMaskRatioValue: 0
       });
-    });
+    }
   },
 
   toggleStampSampling: function() {
@@ -1693,7 +1693,7 @@ Page({
     return '手动擦除';
   },
 
-  runWatermarkRemoveWithMask: function(maskInfo, maskB64, qualityOverride) {
+  runWatermarkRemoveWithStrokes: function(maskInfo, strokeInfo, qualityOverride) {
     var that = this;
     var quality = qualityOverride || that.data.wmQuality || 'fast';
     var wmApi = require('../../utils/watermarkApi.js');
@@ -1718,14 +1718,15 @@ Page({
     }
 
     var modeKey = quality === 'hd' ? 'hd' : (quality === 'fast' ? 'quick' : 'manual');
-    var apiCall = modeKey === 'hd' ? wmApi.hdRemove : (modeKey === 'quick' ? wmApi.quickRemove : wmApi.manualRemove);
-    var endpoint = modeKey === 'hd' ? '/api/watermark/hd-remove' : (modeKey === 'quick' ? '/api/watermark/quick-remove' : '/api/watermark/manual-remove');
+    var apiCall = wmApi.removeV2;
+    var endpoint = '/api/watermark/remove-v2';
     var backendMode = modeKey === 'hd' ? 'hd' : (modeKey === 'quick' ? 'opencv_quick' : 'opencv_manual');
     that.setData({ processing: true });
 
     apiCall({
       imagePath: that.data.photoSrc,
-      maskBase64: maskB64,
+      strokeInfo: strokeInfo,
+      quality: modeKey,
       strength: that.data.wmStrength,
       preserveDetail: true
     }).then(function(res) {
@@ -1834,15 +1835,13 @@ Page({
       this.checkWatermarkHealth();
       return;
     }
-    var retryEndpoint = quality === 'hd'
-      ? '/api/watermark/hd-remove'
-      : (quality === 'fast' ? '/api/watermark/quick-remove' : '/api/watermark/manual-remove');
+    var retryEndpoint = '/api/watermark/remove-v2';
     this.setData({
       wmQuality: quality,
       wmUploadUrl: watermarkApi.getBaseUrl() + retryEndpoint
     });
-    if (this._wmLastMaskInfo && this._wmLastMaskBase64) {
-      this.runWatermarkRemoveWithMask(this._wmLastMaskInfo, this._wmLastMaskBase64, quality);
+    if (this._wmLastMaskInfo && this._wmLastStrokeInfo) {
+      this.runWatermarkRemoveWithStrokes(this._wmLastMaskInfo, this._wmLastStrokeInfo, quality);
       return;
     }
     this.doManualRemoveWatermark();
@@ -1855,7 +1854,7 @@ Page({
     var wmCanvas = require('../../utils/watermarkCanvas.js');
     wmCanvas.clearAll();
     that._wmLastMaskInfo = null;
-    that._wmLastMaskBase64 = '';
+    that._wmLastStrokeInfo = null;
     that.setData({
       photoSrc: nextSource,
       resultImage: '',
@@ -1918,7 +1917,8 @@ Page({
 
     that.setData({ processing: true });
 
-    wmCanvas.exportValidatedMask().then(function(maskInfo) {
+    try {
+      var maskInfo = wmCanvas.getStrokeTransportPayload();
       if (maskInfo.width !== originalW || maskInfo.height !== originalH) {
         console.error('[watermark] mask size mismatch:', maskInfo.width, maskInfo.height, originalW, originalH);
         that.setData({ processing: false });
@@ -1954,25 +1954,24 @@ Page({
       }
 
       try {
-        var fs = wx.getFileSystemManager();
-        var maskB64 = fs.readFileSync(maskInfo.tempFilePath, 'base64');
+        var strokeInfo = maskInfo;
         that._wmLastMaskInfo = maskInfo;
-        that._wmLastMaskBase64 = maskB64;
-        that.runWatermarkRemoveWithMask(maskInfo, maskB64, that.data.wmQuality);
+        that._wmLastStrokeInfo = strokeInfo;
+        that.runWatermarkRemoveWithStrokes(maskInfo, strokeInfo, that.data.wmQuality);
       } catch (err) {
-        console.error('[watermark] failed to read mask file as base64:', err);
+        console.error('[watermark] failed to prepare stroke upload:', err);
         that.setData({ processing: false });
         wx.showToast({ title: '图片上传失败，请重新尝试。', icon: 'none' });
       }
-    }).catch(function(err) {
-      console.error('[watermark] failed to export validated mask:', err);
+    } catch (err) {
+      console.error('[watermark] failed to build stroke payload:', err);
       that.setData({ processing: false });
       wx.showToast({
         title: that.getWatermarkUserError(err, '处理失败，请调整涂抹区域后重试。'),
         icon: 'none',
         duration: 2500
       });
-    });
+    }
   },
 
   // 🛠️ 仿制图章保存结果

@@ -22,6 +22,7 @@ var displayedImageHeight = 0;
 var imageOffsetX = 0;
 var imageOffsetY = 0;
 var dpr = 1;
+var strokeTransportOnly = false;
 
 var originalImageObj = null; // 缓存原图 Image 对象以方便重绘
 var originalImagePath = '';
@@ -52,6 +53,7 @@ function initCanvases(params) {
     originalImagePath = params.imagePath;
     var containerWidth = params.containerWidth || 320;
     dpr = params.dpr || 1;
+    strokeTransportOnly = params.strokeTransportOnly === true;
 
     displayContext = displayCanvasNode.getContext('2d');
 
@@ -83,6 +85,13 @@ function initCanvases(params) {
 
         // 3. 动态创建离线 Canvas，完全避开 DOM 查询
         try {
+          if (strokeTransportOnly) {
+            maskCanvasNode = null;
+            maskContext = null;
+            fullCanvasNode = null;
+            fullContext = null;
+            console.log('[watermark] stroke transport mode: full-size offscreen canvases disabled');
+          } else {
           console.log('[watermark] creating offscreen maskCanvas, size:', imgW, 'x', imgH);
           maskCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
           maskContext = maskCanvasNode.getContext('2d');
@@ -90,6 +99,7 @@ function initCanvases(params) {
           console.log('[watermark] creating offscreen fullCanvas, size:', imgW, 'x', imgH);
           fullCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
           fullContext = fullCanvasNode.getContext('2d');
+          }
         } catch (offscreenErr) {
           console.error('[watermark] failed to create offscreen canvas:', offscreenErr);
           reject(new Error('创建离线画布失败: ' + offscreenErr.message));
@@ -143,7 +153,7 @@ function initCanvases(params) {
  * 重置/初始化所有画布的基础内容
  */
 function defReset() {
-  if (!displayContext || !maskContext || !fullContext) return;
+  if (!displayContext) return;
 
   // 原图渲染到展示画布
   displayContext.clearRect(0, 0, displayW, displayH);
@@ -152,12 +162,16 @@ function defReset() {
   }
 
   // mask 画布初始画为全黑
-  maskContext.fillStyle = '#000000';
-  maskContext.fillRect(0, 0, imgW, imgH);
+  if (maskContext) {
+    maskContext.fillStyle = '#000000';
+    maskContext.fillRect(0, 0, imgW, imgH);
+  }
 
   // fullCanvas 渲染原尺寸原图
-  fullContext.clearRect(0, 0, imgW, imgH);
-  if (originalImageObj) {
+  if (fullContext) {
+    fullContext.clearRect(0, 0, imgW, imgH);
+  }
+  if (fullContext && originalImageObj) {
     fullContext.drawImage(originalImageObj, 0, 0, imgW, imgH);
   }
 }
@@ -170,7 +184,7 @@ function resetCanvases() {
  * 重绘所有历史笔迹，用于撤销和恢复
  */
 function redrawHistory() {
-  if (!displayContext || !maskContext || !fullContext) return;
+  if (!displayContext) return;
 
   resetCanvases();
 
@@ -194,7 +208,7 @@ function redrawHistory() {
  * 绘制手动涂抹笔画
  */
 function drawBrushStroke(stroke, scaleX, scaleY) {
-  if (!displayContext || !maskContext) return;
+  if (!displayContext) return;
 
   var pts = stroke.points;
   if (!pts || pts.length === 0) return;
@@ -229,6 +243,8 @@ function drawBrushStroke(stroke, scaleX, scaleY) {
     displayContext.stroke();
   }
 
+  if (!maskContext) return;
+
   // 2. 绘制 Mask 画布 (全白实心线)
   maskContext.lineCap = 'round';
   maskContext.lineJoin = 'round';
@@ -249,8 +265,23 @@ function drawBrushStroke(stroke, scaleX, scaleY) {
 /**
  * 绘制仿制图章复制像素笔画
  */
+function ensureFullCanvas() {
+  if (fullCanvasNode && fullContext) return true;
+  if (!imgW || !imgH) return false;
+  try {
+    fullCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
+    fullContext = fullCanvasNode.getContext('2d');
+    if (originalImageObj) fullContext.drawImage(originalImageObj, 0, 0, imgW, imgH);
+    publishRuntimeState();
+    return true;
+  } catch (err) {
+    console.error('[watermark] lazy full canvas creation failed:', err);
+    return false;
+  }
+}
+
 function drawStampStroke(stroke, scaleX, scaleY) {
-  if (!displayContext || !fullContext) return;
+  if (!displayContext || !ensureFullCanvas()) return;
 
   var pts = stroke.points;
   if (!pts || pts.length === 0) return;
@@ -295,7 +326,7 @@ function drawStampStroke(stroke, scaleX, scaleY) {
 }
 
 function drawMaskRectStroke(stroke) {
-  if (!displayContext || !maskContext) return;
+  if (!displayContext) return;
   var scaleX = displayedImageWidth ? (imgW / displayedImageWidth) : 1;
   var scaleY = displayedImageHeight ? (imgH / displayedImageHeight) : 1;
   var x = Math.max(0, Math.min(imgW, stroke.x || 0));
@@ -303,8 +334,10 @@ function drawMaskRectStroke(stroke) {
   var w = Math.max(1, Math.min(imgW - x, stroke.w || 1));
   var h = Math.max(1, Math.min(imgH - y, stroke.h || 1));
 
-  maskContext.fillStyle = '#FFFFFF';
-  maskContext.fillRect(x, y, w, h);
+  if (maskContext) {
+    maskContext.fillStyle = '#FFFFFF';
+    maskContext.fillRect(x, y, w, h);
+  }
 
   displayContext.fillStyle = 'rgba(255, 68, 68, 0.45)';
   displayContext.fillRect(x / scaleX + imageOffsetX, y / scaleY + imageOffsetY, w / scaleX, h / scaleY);
@@ -369,6 +402,100 @@ function getDisplayRect() {
     displayedImageHeight: displayedImageHeight,
     imageOffsetX: imageOffsetX,
     imageOffsetY: imageOffsetY
+  };
+}
+
+function getStrokeTransportPayload() {
+  if (!imgW || !imgH || !displayedImageWidth || !displayedImageHeight) {
+    throw new Error('原图或显示尺寸未初始化');
+  }
+  var active = getActiveBrushStrokes();
+  var normalized = [];
+  var estimatedPixels = 0;
+  var minX = imgW;
+  var minY = imgH;
+  var maxX = 0;
+  var maxY = 0;
+
+  function clamp01(value) { return Math.max(0, Math.min(1, value)); }
+  function includeBox(x1, y1, x2, y2) {
+    minX = Math.min(minX, x1);
+    minY = Math.min(minY, y1);
+    maxX = Math.max(maxX, x2);
+    maxY = Math.max(maxY, y2);
+  }
+
+  for (var i = 0; i < active.length; i++) {
+    var stroke = active[i];
+    if (stroke.type === 'maskRect') {
+      var rx = clamp01((stroke.x || 0) / imgW);
+      var ry = clamp01((stroke.y || 0) / imgH);
+      var rw = clamp01((stroke.w || 0) / imgW);
+      var rh = clamp01((stroke.h || 0) / imgH);
+      normalized.push({ type: 'maskRect', x: rx, y: ry, w: rw, h: rh });
+      var rectPixels = Math.max(0, Math.round(rw * imgW)) * Math.max(0, Math.round(rh * imgH));
+      estimatedPixels += rectPixels;
+      includeBox(rx * imgW, ry * imgH, (rx + rw) * imgW, (ry + rh) * imgH);
+      continue;
+    }
+
+    var points = stroke.points || [];
+    if (!points.length) continue;
+    var mappedPoints = [];
+    var originalPoints = [];
+    var brushSizeRatio = Math.max(1 / imgW, (stroke.brushSize || 1) / displayedImageWidth);
+    var originalBrush = brushSizeRatio * imgW;
+    var radius = originalBrush / 2;
+    var pathLength = 0;
+    for (var p = 0; p < points.length; p++) {
+      var nx = clamp01((points[p].x - imageOffsetX) / displayedImageWidth);
+      var ny = clamp01((points[p].y - imageOffsetY) / displayedImageHeight);
+      mappedPoints.push({ x: nx, y: ny });
+      var ox = nx * imgW;
+      var oy = ny * imgH;
+      originalPoints.push({ x: ox, y: oy });
+      includeBox(ox - radius, oy - radius, ox + radius, oy + radius);
+      if (p > 0) {
+        var dx = ox - originalPoints[p - 1].x;
+        var dy = oy - originalPoints[p - 1].y;
+        pathLength += Math.sqrt(dx * dx + dy * dy);
+      }
+    }
+    estimatedPixels += Math.PI * radius * radius + pathLength * originalBrush;
+    normalized.push({
+      type: 'brush',
+      brushSizeRatio: brushSizeRatio,
+      points: mappedPoints
+    });
+  }
+
+  var nonZeroPixels = Math.min(imgW * imgH, Math.max(0, Math.round(estimatedPixels)));
+  var hasBounds = normalized.length > 0 && maxX > minX && maxY > minY;
+  var payload = {
+    version: 2,
+    coordinateSpace: 'normalized',
+    originalWidth: imgW,
+    originalHeight: imgH,
+    displayWidth: displayedImageWidth,
+    displayHeight: displayedImageHeight,
+    strokes: normalized
+  };
+  return {
+    payload: payload,
+    strokesJson: JSON.stringify(payload),
+    width: imgW,
+    height: imgH,
+    nonZeroPixels: nonZeroPixels,
+    maskRatio: nonZeroPixels / (imgW * imgH),
+    strokesCount: normalized.length,
+    previewPath: '',
+    boundingBox: hasBounds ? {
+      x: Math.max(0, Math.floor(minX)),
+      y: Math.max(0, Math.floor(minY)),
+      width: Math.min(imgW, Math.ceil(maxX)) - Math.max(0, Math.floor(minX)),
+      height: Math.min(imgH, Math.ceil(maxY)) - Math.max(0, Math.floor(minY))
+    } : null,
+    displayRect: getDisplayRect()
   };
 }
 
@@ -668,6 +795,7 @@ module.exports = {
   copyPixelCirc: copyPixelCirc,
   getActiveBrushStrokes: getActiveBrushStrokes,
   getDisplayRect: getDisplayRect,
+  getStrokeTransportPayload: getStrokeTransportPayload,
   getHistoryCount: function() { return historyIndex + 1; },
   getFutureCount: function() { return history.length - 1 - historyIndex; },
   displayContext: null,
