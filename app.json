@@ -10,6 +10,12 @@
     "pages/preview/preview",
     "pages/tool-detail/tool-detail"
   ],
+  "networkTimeout": {
+    "request": 360000,
+    "connectSocket": 60000,
+    "uploadFile": 360000,
+    "downloadFile": 120000
+  },
   "window": {
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTitleText": "证件照生成器",

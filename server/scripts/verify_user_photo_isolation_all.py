@@ -73,7 +73,7 @@ def read_report(path: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-url", default="https://tupzjianzhao.chat")
     args = parser.parse_args()
     local = args.base_url.rstrip("/")
     cloud = args.cloud_url.rstrip("/")
@@ -130,7 +130,7 @@ def main() -> int:
         "health": cloud_health,
         "retention": cloud_retention,
         "isolationStatus": cloud_status,
-        "frontendCloudBaseConfigured": "http://120.26.44.156" in (ROOT / "utils" / "apiConfig.js").read_text(encoding="utf-8"),
+        "frontendCloudBaseConfigured": "https://tupzjianzhao.chat" in (ROOT / "utils" / "apiConfig.js").read_text(encoding="utf-8"),
         "localNotUsedForCloudVerification": "127.0.0.1" not in cloud and "localhost" not in cloud,
         "deploymentChannelAudit": {
             "repositoryDeployScriptsPresent": (ROOT / "deploy" / "cloud" / "activate-release.ps1").exists()

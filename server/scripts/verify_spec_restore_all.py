@@ -145,7 +145,7 @@ def status_is_pass(report: dict[str, Any]) -> bool:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-url", default="https://tupzjianzhao.chat")
     args = parser.parse_args(argv)
 
     FINAL.mkdir(parents=True, exist_ok=True)

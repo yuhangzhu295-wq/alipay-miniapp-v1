@@ -105,15 +105,15 @@ def main() -> int:
     health = {
         "localApi": request_json("http://127.0.0.1:8000/api/health"),
         "localWatermark": request_json("http://127.0.0.1:8000/api/watermark/health"),
-        "cloudApi": request_json("http://120.26.44.156/api/health"),
-        "cloudWatermark": request_json("http://120.26.44.156/api/watermark/health"),
+        "cloudApi": request_json("https://tupzjianzhao.chat/api/health"),
+        "cloudWatermark": request_json("https://tupzjianzhao.chat/api/watermark/health"),
     }
 
     api_config = (ROOT / "utils" / "apiConfig.js").read_text(encoding="utf-8")
     watermark_config = (ROOT / "utils" / "watermarkConfig.js").read_text(encoding="utf-8")
     route_checks = {
         "localApiBaseDefined": "LOCAL_API_BASE_URL" in api_config and "http://127.0.0.1:8000" in api_config,
-        "cloudApiBaseDefined": "CLOUD_API_BASE_URL" in api_config and "http://120.26.44.156" in api_config,
+        "cloudApiBaseDefined": "CLOUD_API_BASE_URL" in api_config and "https://tupzjianzhao.chat" in api_config,
         "apiTargetStorageDefined": "ID_PHOTO_API_TARGET" in api_config,
         "runtimeTargetFunctionExists": "function getApiBaseUrl" in api_config,
         "watermarkFollowsApiTarget": "same-as-api" in watermark_config and "getApiBaseUrl" in watermark_config,
@@ -131,7 +131,7 @@ def main() -> int:
         "",
         f"- Status: {route_payload['status']}",
         "- Local API target: `http://127.0.0.1:8000`",
-        "- Cloud API target: `http://120.26.44.156`",
+        "- Cloud API target: `https://tupzjianzhao.chat`",
         "- Watermark API target: follows the same API target as ID-photo.",
         "",
         "## Checks",

@@ -386,7 +386,8 @@ Page({
       layoutColorId: '',
       canDownload: false
     });
-    that.startProcessTimer(hasPrepared ? 10000 : 90000);
+    // Covers one prepare plus the compose retry budget without racing wx timeouts.
+    that.startProcessTimer(hasPrepared ? 135000 : 330000);
     console.log('[id-photo-generate] API_BASE_URL:', apiConfig.API_BASE_URL);
     console.log('[id-photo-generate] prepare endpoint:', prepareEndpoint);
     console.log('[id-photo-generate] compose endpoint:', composeEndpoint);

@@ -140,7 +140,7 @@ def main() -> int:
         isolation_all = load_json(ROOT / "reports" / "final" / "verify-all-report.json")
 
     health_local = request_json("http://127.0.0.1:8000/api/health")
-    health_cloud = request_json("http://120.26.44.156/api/health")
+    health_cloud = request_json("https://tupzjianzhao.chat/api/health")
     id_health = request_json("http://127.0.0.1:8000/api/id-photo/health")
 
     git_root = run(["git", "rev-parse", "--show-toplevel"])
@@ -225,7 +225,7 @@ def main() -> int:
                 "- API wrapper: `utils/aiImageApi.js`",
                 "- Config file: `utils/apiConfig.js`",
                 "- Local base URL found: " + str("http://127.0.0.1:8000" in api_config),
-                "- Cloud base URL found: " + str("http://120.26.44.156" in api_config),
+                "- Cloud base URL found: " + str("https://tupzjianzhao.chat" in api_config),
                 "- Prepare endpoint: `/api/id-photo/prepare`",
                 "- Compose endpoint: `/api/id-photo/compose`",
                 "- Preview/download uses backend `finalImageUrl`/`resultUrl` as verified by `verify:id-photo` and `verify:id-photo-main-flow`.",
@@ -238,7 +238,7 @@ def main() -> int:
             [
                 "# Cloud Status",
                 "",
-                f"- Cloud URL: `http://120.26.44.156`",
+                f"- Cloud URL: `https://tupzjianzhao.chat`",
                 f"- /api/health: `{health_cloud.get('statusCode')}` {health_cloud.get('data')}",
                 f"- Local-vs-cloud status: `{local_cloud.get('status')}`",
                 f"- Cloud blocked: `{local_cloud.get('cloudBlocked')}`",

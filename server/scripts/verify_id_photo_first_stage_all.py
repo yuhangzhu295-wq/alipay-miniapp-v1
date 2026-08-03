@@ -71,7 +71,7 @@ def write_md(path: Path, lines: list[str]) -> None:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default=os.environ.get("ID_PHOTO_CLOUD_URL", "http://120.26.44.156"))
+    parser.add_argument("--cloud-url", default=os.environ.get("ID_PHOTO_CLOUD_URL", "https://tupzjianzhao.chat"))
     args = parser.parse_args(argv)
     FINAL.mkdir(parents=True, exist_ok=True)
     GLOBAL_FINAL.mkdir(parents=True, exist_ok=True)

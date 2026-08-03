@@ -10,6 +10,8 @@
  */
 
 var config = require('./apiConfig.js');
+var ID_PHOTO_PREPARE_TIMEOUT_MS = 210000;
+var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 
 /**
  * 健康检查 — 判断后端是否启动
@@ -323,7 +325,7 @@ function prepareIdPhotoV2(imagePath, options) {
       filePath: imagePath,
       name: 'image',
       formData: formData,
-      timeout: 35000,
+      timeout: ID_PHOTO_PREPARE_TIMEOUT_MS,
       success: function(res) {
         try {
           var data = JSON.parse(res.data);
@@ -352,8 +354,9 @@ function prepareIdPhotoV2(imagePath, options) {
       },
       fail: function(err) {
         console.error('[id-photo-api] prepare upload failed:', err);
+        var isTimeout = err && err.errMsg && err.errMsg.indexOf('timeout') >= 0;
         var apiErr = new Error('生成服务暂不可用，请稍后重试。');
-        apiErr.code = 'SERVICE_UNAVAILABLE';
+        apiErr.code = isTimeout ? 'ID_PHOTO_TIMEOUT' : 'SERVICE_UNAVAILABLE';
         reject(apiErr);
       }
     });
@@ -381,7 +384,7 @@ function composeIdPhotoV2(options) {
         bgColorName: options.bgColorName || '',
         outputType: options.outputType || 'jpg'
       },
-      timeout: 25000,
+      timeout: ID_PHOTO_COMPOSE_TIMEOUT_MS,
       success: function(res) {
         var data = res.data || {};
         console.log('[id-photo-api] compose response:', {

@@ -59,6 +59,8 @@ AUTH_SECRET = os.environ.get("ID_PHOTO_AUTH_SECRET") or hashlib.sha256(
     ("id-photo-auth:" + os.path.abspath(BASE_RUNTIME_DIR)).encode("utf-8")
 ).hexdigest()
 CLEANUP_INTERVAL_SECONDS = 3600
+ID_PHOTO_PREPARE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_PREPARE_TIMEOUT_SECONDS", "180"))
+ID_PHOTO_COMPOSE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_COMPOSE_TIMEOUT_SECONDS", "60"))
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 _asset_registry_lock = threading.RLock()
@@ -1170,7 +1172,7 @@ async def id_photo_prepare(
                 request_id=request_id,
                 hair_retouch=hairRetouch,
             ),
-            timeout=90,
+            timeout=ID_PHOTO_PREPARE_TIMEOUT_SECONDS,
         )
         for key, value in costs.items():
             print(f"[id-photo] requestId={request_id} step={key.replace('_ms', '')} cost={value}ms")
@@ -1281,7 +1283,7 @@ async def id_photo_compose(
                 output_type=outputType,
                 request_id=request_id,
             ),
-            timeout=20,
+            timeout=ID_PHOTO_COMPOSE_TIMEOUT_SECONDS,
         )
         save_started = time.perf_counter()
         with open(result["path"], "rb") as f:

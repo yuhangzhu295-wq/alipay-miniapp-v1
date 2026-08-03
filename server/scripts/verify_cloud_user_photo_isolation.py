@@ -20,7 +20,7 @@ def load_verify():
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base-url", default="http://120.26.44.156")
+    parser.add_argument("--base-url", default="https://tupzjianzhao.chat")
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
     if "127.0.0.1" in base or "localhost" in base:

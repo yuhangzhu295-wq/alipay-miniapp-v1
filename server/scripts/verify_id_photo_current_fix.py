@@ -502,7 +502,7 @@ def write_reports(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--local-base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-base-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-base-url", default="https://tupzjianzhao.chat")
     parser.add_argument("--samples", default=r"C:\Users\zyu33\Desktop")
     args = parser.parse_args()
 

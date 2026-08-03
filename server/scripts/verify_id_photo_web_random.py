@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-url", default="https://tupzjianzhao.chat")
     parser.add_argument("--real-count", type=int, default=40)
     parser.add_argument("--min-pass-rate", type=float, default=95)
     args = parser.parse_args()

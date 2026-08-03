@@ -62,7 +62,7 @@ def main() -> int:
         "serverDeleteChecksOwner": "不能删除不属于当前用户" in files["serverMain"],
         "serverDownloadChecksOwner": "不能下载不属于当前用户" in files["serverMain"],
         "retentionStill86400": "ID_PHOTO_ASSET_RETENTION_SECONDS" in files["serverMain"] and "86400" in files["serverMain"],
-        "cloudBaseConfigured": "http://120.26.44.156" in files["apiConfig"],
+        "cloudBaseConfigured": "https://tupzjianzhao.chat" in files["apiConfig"],
     }
     passed = all(checks.values())
 

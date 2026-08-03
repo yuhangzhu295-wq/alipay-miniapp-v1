@@ -1134,7 +1134,7 @@ def maybe_run_extra_regression(enabled: bool, base_url: str) -> dict[str, Any]:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-base-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-base-url", default="https://tupzjianzhao.chat")
     parser.add_argument("--limit", type=int, default=12)
     parser.add_argument("--run-extra-regression", action="store_true")
     args = parser.parse_args(argv)

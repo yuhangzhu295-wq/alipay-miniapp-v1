@@ -29,7 +29,7 @@ from verify_id_photo_all_formats import (
 )
 
 
-DEFAULT_CLOUD_URL = "http://120.26.44.156"
+DEFAULT_CLOUD_URL = "https://tupzjianzhao.chat"
 COMPARE_SPEC_IDS = [
     "yicun",
     "dayicun",

@@ -12,7 +12,7 @@
  */
 
 var LOCAL_API_BASE_URL = 'http://127.0.0.1:8000';
-var CLOUD_API_BASE_URL = 'http://42.192.107.208:8000';
+var CLOUD_API_BASE_URL = 'https://tupzjianzhao.chat';
 var API_TARGET_STORAGE_KEY = 'ID_PHOTO_API_TARGET';
 
 function getRuntimeEnvVersion() {
@@ -44,7 +44,7 @@ function getApiBaseUrl() {
     return CLOUD_API_BASE_URL;
   }
   // 强制默认使用云端接口（方便本地开发者工具测试）
-  return LOCAL_API_BASE_URL;
+  return CLOUD_API_BASE_URL;
 }
 
 var API_BASE_URL = getApiBaseUrl();

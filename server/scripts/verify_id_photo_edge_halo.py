@@ -477,7 +477,7 @@ def write_static_reports(samples: list[dict[str, Any]], local: dict[str, Any], c
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-base-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-base-url", default="https://tupzjianzhao.chat")
     parser.add_argument("--samples", default=r"C:\Users\zyu33\Desktop\idphoto-edge-halo-samples")
     parser.add_argument("--reference", default=r"C:\Users\zyu33\AppData\Local\Temp\codex-clipboard-9cb1b73a-3388-4476-aad2-89233c7ed016.png")
     parser.add_argument("--limit", type=int, default=6)

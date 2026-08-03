@@ -17,7 +17,7 @@ var WATERMARK_API_MODE = 'same-as-api';
 
 var WATERMARK_LOCAL_BASE_URL = apiConfig.LOCAL_API_BASE_URL || 'http://127.0.0.1:8000';
 var WATERMARK_LAN_BASE_URL = apiConfig.API_BASE_URL;
-var WATERMARK_ONLINE_BASE_URL = apiConfig.CLOUD_API_BASE_URL || 'http://120.26.44.156';
+var WATERMARK_ONLINE_BASE_URL = apiConfig.CLOUD_API_BASE_URL || 'https://tupzjianzhao.chat';
 var ENABLE_HD_REPAIR = true;
 var HD_REPAIR_ENGINE = 'lama';
 

@@ -93,7 +93,7 @@ def status_pass(report: dict[str, Any]) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-url", default="https://tupzjianzhao.chat")
     args = parser.parse_args()
 
     id_photo = load_json(ROOT / "reports" / "final" / "id-photo-validation-report.json")

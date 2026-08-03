@@ -174,7 +174,7 @@ def assemble_cloud_deployment_report(cloud_url: str, local_vs_cloud: dict[str, A
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--cloud-url", default="http://120.26.44.156")
+    parser.add_argument("--cloud-url", default="https://tupzjianzhao.chat")
     args = parser.parse_args(argv)
 
     SPEC_FINAL.mkdir(parents=True, exist_ok=True)
