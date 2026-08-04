@@ -171,6 +171,34 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
     return result
 
 
+def _call_iopaint_scaled(image, mask_bin, feather=False, timeout=180):
+    original_h, original_w = image.shape[:2]
+    max_edge = max(1024, min(1536, int(os.environ.get("HD_INPAINT_MAX_EDGE", "1536"))))
+    scale = min(1.0, max_edge / float(max(original_w, original_h)))
+    if scale < 1.0:
+        inference_size = (
+            max(1, int(round(original_w * scale))),
+            max(1, int(round(original_h * scale))),
+        )
+        inference_image = cv2.resize(image, inference_size, interpolation=cv2.INTER_AREA)
+        inference_mask = cv2.resize(mask_bin, inference_size, interpolation=cv2.INTER_NEAREST)
+    else:
+        inference_size = (original_w, original_h)
+        inference_image = image
+        inference_mask = mask_bin
+    started = time.perf_counter()
+    repaired = _call_iopaint(inference_image, inference_mask, feather=feather, timeout=timeout)
+    call_ms = int((time.perf_counter() - started) * 1000)
+    if repaired.shape[:2] != (original_h, original_w):
+        repaired = cv2.resize(repaired, (original_w, original_h), interpolation=cv2.INTER_LANCZOS4)
+    return repaired, {
+        "roiOriginalSize": f"{original_w}x{original_h}",
+        "roiInferenceSize": f"{inference_size[0]}x{inference_size[1]}",
+        "roiScale": round(scale, 6),
+        "lamaMs": call_ms,
+    }
+
+
 def _odd_kernel(value, minimum=3, maximum=31):
     value = max(minimum, min(maximum, int(value)))
     return value if value % 2 == 1 else value + 1
@@ -297,11 +325,17 @@ def _residual_quality(image, mask_bin):
 
 
 def _residual_needs_retry(before, after):
-    return bool(
-        after["mean"] > max(1.8, before["mean"] * 0.30)
-        or after["p90"] > max(5.0, before["p90"] * 0.30)
-        or after["darkRatio"] > max(0.075, before["darkRatio"] * 0.34)
+    visible_residual = bool(
+        after["mean"] > 2.5
+        or after["p90"] > 8.0
+        or after["darkRatio"] > 0.09
     )
+    insufficient_reduction = bool(
+        after["mean"] > before["mean"] * 0.40
+        or after["p90"] > before["p90"] * 0.40
+        or after["darkRatio"] > before["darkRatio"] * 0.42
+    )
+    return visible_residual and insufficient_reduction
 
 
 def _build_hd_fallback_mask(mask_bin, image_w, image_h, strength_mode):
@@ -506,6 +540,10 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
         "diffMean": 0,
         "diffMax": 0,
         "resultUrl": "",
+        "lamaCallCount": 0,
+        "firstLamaMs": 0,
+        "retryLamaMs": 0,
+        "totalDurationMs": 0,
     }
 
     mask_bin = _mask_to_binary(mask_raw)
@@ -561,7 +599,10 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
     composite_sigma = 1.2
 
     if iopaint_available:
-        repaired = _call_iopaint(image, hd_mask, feather=feather)
+        repaired, first_lama_debug = _call_iopaint_scaled(image, hd_mask, feather=feather)
+        debug.update(first_lama_debug)
+        debug["lamaCallCount"] = 1
+        debug["firstLamaMs"] = first_lama_debug["lamaMs"]
         debug["backendEngine"] = "iopaint"
         # IOPaint/LaMa is the HD gate. Large tiled watermark masks need to keep
         # the model result as the primary image; heavy local smoothing makes
@@ -614,8 +655,10 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
     before_quality = _residual_quality(image, quality_mask)
     after_quality = _residual_quality(result, quality_mask)
     auto_retry_count = 0
-    residual_detected = _residual_needs_retry(before_quality, after_quality)
-    while residual_detected and auto_retry_count < 2:
+    retry_min_pixels = max(512, int(image_w * image_h * 0.008))
+    retry_eligible = int(cv2.countNonZero(quality_mask)) >= retry_min_pixels
+    residual_detected = retry_eligible and _residual_needs_retry(before_quality, after_quality)
+    while residual_detected and auto_retry_count < 1:
         residual_mask = _build_thin_watermark_mask(result, quality_mask)
         residual_mask = cv2.morphologyEx(
             residual_mask,
@@ -630,9 +673,11 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
         )
         if cv2.countNonZero(residual_mask) <= 0:
             break
-        retry_repaired = _call_iopaint(result, residual_mask, feather=False)
+        retry_repaired, retry_lama_debug = _call_iopaint_scaled(result, residual_mask, feather=False)
         result = _composite_mask_area(result, retry_repaired, residual_mask, True, sigma=0.35)
         auto_retry_count += 1
+        debug["lamaCallCount"] += 1
+        debug["retryLamaMs"] += retry_lama_debug["lamaMs"]
         after_quality = _residual_quality(result, quality_mask)
         residual_detected = _residual_needs_retry(before_quality, after_quality)
 
@@ -645,12 +690,15 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
         "residualDarkRatioAfter": after_quality["darkRatio"],
         "residualDetected": residual_detected,
         "autoRetryCount": auto_retry_count,
+        "retryEligible": retry_eligible,
+        "retryMinPixels": retry_min_pixels,
     })
 
     diff_mean, diff_max = _diff_debug(image, result, mask_bin)
     debug["diffMean"] = round(diff_mean, 6)
     debug["diffMax"] = diff_max
     debug["durationMs"] = int((time.time() - started_at) * 1000)
+    debug["totalDurationMs"] = debug["durationMs"]
 
     if diff_max <= 0:
         raise HdInpaintError("高清修复未产生有效变化，请调整涂抹区域后重试。", debug=debug, status_code=422)

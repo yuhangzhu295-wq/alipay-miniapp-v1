@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 import os
 import shutil
 import subprocess
@@ -8,6 +10,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any
+from io import BytesIO
 
 from PIL import Image
 
@@ -90,8 +93,10 @@ def _ensure_ascii_root() -> dict[str, Any]:
 
 def get_model_routing() -> dict[str, Any]:
     installed = available_models()
-    standard_requested = os.environ.get("ID_PHOTO_HIVISION_STANDARD_MODEL", "birefnet-v1-lite").strip()
+    standard_requested = os.environ.get("ID_PHOTO_HIVISION_STANDARD_MODEL", "hivision_modnet").strip()
     detail_requested = os.environ.get("ID_PHOTO_HIVISION_DETAIL_MODEL", "birefnet-v1-lite").strip()
+    balanced_requested = os.environ.get("ID_PHOTO_HIVISION_BALANCED_MODEL", "rmbg-1.4").strip()
+    balanced_enabled = os.environ.get("ID_PHOTO_HIVISION_ENABLE_BALANCED", "").strip().lower() in {"1", "true", "yes"}
 
     def resolve(requested: str) -> str:
         if requested in installed:
@@ -100,11 +105,68 @@ def get_model_routing() -> dict[str, Any]:
 
     return {
         "standard": resolve(standard_requested),
+        "balanced": resolve(balanced_requested) if balanced_enabled else "",
+        "balancedCandidate": resolve(balanced_requested),
+        "balancedEnabled": balanced_enabled,
+        "balancedDecision": "disabled: S02 and S07 failed background-leak A/B" if not balanced_enabled else "enabled by environment",
         "detail": resolve(detail_requested),
         "standardRequested": standard_requested,
         "detailRequested": detail_requested,
         "installed": installed,
     }
+
+
+def _worker_url() -> str:
+    return os.environ.get("HIVISION_WORKER_URL", "http://127.0.0.1:8091").rstrip("/")
+
+
+def _decode_worker_metrics(value: str) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        padding = "=" * (-len(value) % 4)
+        return json.loads(base64.urlsafe_b64decode(value + padding).decode("utf-8"))
+    except Exception:
+        return {}
+
+
+def _call_worker(image_path: Path, model: str, timeout: int) -> dict[str, Any]:
+    started = time.perf_counter()
+    try:
+        import requests
+
+        response = requests.post(
+            _worker_url() + "/matting",
+            params={"model": model},
+            data=image_path.read_bytes(),
+            headers={"Content-Type": "image/png"},
+            timeout=max(5, timeout),
+        )
+        metrics = _decode_worker_metrics(response.headers.get("X-Hivision-Metrics", ""))
+        if response.status_code != 200:
+            return {
+                "success": False,
+                "returncode": response.status_code,
+                "seconds": round(time.perf_counter() - started, 3),
+                "outputTail": response.text[-1000:],
+                "workerMetrics": metrics,
+            }
+        rgba = Image.open(BytesIO(response.content)).convert("RGBA")
+        return {
+            "success": True,
+            "returncode": 0,
+            "seconds": round(time.perf_counter() - started, 3),
+            "rgba": rgba,
+            "workerMetrics": metrics,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "returncode": -1,
+            "seconds": round(time.perf_counter() - started, 3),
+            "outputTail": repr(exc),
+            "workerMetrics": {},
+        }
 
 
 def _model_order(preferred_model: str = "") -> list[str]:
@@ -141,6 +203,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
         "asciiRoot": str(ASCII_ROOT),
         "requestedModel": model or "",
         "modelRouting": get_model_routing(),
+        "workerUrl": _worker_url(),
         "attempts": [],
     }
     if not ready:
@@ -181,6 +244,48 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
         output_path = ASCII_RUNTIME_DIR / f"{safe_token}-{model}.png"
         if output_path.exists():
             output_path.unlink()
+        worker = _call_worker(input_path, model, remaining)
+        worker_attempt = {
+            "model": model,
+            "transport": "resident_worker_http",
+            "returncode": worker["returncode"],
+            "seconds": worker["seconds"],
+            "queueWaitSeconds": round(float((worker.get("workerMetrics") or {}).get("queueWaitMs") or 0) / 1000, 3),
+            "outputPath": str(output_path),
+            "outputExists": bool(worker.get("success")),
+            "outputTail": worker.get("outputTail", ""),
+            **(worker.get("workerMetrics") or {}),
+        }
+        debug["attempts"].append(worker_attempt)
+        if worker.get("success"):
+            rgba = worker["rgba"]
+            rgba.save(output_path, format="PNG")
+            alpha_metrics = _alpha_metrics(rgba.getchannel("A"))
+            worker_attempt.update(alpha_metrics)
+            if alpha_metrics["alphaExtrema"][1] > 4 and not (
+                alpha_metrics["transparentRatio"] < 0.005 or alpha_metrics["foregroundRatio"] > 0.96
+            ):
+                route = "detail" if model == get_model_routing().get("detail") else (
+                    "balanced" if model == get_model_routing().get("balanced") else "fast"
+                )
+                return {
+                    "success": True,
+                    "engine": "hivision",
+                    "model": model,
+                    "rgba": rgba,
+                    "debug": {
+                        **debug,
+                        "selectedModel": model,
+                        "selectedOutputPath": str(output_path),
+                        **alpha_metrics,
+                        "trustedAlpha": True,
+                        "fallbackWithinHivision": model != models[0],
+                        "modelRoute": route,
+                        "workerUsed": True,
+                    },
+                }
+            worker_attempt["rejected"] = "worker output alpha is unusable"
+
         cmd = [
             str(VENV_PYTHON),
             "inference.py",
@@ -222,6 +327,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                 )
                 attempt = {
                     "model": model,
+                    "transport": "controlled_subprocess_fallback",
                     "cmd": cmd,
                     "returncode": proc.returncode,
                     "seconds": round(time.time() - started, 2),
@@ -233,6 +339,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
             except Exception as exc:
                 attempt = {
                     "model": model,
+                    "transport": "controlled_subprocess_fallback",
                     "cmd": cmd,
                     "returncode": -1,
                     "seconds": round(time.time() - started, 2),
@@ -269,7 +376,8 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                     **alpha_metrics,
                     "trustedAlpha": True,
                     "fallbackWithinHivision": model != models[0],
-                    "modelRoute": "detail" if model == get_model_routing().get("detail") else "standard",
+                    "modelRoute": "detail" if model == get_model_routing().get("detail") else "fast",
+                    "workerUsed": False,
                 },
             }
         except Exception as exc:

@@ -508,6 +508,134 @@ def _resize_input_for_prepare(img_bytes, max_side=960):
         return img_bytes, {"originalSize": "unknown", "workingSize": "unknown", "resized": False}
 
 
+def _fast_quality_fail_reasons(report, quality):
+    raw = set(report.get("failReasons") or [])
+    reasons = []
+    if raw & {"ID_PHOTO_HEAD_TOO_SMALL", "ID_PHOTO_TOP_PADDING_TOO_LARGE", "ID_PHOTO_HEAD_SIZE_BAD"}:
+        reasons.append("hatTopMissing")
+    if "ID_PHOTO_HAIR_BACKGROUND_HOLE" in raw:
+        reasons.append("hairTopHole")
+    if not bool(quality.get("faceInsideMask")):
+        reasons.append("faceInsideMaskFalse")
+    if raw & {"ID_PHOTO_BODY_ALPHA_MISSING", "ID_PHOTO_SHOULDER_TOO_NARROW", "ID_PHOTO_SHOULDER_WIDTH_BAD"}:
+        reasons.append("shoulderAlphaMissing")
+    if "ID_PHOTO_MATTING_BACKGROUND_LEAK" in raw or float(quality.get("remainingBackgroundSheetRatio") or 0) > 0.035:
+        reasons.append("backgroundSheetRetained")
+    if "ID_PHOTO_SIDE_BACKGROUND_RESIDUAL" in raw:
+        reasons.append("sideBackgroundResidual")
+    if raw & {"ID_PHOTO_USED_FOREGROUND_MISSING", "ID_PHOTO_FACE_BACKGROUND_HOLE"}:
+        reasons.append("foregroundIncomplete")
+    alpha_ratio = float(quality.get("maskNonZeroRatio") or 0)
+    if alpha_ratio < 0.025 or alpha_ratio > 0.96:
+        reasons.append("abnormalAlpha")
+    if not report.get("passed") and not reasons:
+        reasons.append("foregroundIncomplete")
+    return list(dict.fromkeys(reasons))
+
+
+def _probe_fast_matting(matting, face_box, spec, composition):
+    quality = dict(matting.get("quality") or {})
+    target_size = (int(spec.get("width", 295)), int(spec.get("height", 413)))
+    source_background_rgb = (
+        (quality.get("mattingRefine") or {}).get("sourceBackgroundRgb")
+        or quality.get("sourceBackgroundRgb")
+    )
+    probe_path = ""
+    try:
+        result, compose_quality = compose_id_photo(
+            matting["foregroundPath"],
+            face_box,
+            target_size,
+            BG_COLORS["blue"],
+            composition=composition,
+            source_background_rgb=source_background_rgb,
+            preserve_detail=bool(quality.get("trustedAlpha")),
+        )
+        quality.update(compose_quality)
+        composition_check = validate_composition_metrics(quality)
+        probe = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        probe_path = probe.name
+        probe.close()
+        result.save(probe_path, format="PNG")
+        report = build_quality_report(
+            probe_path,
+            target_size[0],
+            target_size[1],
+            BG_COLORS["blue"],
+            quality,
+            {
+                "usedForegroundPng": True,
+                "usedOriginalImageDirectly": False,
+                "backgroundPureColor": True,
+            },
+        )
+        if not composition_check.get("success"):
+            report = dict(report)
+            report["passed"] = False
+            report["failReasons"] = list(dict.fromkeys([
+                *(report.get("failReasons") or []),
+                composition_check.get("code") or "ID_PHOTO_HEAD_SIZE_BAD",
+            ]))
+        reasons = _fast_quality_fail_reasons(report, quality)
+        return not reasons, reasons, {
+            "passed": not reasons,
+            "qualityScore": report.get("score", 0),
+            "rawFailReasons": report.get("failReasons") or [],
+        }
+    except Exception as exc:
+        return False, ["foregroundIncomplete"], {"passed": False, "error": repr(exc)}
+    finally:
+        if probe_path:
+            try:
+                Path(probe_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
+def _attach_routing_telemetry(matting, telemetry):
+    quality = matting.setdefault("quality", {})
+    refine = quality.setdefault("mattingRefine", {})
+    refine.setdefault("engineDebug", {}).update(telemetry)
+    quality.update(telemetry)
+    return matting
+
+
+def _matting_attempt_metrics(matting):
+    debug = ((matting.get("quality") or {}).get("mattingRefine") or {}).get("engineDebug") or {}
+    attempts = debug.get("attempts") or []
+    if not attempts:
+        return {}
+    attempt = attempts[-1]
+    return {
+        key: attempt.get(key)
+        for key in (
+            "model",
+            "transport",
+            "modelLoadMs",
+            "inferenceMs",
+            "queueWaitMs",
+            "inputInferenceSize",
+            "sessionReused",
+            "freeMemoryMb",
+            "swapUsedMb",
+            "processRssMb",
+            "cpuPercent",
+            "loadAverage1m",
+        )
+        if attempt.get(key) is not None
+    }
+
+
+def _delete_matting_files(matting):
+    for key in ("foregroundPath", "maskPath"):
+        try:
+            path = matting.get(key)
+            if path:
+                Path(path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
 def _segment_creative(img_bytes):
     return _fast_segment_rgba(img_bytes)
 
@@ -805,12 +933,69 @@ def _prepare_cutout(
     outfit_id = _validate_basic_template(outfit, actual_image_type, purpose, composition)
 
     t1 = time.perf_counter()
+    first_started = time.perf_counter()
     matting = matte_person(
         img_bytes,
         face.get("faceBox"),
         prefer_detail=bool(hair_retouch),
         request_id=request_id,
     )
+    first_duration_ms = int((time.perf_counter() - first_started) * 1000)
+    if hair_retouch:
+        detail_worker_metrics = _matting_attempt_metrics(matting)
+        telemetry = {
+            "fastModel": "hivision_modnet",
+            "fastDurationMs": 0,
+            "fastFailReasons": [],
+            "detailFallbackUsed": False,
+            "detailModel": matting.get("model") or "birefnet-v1-lite",
+            "detailDurationMs": first_duration_ms,
+            "finalSelectedModel": matting.get("model") or "",
+            "detailWorkerMetrics": detail_worker_metrics,
+        }
+        if matting.get("success"):
+            _attach_routing_telemetry(matting, telemetry)
+    else:
+        fast_model = matting.get("model") or "hivision_modnet"
+        fast_worker_metrics = _matting_attempt_metrics(matting)
+        if matting.get("success"):
+            fast_passed, fast_fail_reasons, fast_probe = _probe_fast_matting(
+                matting,
+                face.get("faceBox"),
+                spec,
+                composition,
+            )
+        else:
+            fast_passed = False
+            fast_fail_reasons = ["abnormalAlpha"]
+            fast_probe = {"passed": False, "error": matting.get("message")}
+        detail_duration_ms = 0
+        if not fast_passed:
+            _delete_matting_files(matting)
+            detail_started = time.perf_counter()
+            detail_matting = matte_person(
+                img_bytes,
+                face.get("faceBox"),
+                prefer_detail=True,
+                request_id=f"{request_id}-detail",
+            )
+            detail_duration_ms = int((time.perf_counter() - detail_started) * 1000)
+            matting = detail_matting
+        detail_worker_metrics = _matting_attempt_metrics(matting) if not fast_passed else {}
+        telemetry = {
+            "fastModel": fast_model,
+            "fastDurationMs": first_duration_ms,
+            "fastFailReasons": fast_fail_reasons,
+            "fastQualityProbe": fast_probe,
+            "detailFallbackUsed": not fast_passed,
+            "detailModel": (matting.get("model") if not fast_passed else "birefnet-v1-lite") or "birefnet-v1-lite",
+            "detailDurationMs": detail_duration_ms,
+            "finalSelectedModel": matting.get("model") or "",
+            "fastWorkerMetrics": fast_worker_metrics,
+            "detailWorkerMetrics": detail_worker_metrics,
+        }
+        if matting.get("success"):
+            _attach_routing_telemetry(matting, telemetry)
     times["remove_background_ms"] = int((time.perf_counter() - t1) * 1000)
     print(f"[id-photo] requestId={request_id} step=remove_background cost={times['remove_background_ms']}ms", flush=True)
     if not matting.get("success"):

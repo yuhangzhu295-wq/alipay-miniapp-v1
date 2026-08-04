@@ -136,7 +136,9 @@ def process_stroke_inpaint(
     mask, mask_debug = build_mask_from_strokes(payload, image_width, image_height)
     box = mask_debug["maskBoundingBox"]
     base_padding = int(round(min(image_width, image_height) * 0.04))
-    padding = max(64, min(256, base_padding))
+    stroke_span = max(int(box["width"]), int(box["height"]))
+    adaptive_padding = max(base_padding, int(round(stroke_span * 0.08)))
+    padding = max(32, min(128, adaptive_padding))
     x1 = max(0, box["x"] - padding)
     y1 = max(0, box["y"] - padding)
     x2 = min(image_width, box["x"] + box["width"] + padding)
@@ -211,6 +213,7 @@ def process_stroke_inpaint(
         "strokesPayloadBytes": len(strokes_json.encode("utf-8")),
         "imageUploadBytes": len(image_bytes),
         "originalSize": f"{image_width}x{image_height}",
+        "roiOriginalSize": f"{roi_image_for_engine.shape[1]}x{roi_image_for_engine.shape[0]}",
         "roi": {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1, "padding": padding},
         "roiReflectBorder": {
             "left": border_left,
@@ -223,6 +226,7 @@ def process_stroke_inpaint(
         "outputSize": f"{image_width}x{image_height}",
         "outputBytes": len(output_bytes),
         "durationMs": int((time.perf_counter() - started) * 1000),
+        "totalDurationMs": int((time.perf_counter() - started) * 1000),
     }
     return {
         "bytes": output_bytes,

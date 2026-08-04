@@ -49,11 +49,14 @@ def main() -> int:
     legacy_path = SERVER_ROOT / "id_photo_engine_legacy" / "id_photo_v2.py"
     checks = {
         "serviceUsesTruthfulLegacyPipeline": "id_photo_engine_legacy.id_photo_v2" in service_text,
-        "standardUsesBirefnet": routing["standard"] == "birefnet-v1-lite",
+        "standardUsesFastModnet": routing["standard"] == "hivision_modnet",
         "detailUsesBirefnet": routing["detail"] == "birefnet-v1-lite",
-        "standardFallbacksRemain": standard_order[:3] == ["birefnet-v1-lite", "hivision_modnet", "rmbg-1.4"],
+        "balancedCandidateUsesRmbg": routing["balancedCandidate"] == "rmbg-1.4",
+        "balancedDisabledAfterAbFailure": routing["balanced"] == "" and routing["balancedEnabled"] is False,
+        "standardFallbacksRemain": standard_order[:3] == ["hivision_modnet", "birefnet-v1-lite", "rmbg-1.4"],
         "detailFallbacksRemain": detail_order[:3] == ["birefnet-v1-lite", "hivision_modnet", "rmbg-1.4"],
         "inferenceIsSerialized": hasattr(runner, "_INFERENCE_LOCK"),
+        "residentWorkerConfigured": "HIVISION_WORKER_URL" in (PROJECT_ROOT / "deploy" / "cloud" / "photo-generator.service").read_text(encoding="utf-8"),
         "prepareAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "prepare_id_photo_v2"),
         "prepareCutoutAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "_prepare_cutout"),
         "generateAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "generate_id_photo_v2"),
