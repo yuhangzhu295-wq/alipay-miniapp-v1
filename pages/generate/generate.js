@@ -304,6 +304,8 @@ Page({
       civil_service: 'civil-service-exam',
       computer: 'computer-exam',
       cet: 'cet-exam',
+      driver: 'driver-license-cn',
+      driver_common: 'driver-license-cn',
       jianli: 'resume-headshot'
     };
     return map[spec.id] || spec.backendSpecId || spec.id || 'one-inch';
@@ -321,6 +323,9 @@ Page({
     }
     if (groupId === 'passport_visa' || id.indexOf('passport') >= 0) {
       return 'passport';
+    }
+    if (id === 'driver' || id === 'driver_common' || id === 'driver-license-cn') {
+      return 'driver_license';
     }
     if (id.indexOf('resume') >= 0 || id === 'jianli') {
       return 'resume';

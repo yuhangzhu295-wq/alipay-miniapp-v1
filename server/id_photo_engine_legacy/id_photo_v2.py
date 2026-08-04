@@ -509,15 +509,13 @@ def _resize_input_for_prepare(img_bytes, max_side=960):
 
 
 def _fast_quality_fail_reasons(report, quality):
-    raw = set(report.get("failReasons") or [])
+    raw = set(report.get("mattingFailReasons") or [])
     reasons = []
-    if raw & {"ID_PHOTO_HEAD_TOO_SMALL", "ID_PHOTO_TOP_PADDING_TOO_LARGE", "ID_PHOTO_HEAD_SIZE_BAD"}:
-        reasons.append("hatTopMissing")
     if "ID_PHOTO_HAIR_BACKGROUND_HOLE" in raw:
         reasons.append("hairTopHole")
     if not bool(quality.get("faceInsideMask")):
         reasons.append("faceInsideMaskFalse")
-    if raw & {"ID_PHOTO_BODY_ALPHA_MISSING", "ID_PHOTO_SHOULDER_TOO_NARROW", "ID_PHOTO_SHOULDER_WIDTH_BAD"}:
+    if "ID_PHOTO_BODY_ALPHA_MISSING" in raw:
         reasons.append("shoulderAlphaMissing")
     if "ID_PHOTO_MATTING_BACKGROUND_LEAK" in raw or float(quality.get("remainingBackgroundSheetRatio") or 0) > 0.035:
         reasons.append("backgroundSheetRetained")
@@ -525,11 +523,11 @@ def _fast_quality_fail_reasons(report, quality):
         reasons.append("sideBackgroundResidual")
     if raw & {"ID_PHOTO_USED_FOREGROUND_MISSING", "ID_PHOTO_FACE_BACKGROUND_HOLE"}:
         reasons.append("foregroundIncomplete")
+    if "ID_PHOTO_BLACK_BACK_PANEL" in raw:
+        reasons.append("backgroundSheetRetained")
     alpha_ratio = float(quality.get("maskNonZeroRatio") or 0)
     if alpha_ratio < 0.025 or alpha_ratio > 0.96:
         reasons.append("abnormalAlpha")
-    if not report.get("passed") and not reasons:
-        reasons.append("foregroundIncomplete")
     return list(dict.fromkeys(reasons))
 
 
@@ -550,9 +548,15 @@ def _probe_fast_matting(matting, face_box, spec, composition):
             composition=composition,
             source_background_rgb=source_background_rgb,
             preserve_detail=bool(quality.get("trustedAlpha")),
+            composition_profile=spec.get("compositionProfile"),
         )
         quality.update(compose_quality)
-        composition_check = validate_composition_metrics(quality)
+        composition_check = validate_composition_metrics(
+            quality,
+            spec.get("compositionProfile"),
+            target_size[0],
+            target_size[1],
+        )
         probe = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
         probe_path = probe.name
         probe.close()
@@ -568,22 +572,47 @@ def _probe_fast_matting(matting, face_box, spec, composition):
                 "usedOriginalImageDirectly": False,
                 "backgroundPureColor": True,
             },
+            composition_profile=spec.get("compositionProfile"),
         )
-        if not composition_check.get("success"):
-            report = dict(report)
-            report["passed"] = False
-            report["failReasons"] = list(dict.fromkeys([
-                *(report.get("failReasons") or []),
-                composition_check.get("code") or "ID_PHOTO_HEAD_SIZE_BAD",
-            ]))
         reasons = _fast_quality_fail_reasons(report, quality)
-        return not reasons, reasons, {
-            "passed": not reasons,
+        matting_pass = not reasons and bool(report.get("mattingPass", True))
+        crop_fail_reasons = list(dict.fromkeys([
+            *(report.get("cropFailReasons") or []),
+            *(composition_check.get("cropFailReasons") or []),
+        ]))
+        return matting_pass, reasons, {
+            "mattingPass": matting_pass,
+            "mattingFailReasons": report.get("mattingFailReasons") or [],
+            "cropPass": not crop_fail_reasons,
+            "cropFailReasons": crop_fail_reasons,
+            "cropRetryCount": int(compose_quality.get("cropRetryCount") or 0),
+            "fastResultUsable": bool(report.get("fastResultUsable", matting_pass)),
+            "detailRecommended": bool(report.get("detailRecommended")),
+            "detailReasons": report.get("detailReasons") or [],
             "qualityScore": report.get("score", 0),
             "rawFailReasons": report.get("failReasons") or [],
+            "qualityReport": {
+                "score": report.get("score", 0),
+                "mattingPass": bool(report.get("mattingPass")),
+                "mattingFailReasons": report.get("mattingFailReasons") or [],
+                "cropPass": bool(report.get("cropPass")),
+                "cropFailReasons": report.get("cropFailReasons") or [],
+                "fastWarningReasons": report.get("fastWarningReasons") or [],
+                "rawFailReasons": report.get("failReasons") or [],
+            },
         }
     except Exception as exc:
-        return False, ["foregroundIncomplete"], {"passed": False, "error": repr(exc)}
+        return False, ["foregroundIncomplete"], {
+            "mattingPass": False,
+            "mattingFailReasons": ["FAST_MODEL_OR_PROBE_FAILED"],
+            "cropPass": False,
+            "cropFailReasons": [],
+            "cropRetryCount": 0,
+            "fastResultUsable": False,
+            "detailRecommended": True,
+            "detailReasons": ["FAST_MODEL_OR_PROBE_FAILED"],
+            "error": repr(exc),
+        }
     finally:
         if probe_path:
             try:
@@ -944,10 +973,17 @@ def _prepare_cutout(
     if hair_retouch:
         detail_worker_metrics = _matting_attempt_metrics(matting)
         telemetry = {
+            "requestedModel": "birefnet-v1-lite",
             "fastModel": "hivision_modnet",
             "fastDurationMs": 0,
             "fastFailReasons": [],
+            "mattingPass": True,
+            "mattingFailReasons": [],
+            "cropPass": True,
+            "cropFailReasons": [],
+            "cropRetryCount": 0,
             "detailFallbackUsed": False,
+            "detailFallbackReasons": [],
             "detailModel": matting.get("model") or "birefnet-v1-lite",
             "detailDurationMs": first_duration_ms,
             "finalSelectedModel": matting.get("model") or "",
@@ -968,7 +1004,18 @@ def _prepare_cutout(
         else:
             fast_passed = False
             fast_fail_reasons = ["abnormalAlpha"]
-            fast_probe = {"passed": False, "error": matting.get("message")}
+            fast_probe = {
+                "mattingPass": False,
+                "mattingFailReasons": ["FAST_MODEL_FAILED"],
+                "cropPass": False,
+                "cropFailReasons": [],
+                "cropRetryCount": 0,
+                "fastResultUsable": False,
+                "detailRecommended": True,
+                "detailReasons": ["FAST_MODEL_FAILED"],
+                "rawFailReasons": [matting.get("code") or "FAST_MODEL_FAILED"],
+                "error": matting.get("message"),
+            }
         detail_duration_ms = 0
         if not fast_passed:
             _delete_matting_files(matting)
@@ -983,11 +1030,25 @@ def _prepare_cutout(
             matting = detail_matting
         detail_worker_metrics = _matting_attempt_metrics(matting) if not fast_passed else {}
         telemetry = {
+            "requestedModel": "hivision_modnet",
             "fastModel": fast_model,
             "fastDurationMs": first_duration_ms,
             "fastFailReasons": fast_fail_reasons,
+            "fastQualityReport": fast_probe.get("qualityReport") or {},
             "fastQualityProbe": fast_probe,
+            "rawFailReasons": fast_probe.get("rawFailReasons") or [],
+            "fastMattingPass": bool(fast_probe.get("mattingPass")),
+            "fastMattingFailReasons": fast_probe.get("mattingFailReasons") or [],
+            "mattingPass": bool(matting.get("success")),
+            "mattingFailReasons": [] if matting.get("success") else (fast_probe.get("mattingFailReasons") or []),
+            "cropPass": bool(fast_probe.get("cropPass")),
+            "cropFailReasons": fast_probe.get("cropFailReasons") or [],
+            "cropRetryCount": int(fast_probe.get("cropRetryCount") or 0),
+            "fastResultUsable": bool(fast_probe.get("fastResultUsable")),
+            "detailRecommended": bool(fast_probe.get("detailRecommended")),
+            "detailReasons": fast_probe.get("detailReasons") or [],
             "detailFallbackUsed": not fast_passed,
+            "detailFallbackReasons": fast_fail_reasons if not fast_passed else [],
             "detailModel": (matting.get("model") if not fast_passed else "birefnet-v1-lite") or "birefnet-v1-lite",
             "detailDurationMs": detail_duration_ms,
             "finalSelectedModel": matting.get("model") or "",
@@ -996,6 +1057,17 @@ def _prepare_cutout(
         }
         if matting.get("success"):
             _attach_routing_telemetry(matting, telemetry)
+    print(
+        f"[id-photo] requestId={request_id} routing="
+        f"{{requestedModel:{telemetry.get('requestedModel')},fastModel:{telemetry.get('fastModel')},"
+        f"fastDurationMs:{telemetry.get('fastDurationMs')},mattingPass:{telemetry.get('mattingPass')},"
+        f"cropPass:{telemetry.get('cropPass')},cropRetryCount:{telemetry.get('cropRetryCount')},"
+        f"detailFallbackUsed:{telemetry.get('detailFallbackUsed')},"
+        f"detailFallbackReasons:{telemetry.get('detailFallbackReasons')},"
+        f"detailDurationMs:{telemetry.get('detailDurationMs')},"
+        f"finalSelectedModel:{telemetry.get('finalSelectedModel')}}}",
+        flush=True,
+    )
     times["remove_background_ms"] = int((time.perf_counter() - t1) * 1000)
     print(f"[id-photo] requestId={request_id} step=remove_background cost={times['remove_background_ms']}ms", flush=True)
     if not matting.get("success"):
@@ -1091,12 +1163,21 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         composition=item["composition"],
         source_background_rgb=source_background_rgb,
         preserve_detail=bool(item_quality.get("trustedAlpha")),
+        composition_profile=spec.get("compositionProfile"),
     )
     quality = {
         **item_quality,
         **quality,
     }
-    metrics_check = validate_composition_metrics(quality)
+    metrics_check = validate_composition_metrics(
+        quality,
+        spec.get("compositionProfile"),
+        target_size[0],
+        target_size[1],
+    )
+    quality["cropPass"] = bool(metrics_check.get("cropPass"))
+    quality["cropFailReasons"] = metrics_check.get("cropFailReasons") or []
+    quality["cropRetryCount"] = int(quality.get("cropRetryCount") or 0)
     if not metrics_check.get("success"):
         raise PortraitQualityError(metrics_check["code"], metrics_check)
     result, outfit_payload = _apply_outfit_template(
@@ -1125,18 +1206,43 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     final_check = validate_final_output(tmp.name, target_size[0], target_size[1], spec["bgColor"])
     if not final_check.get("success"):
         raise PortraitQualityError(final_check["code"], final_check)
-    quality_report = build_quality_report(tmp.name, target_size[0], target_size[1], spec["bgColor"], quality, debug)
+    quality_report = build_quality_report(
+        tmp.name,
+        target_size[0],
+        target_size[1],
+        spec["bgColor"],
+        quality,
+        debug,
+        composition_profile=spec.get("compositionProfile"),
+    )
     quality["qualityReport"] = quality_report
     quality["qualityPassed"] = bool(quality_report.get("passed"))
     quality["qualityScore"] = quality_report.get("score", 0)
     quality["qualityFailReasons"] = quality_report.get("failReasons", [])
-    if not quality_report.get("passed"):
+    quality["mattingPass"] = bool(quality_report.get("mattingPass"))
+    quality["mattingFailReasons"] = quality_report.get("mattingFailReasons") or []
+    quality["cropPass"] = bool(quality_report.get("cropPass"))
+    quality["cropFailReasons"] = quality_report.get("cropFailReasons") or []
+    quality["fastResultUsable"] = bool(quality_report.get("fastResultUsable"))
+    quality["detailRecommended"] = bool(quality_report.get("detailRecommended"))
+    quality["detailReasons"] = quality_report.get("detailReasons") or []
+    final_blocking_reasons = [
+        *(quality_report.get("mattingFailReasons") or []),
+        *(quality_report.get("cropFailReasons") or []),
+        *(quality_report.get("outputFailReasons") or []),
+    ]
+    if final_blocking_reasons:
         raise PortraitQualityError(
-            (quality_report.get("failReasons") or ["ID_PHOTO_QUALITY_FAILED"])[0],
+            final_blocking_reasons[0],
             {
                 "code": "ID_PHOTO_QUALITY_FAILED",
                 "message": "证件照生成质量未达标，请重新上传清晰正面照片。",
                 **quality,
+                "mattingPass": bool(quality_report.get("mattingPass")),
+                "mattingFailReasons": quality_report.get("mattingFailReasons") or [],
+                "cropPass": bool(quality_report.get("cropPass")),
+                "cropFailReasons": quality_report.get("cropFailReasons") or [],
+                "cropRetryCount": int(quality.get("cropRetryCount") or 0),
             },
         )
     print(f"[id-photo] requestId={request_id} step=compose_background cost={int((time.perf_counter() - t0) * 1000)}ms")

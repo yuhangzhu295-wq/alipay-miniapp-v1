@@ -1091,8 +1091,8 @@ async def id_photo_generate_v2(
             "message": "生成成功" if result["mode"] != "official" else "已按规格生成，请以提交平台审核为准",
             "quality": {
                 **result.get("quality", {}),
-                "maskPassed": result.get("quality", {}).get("maskValid", True),
-                "compositionPassed": True,
+                "maskPassed": result.get("quality", {}).get("mattingPass", result.get("quality", {}).get("maskValid", True)),
+                "compositionPassed": result.get("quality", {}).get("cropPass", True),
             },
             "debug": debug,
         }
@@ -1364,8 +1364,8 @@ async def id_photo_compose(
             "message": "生成成功",
             "quality": {
                 **result.get("quality", {}),
-                "maskPassed": result.get("quality", {}).get("maskValid", True),
-                "compositionPassed": True,
+                "maskPassed": result.get("quality", {}).get("mattingPass", result.get("quality", {}).get("maskValid", True)),
+                "compositionPassed": result.get("quality", {}).get("cropPass", True),
             },
         }
     except asyncio.TimeoutError:

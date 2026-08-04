@@ -9,6 +9,42 @@ BG_COLORS = {
     "darkBlue": "#0b3d91",
 }
 
+
+def _composition_profile(**values):
+    profile = {
+        "standardRef": "",
+        "sourceType": "",
+        "headWidthRatioMin": None,
+        "headWidthRatioMax": None,
+        "headHeightRatioMin": None,
+        "headHeightRatioMax": None,
+        "topMarginRatioMin": None,
+        "topMarginRatioMax": None,
+        "chinBottomRatioMin": None,
+        "chinBottomRatioMax": None,
+        "shoulderWidthRatioMin": None,
+        "shoulderWidthRatioMax": None,
+        "backgroundPolicy": "",
+        "headwearPolicy": "",
+    }
+    profile.update(values)
+    return profile
+
+
+PROJECT_COMMON_PROFILE = _composition_profile(
+    sourceType="project_common_profile",
+    headWidthRatioMin=0.42,
+    headWidthRatioMax=0.84,
+    headHeightRatioMin=0.58,
+    headHeightRatioMax=0.70,
+    topMarginRatioMin=0.066,
+    topMarginRatioMax=0.123,
+    chinBottomRatioMin=0.0,
+    chinBottomRatioMax=0.33,
+    shoulderWidthRatioMin=0.75,
+    shoulderWidthRatioMax=1.0,
+)
+
 PHOTO_SPECS = {
     "one-inch": {
         "id": "one-inch",
@@ -21,6 +57,7 @@ PHOTO_SPECS = {
         "defaultBg": "blue",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": dict(PROJECT_COMMON_PROFILE),
     },
     "two-inch": {
         "id": "two-inch",
@@ -94,6 +131,12 @@ PHOTO_SPECS = {
         "composition": "head_shoulder",
         "mode": "official",
         "note": "24位RGB，正面免冠，露双肩。",
+        "compositionProfile": _composition_profile(
+            standardRef="GA/T 461-2019",
+            sourceType="official",
+            backgroundPolicy="white_only",
+            headwearPolicy="no_headwear",
+        ),
     },
     "social-security-cn": {
         "id": "social-security-cn",
@@ -117,6 +160,41 @@ PHOTO_SPECS = {
         "defaultBg": "white",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(
+            standardRef="GA/T 1180-2014及现行护照办证要求",
+            sourceType="official",
+            headWidthRatioMin=15 / 33,
+            headWidthRatioMax=22 / 33,
+            headHeightRatioMin=28 / 48,
+            headHeightRatioMax=33 / 48,
+            topMarginRatioMin=3 / 48,
+            topMarginRatioMax=5 / 48,
+            chinBottomRatioMin=7 / 48,
+            backgroundPolicy="white_only",
+            headwearPolicy="no_headwear",
+        ),
+    },
+    "driver-license-cn": {
+        "id": "driver-license-cn",
+        "name": "机动车驾驶证相片",
+        "category": "driver_license",
+        "width": 260,
+        "height": 378,
+        "widthMm": 22,
+        "heightMm": 32,
+        "defaultBg": "white",
+        "composition": "head_shoulder",
+        "mode": "official",
+        "compositionProfile": _composition_profile(
+            standardRef="公安交管部门现行机动车驾驶证办证要求",
+            sourceType="official",
+            headWidthRatioMin=14 / 22,
+            headWidthRatioMax=16 / 22,
+            headHeightRatioMin=19 / 32,
+            headHeightRatioMax=22 / 32,
+            backgroundPolicy="white_only",
+            headwearPolicy="no_headwear",
+        ),
     },
     "exit-entry-cn": {
         "id": "exit-entry-cn",
@@ -139,6 +217,7 @@ PHOTO_SPECS = {
         "maxKb": 200,
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(sourceType="platform_profile"),
     },
     "civil-service-exam": {
         "id": "civil-service-exam",
@@ -149,6 +228,7 @@ PHOTO_SPECS = {
         "defaultBg": "blue",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(sourceType="platform_profile"),
     },
     "postgraduate-exam": {
         "id": "postgraduate-exam",
@@ -159,6 +239,7 @@ PHOTO_SPECS = {
         "defaultBg": "white",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(sourceType="platform_profile"),
     },
     "cet-exam": {
         "id": "cet-exam",
@@ -169,6 +250,7 @@ PHOTO_SPECS = {
         "defaultBg": "blue",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(sourceType="platform_profile"),
     },
     "computer-exam": {
         "id": "computer-exam",
@@ -179,6 +261,7 @@ PHOTO_SPECS = {
         "defaultBg": "blue",
         "composition": "head_shoulder",
         "mode": "official",
+        "compositionProfile": _composition_profile(sourceType="platform_profile"),
     },
     "resume-headshot": {
         "id": "resume-headshot",
@@ -262,11 +345,21 @@ PHOTO_SPECS = {
     },
 }
 
+# Every existing entry exposes the same stable profile shape. Entries without
+# a cited standard keep null ratios and continue using the historical project
+# composition envelope.
+for _spec in PHOTO_SPECS.values():
+    _spec.setdefault(
+        "compositionProfile",
+        _composition_profile(sourceType="project_profile"),
+    )
+
 DEFAULT_SPEC_BY_PURPOSE = {
     "official_id_photo": "one-inch",
     "id_card": "id-card-cn",
     "social_security": "social-security-cn",
     "passport": "passport-cn",
+    "driver_license": "driver-license-cn",
     "teacher_exam": "teacher-exam",
     "civil_service_exam": "civil-service-exam",
     "resume": "resume-headshot",

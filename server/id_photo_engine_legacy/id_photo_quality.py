@@ -16,6 +16,50 @@ import numpy as np
 from PIL import Image
 
 
+CROP_FAIL_CODES = {
+    "ID_PHOTO_TOP_PADDING_BAD",
+    "ID_PHOTO_TOP_PADDING_TOO_SMALL",
+    "ID_PHOTO_TOP_PADDING_TOO_LARGE",
+    "ID_PHOTO_BOTTOM_PADDING_BAD",
+    "ID_PHOTO_HEAD_SIZE_BAD",
+    "ID_PHOTO_HEAD_TOO_SMALL",
+    "ID_PHOTO_HEAD_TOO_LARGE",
+    "ID_PHOTO_HEAD_WIDTH_BAD",
+    "ID_PHOTO_SHOULDER_WIDTH_BAD",
+    "ID_PHOTO_SHOULDER_TOO_NARROW",
+    "ID_PHOTO_SHOULDER_TOO_WIDE",
+    "ID_PHOTO_FACE_NOT_CENTERED",
+    "ID_PHOTO_FACE_TOO_SMALL",
+    "ID_PHOTO_BODY_TOO_MUCH",
+}
+
+MATTING_FAIL_CODES = {
+    "ID_PHOTO_HAIR_BACKGROUND_HOLE",
+    "ID_PHOTO_FACE_BACKGROUND_HOLE",
+    "ID_PHOTO_BODY_ALPHA_MISSING",
+    "ID_PHOTO_MATTING_BACKGROUND_LEAK",
+    "ID_PHOTO_SIDE_BACKGROUND_RESIDUAL",
+    "ID_PHOTO_BLACK_BACK_PANEL",
+    "ID_PHOTO_USED_FOREGROUND_MISSING",
+}
+
+FAST_WARNING_CODES = {"ID_PHOTO_EDGE_HALO"}
+
+
+def split_quality_fail_reasons(fail_reasons):
+    reasons = list(dict.fromkeys(fail_reasons or []))
+    crop = [code for code in reasons if code in CROP_FAIL_CODES]
+    matting = [code for code in reasons if code in MATTING_FAIL_CODES]
+    warnings = [code for code in reasons if code in FAST_WARNING_CODES]
+    other = [code for code in reasons if code not in CROP_FAIL_CODES | MATTING_FAIL_CODES | FAST_WARNING_CODES]
+    return {
+        "cropFailReasons": crop,
+        "mattingFailReasons": matting,
+        "fastWarningReasons": warnings,
+        "outputFailReasons": other,
+    }
+
+
 
 def invalid_input(message="请上传清晰的真人正面照片。"):
     return {
@@ -46,7 +90,7 @@ def _inside_box(x: int, y: int, box: Dict[str, float] | None, pad: int = 4) -> b
     return left <= x <= right and top <= y <= bottom
 
 
-def _composition_thresholds(width_px: int, height_px: int) -> Dict[str, float]:
+def _composition_thresholds(width_px: int, height_px: int, composition_profile=None) -> Dict[str, float]:
     """Return size-aware gates for final ID-photo composition.
 
     The old checks used one-inch ratios for every output. That falsely rejects
@@ -67,7 +111,7 @@ def _composition_thresholds(width_px: int, height_px: int) -> Dict[str, float]:
     if small_canvas:
         head_width_max = min(1.06, head_width_max + 0.03)
 
-    return {
+    thresholds = {
         "topMin": top_min,
         "topMax": top_max,
         "bottomMin": 0.0,
@@ -80,6 +124,32 @@ def _composition_thresholds(width_px: int, height_px: int) -> Dict[str, float]:
         "shoulderMax": 1.0,
         "centerMax": 0.045 if small_canvas else 0.04,
     }
+    profile = composition_profile or {}
+    profile_fields = {
+        "headWidthRatioMin": "headWidthMin",
+        "headWidthRatioMax": "headWidthMax",
+        "headHeightRatioMin": "headHeightMin",
+        "headHeightRatioMax": "headHeightMax",
+        "topMarginRatioMin": "topMin",
+        "topMarginRatioMax": "topMax",
+        "shoulderWidthRatioMin": "shoulderMin",
+        "shoulderWidthRatioMax": "shoulderMax",
+    }
+    for profile_key, threshold_key in profile_fields.items():
+        value = profile.get(profile_key)
+        if value is not None:
+            thresholds[threshold_key] = float(value)
+    thresholds["chinBottomMin"] = (
+        float(profile["chinBottomRatioMin"])
+        if profile.get("chinBottomRatioMin") is not None
+        else None
+    )
+    thresholds["chinBottomMax"] = (
+        float(profile["chinBottomRatioMax"])
+        if profile.get("chinBottomRatioMax") is not None
+        else None
+    )
+    return thresholds
 
 
 def _sample_background_purity(
@@ -836,7 +906,15 @@ def _bottom_watermark_metrics(
     }
 
 
-def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None, debug=None):
+def build_quality_report(
+    image_path,
+    width_px,
+    height_px,
+    bg_color,
+    metrics=None,
+    debug=None,
+    composition_profile=None,
+):
     metrics = metrics or {}
     debug = debug or {}
     checks: Dict[str, object] = {}
@@ -846,11 +924,15 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
     try:
         image = Image.open(image_path).convert("RGB")
     except Exception:
+        split = split_quality_fail_reasons(["BACKGROUND_COMPOSE_FAILED"])
         return {
             "passed": False,
+            "mattingPass": True,
+            "cropPass": True,
             "score": 0,
             "checks": {},
             "failReasons": ["BACKGROUND_COMPOSE_FAILED"],
+            **split,
             "metrics": metrics,
         }
 
@@ -976,7 +1058,16 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
     top = float(metrics.get("topPaddingRatio") or 0)
     bottom = float(metrics.get("bottomPaddingRatio") or 0)
     head_h = float(metrics.get("headHeightRatio") or metrics.get("headRatio") or 0)
-    head_w = float(metrics.get("headWidthRatio") or 0)
+    profile = composition_profile or metrics.get("compositionProfile") or {}
+    use_profile_head_width = (
+        profile.get("headWidthRatioMin") is not None
+        or profile.get("headWidthRatioMax") is not None
+    )
+    head_w = float(
+        (metrics.get("profileHeadWidthRatio") if use_profile_head_width else None)
+        or metrics.get("headWidthRatio")
+        or 0
+    )
     shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
     center = float(metrics.get("faceCenterOffset") or 0)
     fg_h = float(metrics.get("foregroundHeightRatio") or 0)
@@ -1048,7 +1139,7 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
             fail_reasons.append(code)
             score -= penalty
 
-    thresholds = _composition_thresholds(int(width_px), int(height_px))
+    thresholds = _composition_thresholds(int(width_px), int(height_px), profile)
     checks["compositionThresholds"] = thresholds
 
     require(thresholds["topMin"] <= top <= thresholds["topMax"], "ID_PHOTO_TOP_PADDING_BAD", 10)
@@ -1070,6 +1161,12 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
         fail_reasons.append("ID_PHOTO_SHOULDER_TOO_WIDE")
     require(center <= thresholds["centerMax"], "ID_PHOTO_FACE_NOT_CENTERED", 8)
     require(not checks["bodyTooMuch"], "ID_PHOTO_BODY_TOO_MUCH", 10)
+    chin_bottom = float(metrics.get("chinBottomRatio") or 0)
+    checks["chinBottomRatio"] = round(chin_bottom, 4)
+    if thresholds.get("chinBottomMin") is not None:
+        require(chin_bottom >= thresholds["chinBottomMin"], "ID_PHOTO_BOTTOM_PADDING_BAD", 8)
+    if thresholds.get("chinBottomMax") is not None:
+        require(chin_bottom <= thresholds["chinBottomMax"], "ID_PHOTO_BOTTOM_PADDING_BAD", 8)
     require(checks["usedForegroundPng"], "ID_PHOTO_USED_FOREGROUND_MISSING", 20)
     # Cleanup composedMaskPath in normal production requests. Verification can
     # keep this file for pixel-level alpha diagnostics.
@@ -1080,11 +1177,28 @@ def build_quality_report(image_path, width_px, height_px, bg_color, metrics=None
         except Exception:
             pass
 
+    split = split_quality_fail_reasons(fail_reasons)
+    matting_pass = not split["mattingFailReasons"]
+    crop_pass = not split["cropFailReasons"]
+    output_pass = not split["outputFailReasons"]
+    fast_result_usable = matting_pass and output_pass
+    status = "PASS"
+    if not (matting_pass and crop_pass and output_pass):
+        status = "FAIL"
+    elif split["fastWarningReasons"]:
+        status = "FAST_WARNING"
     return {
-        "passed": score >= 85 and not fail_reasons,
+        "passed": matting_pass and crop_pass and output_pass,
+        "status": status,
+        "mattingPass": matting_pass,
+        "cropPass": crop_pass,
+        "fastResultUsable": fast_result_usable,
+        "detailRecommended": bool(split["fastWarningReasons"]),
+        "detailReasons": split["fastWarningReasons"],
         "score": max(0, min(100, round(score, 2))),
         "checks": checks,
         "failReasons": fail_reasons,
+        **split,
         "metrics": {
             **metrics,
             "backgroundEdgeBadSamples": edge_bad,
@@ -1112,23 +1226,58 @@ def validate_final_output(image_path, width_px, height_px, bg_color):
     return {"success": True, "qualityReport": report}
 
 
-def validate_composition_metrics(metrics):
+def validate_composition_metrics(metrics, composition_profile=None, width_px=295, height_px=413):
     if not metrics:
         return {
             "success": False,
             "code": "BACKGROUND_COMPOSE_FAILED",
             "message": "底色生成失败，请重新选择底色或重新上传照片。",
         }
-    if metrics.get("faceCenterOffset", 0) > 0.08:
-        return {
-            "success": False,
-            "code": "ID_PHOTO_FACE_NOT_CENTERED",
-            "message": "当前照片构图不适合自动生成，请重新上传头肩清晰照片。",
-        }
-    if metrics.get("faceHeightRatio", 0) < 0.20:
-        return {
-            "success": False,
-            "code": "ID_PHOTO_FACE_TOO_SMALL",
-            "message": "当前照片人脸过小，请重新上传清晰正面照片。",
-        }
-    return {"success": True}
+    thresholds = _composition_thresholds(width_px, height_px, composition_profile)
+    failures = []
+    top = float(metrics.get("topPaddingRatio") or 0)
+    head_h = float(metrics.get("headHeightRatio") or metrics.get("headRatio") or 0)
+    profile = composition_profile or metrics.get("compositionProfile") or {}
+    use_profile_head_width = (
+        profile.get("headWidthRatioMin") is not None
+        or profile.get("headWidthRatioMax") is not None
+    )
+    head_w = float(
+        (metrics.get("profileHeadWidthRatio") if use_profile_head_width else None)
+        or metrics.get("headWidthRatio")
+        or 0
+    )
+    shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
+    center = float(metrics.get("faceCenterOffset") or 0)
+    if top < thresholds["topMin"]:
+        failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_SMALL"])
+    elif top > thresholds["topMax"]:
+        failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_LARGE"])
+    if head_h < thresholds["headHeightMin"]:
+        failures.extend(["ID_PHOTO_HEAD_SIZE_BAD", "ID_PHOTO_HEAD_TOO_SMALL"])
+    elif head_h > thresholds["headHeightMax"]:
+        failures.extend(["ID_PHOTO_HEAD_SIZE_BAD", "ID_PHOTO_HEAD_TOO_LARGE"])
+    if not thresholds["headWidthMin"] <= head_w <= thresholds["headWidthMax"]:
+        failures.append("ID_PHOTO_HEAD_WIDTH_BAD")
+    if shoulder < thresholds["shoulderMin"]:
+        failures.extend(["ID_PHOTO_SHOULDER_WIDTH_BAD", "ID_PHOTO_SHOULDER_TOO_NARROW"])
+    elif shoulder > thresholds["shoulderMax"]:
+        failures.extend(["ID_PHOTO_SHOULDER_WIDTH_BAD", "ID_PHOTO_SHOULDER_TOO_WIDE"])
+    if center > thresholds["centerMax"]:
+        failures.append("ID_PHOTO_FACE_NOT_CENTERED")
+    if float(metrics.get("faceHeightRatio") or 0) < 0.20:
+        failures.append("ID_PHOTO_FACE_TOO_SMALL")
+    chin_bottom = float(metrics.get("chinBottomRatio") or 0)
+    if thresholds.get("chinBottomMin") is not None and chin_bottom < thresholds["chinBottomMin"]:
+        failures.append("ID_PHOTO_BOTTOM_PADDING_BAD")
+    if thresholds.get("chinBottomMax") is not None and chin_bottom > thresholds["chinBottomMax"]:
+        failures.append("ID_PHOTO_BOTTOM_PADDING_BAD")
+    failures = list(dict.fromkeys(failures))
+    return {
+        "success": not failures,
+        "cropPass": not failures,
+        "cropFailReasons": failures,
+        "code": failures[0] if failures else "",
+        "message": "构图已按当前规格校验。" if not failures else "当前照片构图不符合所选规格。",
+        "targetRange": thresholds,
+    }
