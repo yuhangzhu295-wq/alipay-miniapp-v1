@@ -104,6 +104,18 @@ def _release_other_sessions(model: str) -> None:
     _CURRENT_MODEL = model
 
 
+def _release_all_sessions() -> dict[str, object]:
+    global _CURRENT_MODEL
+    released = []
+    for model, session_name in MODEL_SESSIONS.items():
+        if getattr(hm, session_name, None) is not None:
+            setattr(hm, session_name, None)
+            released.append(model)
+    _CURRENT_MODEL = ""
+    gc.collect()
+    return {"releasedModels": released, **_resource_metrics()}
+
+
 def _session_loaded(model: str) -> bool:
     return getattr(hm, MODEL_SESSIONS[model], None) is not None
 
@@ -206,6 +218,33 @@ def health() -> dict[str, object]:
         "startup": _STARTUP_DEBUG,
         "resources": _resource_metrics(),
     }
+
+
+@app.post("/release")
+def release() -> dict[str, object]:
+    acquired = _INFERENCE_LOCK.acquire(timeout=30)
+    if not acquired:
+        raise HTTPException(status_code=503, detail="worker queue timeout")
+    try:
+        return {"success": True, **_release_all_sessions()}
+    finally:
+        _INFERENCE_LOCK.release()
+
+
+@app.post("/warmup")
+def warmup(model: str = Query(default=FAST_MODEL)) -> dict[str, object]:
+    if model != FAST_MODEL:
+        raise HTTPException(status_code=400, detail="only the FAST model may be restored")
+    acquired = _INFERENCE_LOCK.acquire(timeout=30)
+    if not acquired:
+        raise HTTPException(status_code=503, detail="worker queue timeout")
+    try:
+        result = _warmup()
+        if not result.get("ready"):
+            raise HTTPException(status_code=500, detail=result)
+        return {"success": True, **result}
+    finally:
+        _INFERENCE_LOCK.release()
 
 
 @app.post("/matting")

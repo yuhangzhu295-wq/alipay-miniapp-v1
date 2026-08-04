@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -169,6 +170,62 @@ def _call_worker(image_path: Path, model: str, timeout: int) -> dict[str, Any]:
         }
 
 
+def _call_worker_control(endpoint: str, timeout: int = 30, **params: str) -> dict[str, Any]:
+    started = time.perf_counter()
+    try:
+        import requests
+
+        response = requests.post(
+            _worker_url() + endpoint,
+            params=params,
+            timeout=max(5, timeout),
+        )
+        try:
+            data = response.json()
+        except Exception:
+            data = {"text": response.text[-1000:]}
+        return {
+            "success": response.status_code == 200 and bool(data.get("success", True)),
+            "statusCode": response.status_code,
+            "durationMs": int((time.perf_counter() - started) * 1000),
+            "data": data,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "statusCode": 0,
+            "durationMs": int((time.perf_counter() - started) * 1000),
+            "error": repr(exc),
+        }
+
+
+def _isolated_detail_enabled(model: str) -> bool:
+    enabled = os.environ.get("ID_PHOTO_HIVISION_DETAIL_ISOLATED", "").strip().lower() in {"1", "true", "yes"}
+    return enabled and model == get_model_routing().get("detail")
+
+
+def _subprocess_metrics(output: str) -> dict[str, Any]:
+    load = re.search(r"Loading ONNX model took\s+([0-9.]+)\s+seconds", output or "")
+    inference = re.search(r"Inference time:\s*([0-9.]+)\s+seconds", output or "")
+    metrics: dict[str, Any] = {"sessionReused": False}
+    if load:
+        metrics["modelLoadMs"] = round(float(load.group(1)) * 1000)
+    if inference:
+        metrics["inferenceMs"] = round(float(inference.group(1)) * 1000)
+    try:
+        import psutil
+
+        memory = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        metrics.update({
+            "freeMemoryMb": round(memory.available / 1024 / 1024, 1),
+            "swapUsedMb": round(swap.used / 1024 / 1024, 1),
+        })
+    except Exception:
+        pass
+    return metrics
+
+
 def _model_order(preferred_model: str = "") -> list[str]:
     installed = available_models()
     requested = preferred_model or get_model_routing().get("standard") or os.environ.get("ID_PHOTO_HIVISION_MODEL", "").strip()
@@ -244,10 +301,22 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
         output_path = ASCII_RUNTIME_DIR / f"{safe_token}-{model}.png"
         if output_path.exists():
             output_path.unlink()
-        worker = _call_worker(input_path, model, remaining)
+        isolated_detail = _isolated_detail_enabled(model)
+        release_debug = _call_worker_control("/release") if isolated_detail else None
+        worker = (
+            {
+                "success": False,
+                "returncode": -2,
+                "seconds": 0,
+                "outputTail": "DETAIL uses isolated on-demand transport on this host",
+                "workerMetrics": {},
+            }
+            if isolated_detail
+            else _call_worker(input_path, model, remaining)
+        )
         worker_attempt = {
             "model": model,
-            "transport": "resident_worker_http",
+            "transport": "isolated_detail_bypass" if isolated_detail else "resident_worker_http",
             "returncode": worker["returncode"],
             "seconds": worker["seconds"],
             "queueWaitSeconds": round(float((worker.get("workerMetrics") or {}).get("queueWaitMs") or 0) / 1000, 3),
@@ -256,6 +325,8 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
             "outputTail": worker.get("outputTail", ""),
             **(worker.get("workerMetrics") or {}),
         }
+        if release_debug is not None:
+            worker_attempt["fastWorkerRelease"] = release_debug
         debug["attempts"].append(worker_attempt)
         if worker.get("success"):
             rgba = worker["rgba"]
@@ -335,6 +406,7 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                     "outputPath": str(output_path),
                     "outputExists": output_path.exists(),
                     "outputTail": (proc.stdout or "")[-4000:],
+                    **_subprocess_metrics(proc.stdout or ""),
                 }
             except Exception as exc:
                 attempt = {
@@ -350,6 +422,13 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
                 }
         finally:
             _INFERENCE_LOCK.release()
+        if isolated_detail:
+            attempt["fastWorkerRestore"] = _call_worker_control(
+                "/warmup",
+                timeout=60,
+                model=get_model_routing().get("standard") or "hivision_modnet",
+            )
+            attempt["isolatedDetail"] = True
         debug["attempts"].append(attempt)
         if attempt["returncode"] != 0 or not output_path.exists():
             continue
