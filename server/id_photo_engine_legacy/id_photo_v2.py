@@ -28,6 +28,7 @@ from services.portrait_matting import matte_person, matting_status
 
 CREATIVE_TYPES = {"anime", "cartoon", "illustration"}
 PREPARE_CACHE = {}
+DETAIL_SOURCE_CACHE = {}
 PREPARE_CACHE_TTL_SECONDS = 24 * 3600
 COMPOSITION_VERSION = "id-head-shoulder-v3"
 OUTFIT_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "outfits"
@@ -60,8 +61,23 @@ def cleanup_prepare_cache(now=None):
                     deleted_files += 1
             except Exception:
                 pass
+    removed_sources = 0
+    for source_id, item in list(DETAIL_SOURCE_CACHE.items()):
+        created_at = float(item.get("createdAt") or 0)
+        if created_at and created_at + PREPARE_CACHE_TTL_SECONDS > now:
+            continue
+        DETAIL_SOURCE_CACHE.pop(source_id, None)
+        removed_sources += 1
+        try:
+            path = item.get("sourcePath")
+            if path and Path(path).exists():
+                Path(path).unlink()
+                deleted_files += 1
+        except Exception:
+            pass
     return {
         "removedPreparedItems": removed,
+        "removedDetailSources": removed_sources,
         "deletedPreparedFiles": deleted_files,
         "retentionSeconds": PREPARE_CACHE_TTL_SECONDS,
     }
@@ -69,6 +85,34 @@ def cleanup_prepare_cache(now=None):
 
 def get_capabilities():
     return {"templates": list_templates()}
+
+
+def _cache_detail_source(img_bytes, options):
+    source_id = uuid.uuid4().hex
+    source = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    source.write(img_bytes)
+    source.flush()
+    source.close()
+    DETAIL_SOURCE_CACHE[source_id] = {
+        "sourceId": source_id,
+        "sourcePath": source.name,
+        "options": dict(options),
+        "createdAt": time.time(),
+    }
+    return source_id
+
+
+def get_detail_source(source_id="", prepared_id=""):
+    if not source_id and prepared_id:
+        prepared = PREPARE_CACHE.get(prepared_id) or {}
+        source_id = prepared.get("sourceId") or ""
+    item = DETAIL_SOURCE_CACHE.get(source_id)
+    if not item:
+        return None
+    path = item.get("sourcePath")
+    if not path or not Path(path).exists():
+        return None
+    return item
 
 
 def _hex_to_rgb(value, fallback="#1a73e8"):
@@ -887,10 +931,13 @@ def _prepare_cutout(
     request_id="",
     hair_retouch=False,
 ):
+    pipeline_started = time.perf_counter()
     times = {}
+    stage_timestamps = {}
     t_resize = time.perf_counter()
     img_bytes, resize_info = _resize_input_for_prepare(img_bytes)
     times["normalize_image_ms"] = int((time.perf_counter() - t_resize) * 1000)
+    stage_timestamps["decodeFinishedAtEpoch"] = time.time()
     print(
         f"[id-photo] requestId={request_id} step=normalize_image "
         f"cost={times['normalize_image_ms']}ms info={resize_info}",
@@ -960,6 +1007,21 @@ def _prepare_cutout(
     actual_image_type = "real_person"
     final_mode = "official" if mode != "creative" else "creative"
     outfit_id = _validate_basic_template(outfit, actual_image_type, purpose, composition)
+    source_id = _cache_detail_source(
+        img_bytes,
+        {
+            "purpose": purpose,
+            "spec_id": spec_id,
+            "image_type": image_type,
+            "mode": mode,
+            "composition": composition,
+            "outfit": outfit,
+            "width_px": width_px,
+            "height_px": height_px,
+            "width_mm": width_mm,
+            "height_mm": height_mm,
+        },
+    )
 
     t1 = time.perf_counter()
     first_started = time.perf_counter()
@@ -968,8 +1030,11 @@ def _prepare_cutout(
         face.get("faceBox"),
         prefer_detail=bool(hair_retouch),
         request_id=request_id,
+        allow_fallback=bool(hair_retouch),
+        timeout=180 if hair_retouch else 10,
     )
     first_duration_ms = int((time.perf_counter() - first_started) * 1000)
+    stage_timestamps["fastInferenceFinishedAtEpoch"] = time.time()
     if hair_retouch:
         detail_worker_metrics = _matting_attempt_metrics(matting)
         telemetry = {
@@ -995,12 +1060,14 @@ def _prepare_cutout(
         fast_model = matting.get("model") or "hivision_modnet"
         fast_worker_metrics = _matting_attempt_metrics(matting)
         if matting.get("success"):
+            quality_gate_started = time.perf_counter()
             fast_passed, fast_fail_reasons, fast_probe = _probe_fast_matting(
                 matting,
                 face.get("faceBox"),
                 spec,
                 composition,
             )
+            times["quality_gate_ms"] = int((time.perf_counter() - quality_gate_started) * 1000)
         else:
             fast_passed = False
             fast_fail_reasons = ["abnormalAlpha"]
@@ -1016,19 +1083,20 @@ def _prepare_cutout(
                 "rawFailReasons": [matting.get("code") or "FAST_MODEL_FAILED"],
                 "error": matting.get("message"),
             }
-        detail_duration_ms = 0
-        if not fast_passed:
-            _delete_matting_files(matting)
-            detail_started = time.perf_counter()
-            detail_matting = matte_person(
-                img_bytes,
-                face.get("faceBox"),
-                prefer_detail=True,
-                request_id=f"{request_id}-detail",
-            )
-            detail_duration_ms = int((time.perf_counter() - detail_started) * 1000)
-            matting = detail_matting
-        detail_worker_metrics = _matting_attempt_metrics(matting) if not fast_passed else {}
+            times["quality_gate_ms"] = 0
+        stage_timestamps["qualityGateFinishedAtEpoch"] = time.time()
+        stage_timestamps["cropFinishedAtEpoch"] = stage_timestamps["qualityGateFinishedAtEpoch"]
+        fast_result_usable = bool(fast_probe.get("fastResultUsable"))
+        crop_passed = bool(fast_probe.get("cropPass"))
+        fast_quality_status = (
+            "FAST_PASS"
+            if fast_passed and crop_passed
+            else ("FAST_WARNING" if fast_result_usable or fast_passed else "FAST_BLOCK")
+        )
+        detail_reasons = list(dict.fromkeys([
+            *(fast_probe.get("detailReasons") or []),
+            *(fast_fail_reasons if fast_quality_status == "FAST_BLOCK" else []),
+        ]))
         telemetry = {
             "requestedModel": "hivision_modnet",
             "fastModel": fast_model,
@@ -1039,21 +1107,22 @@ def _prepare_cutout(
             "rawFailReasons": fast_probe.get("rawFailReasons") or [],
             "fastMattingPass": bool(fast_probe.get("mattingPass")),
             "fastMattingFailReasons": fast_probe.get("mattingFailReasons") or [],
-            "mattingPass": bool(matting.get("success")),
-            "mattingFailReasons": [] if matting.get("success") else (fast_probe.get("mattingFailReasons") or []),
+            "mattingPass": bool(fast_probe.get("mattingPass")),
+            "mattingFailReasons": fast_probe.get("mattingFailReasons") or [],
             "cropPass": bool(fast_probe.get("cropPass")),
             "cropFailReasons": fast_probe.get("cropFailReasons") or [],
             "cropRetryCount": int(fast_probe.get("cropRetryCount") or 0),
-            "fastResultUsable": bool(fast_probe.get("fastResultUsable")),
-            "detailRecommended": bool(fast_probe.get("detailRecommended")),
-            "detailReasons": fast_probe.get("detailReasons") or [],
-            "detailFallbackUsed": not fast_passed,
-            "detailFallbackReasons": fast_fail_reasons if not fast_passed else [],
-            "detailModel": (matting.get("model") if not fast_passed else "birefnet-v1-lite") or "birefnet-v1-lite",
-            "detailDurationMs": detail_duration_ms,
+            "fastResultUsable": fast_result_usable,
+            "fastQualityStatus": fast_quality_status,
+            "detailRecommended": fast_quality_status != "FAST_PASS" or bool(fast_probe.get("detailRecommended")),
+            "detailReasons": detail_reasons,
+            "detailFallbackUsed": False,
+            "detailFallbackReasons": [],
+            "detailModel": "birefnet-v1-lite",
+            "detailDurationMs": 0,
             "finalSelectedModel": matting.get("model") or "",
             "fastWorkerMetrics": fast_worker_metrics,
-            "detailWorkerMetrics": detail_worker_metrics,
+            "detailWorkerMetrics": {},
         }
         if matting.get("success"):
             _attach_routing_telemetry(matting, telemetry)
@@ -1070,6 +1139,41 @@ def _prepare_cutout(
     )
     times["remove_background_ms"] = int((time.perf_counter() - t1) * 1000)
     print(f"[id-photo] requestId={request_id} step=remove_background cost={times['remove_background_ms']}ms", flush=True)
+    if not hair_retouch and telemetry.get("fastQualityStatus") == "FAST_BLOCK":
+        pipeline_total_ms = int((time.perf_counter() - pipeline_started) * 1000)
+        _delete_matting_files(matting)
+        raise PortraitQualityError(
+            "FAST_QUALITY_BLOCKED",
+            {
+                "code": "ID_PHOTO_FAST_BLOCKED",
+                "message": "快速抠图未通过质量检查，请重新上传清晰正面照片或主动开启发丝精修。",
+                "requestId": request_id,
+                "sourceId": source_id,
+                "fastResultUsable": False,
+                "fastQualityStatus": "FAST_BLOCK",
+                "mattingPass": bool(telemetry.get("mattingPass")),
+                "cropPass": bool(telemetry.get("cropPass")),
+                "detailRecommended": True,
+                "detailReasons": telemetry.get("detailReasons") or [],
+                "selectedModel": telemetry.get("finalSelectedModel") or "hivision_modnet",
+                "detailFallbackUsed": False,
+                "detailFallbackReasons": [],
+                "performance": {
+                    "fastInferenceMs": (telemetry.get("fastWorkerMetrics") or {}).get("inferenceMs", 0),
+                    "modelLoadMs": (telemetry.get("fastWorkerMetrics") or {}).get("modelLoadMs", 0),
+                    "queueWaitMs": (telemetry.get("fastWorkerMetrics") or {}).get("queueWaitMs", 0),
+                    "fastDurationMs": telemetry.get("fastDurationMs", 0),
+                    "qualityGateMs": times.get("quality_gate_ms", 0),
+                    "imageDecodeMs": times.get("normalize_image_ms", 0),
+                    "resizeMs": times.get("normalize_image_ms", 0),
+                    "cropMs": 0,
+                    "prepareCacheWriteMs": 0,
+                    "totalMs": pipeline_total_ms,
+                    "totalServerMs": pipeline_total_ms,
+                },
+                "performanceTimestamps": stage_timestamps,
+            },
+        )
     if not matting.get("success"):
         raise PortraitQualityError(
             "SEGMENTATION_INCOMPLETE",
@@ -1114,8 +1218,23 @@ def _prepare_cutout(
             "faceBox": face.get("faceBox"),
         },
     }
+    cache_started = time.perf_counter()
+    fast_metrics = telemetry.get("fastWorkerMetrics") or {}
+    performance = {
+        "resizeMs": times.get("normalize_image_ms", 0),
+        "imageDecodeMs": times.get("normalize_image_ms", 0),
+        "faceDetectMs": times.get("detect_face_ms", 0),
+        "modelLoadMs": fast_metrics.get("modelLoadMs", 0),
+        "fastInferenceMs": fast_metrics.get("inferenceMs", 0),
+        "detailInferenceMs": (telemetry.get("detailWorkerMetrics") or {}).get("inferenceMs", 0),
+        "qualityGateMs": times.get("quality_gate_ms", 0),
+        "cropMs": 0,
+        "queueWaitMs": fast_metrics.get("queueWaitMs", 0),
+        "detailFallbackUsed": bool(telemetry.get("detailFallbackUsed")),
+    }
     PREPARE_CACHE[prepared_id] = {
         "preparedId": prepared_id,
+        "sourceId": source_id,
         "foregroundPngPath": matting["foregroundPath"],
         "alphaMaskPath": matting.get("maskPath", ""),
         "faceBox": face["faceBox"],
@@ -1130,7 +1249,12 @@ def _prepare_cutout(
         "createdAt": time.time(),
         "compositionVersion": COMPOSITION_VERSION,
         "debug": debug,
+        "performance": performance,
+        "performanceTimestamps": stage_timestamps,
     }
+    performance["prepareCacheWriteMs"] = int((time.perf_counter() - cache_started) * 1000)
+    performance["totalServerMs"] = int((time.perf_counter() - pipeline_started) * 1000)
+    stage_timestamps["prepareFinishedAtEpoch"] = time.time()
     times["save_foreground_ms"] = int((time.perf_counter() - t1) * 1000) - times["remove_background_ms"]
     print(f"[id-photo] requestId={request_id} step=prepare_cache preparedId={prepared_id}")
     return PREPARE_CACHE[prepared_id], times
@@ -1289,7 +1413,25 @@ def prepare_id_photo_v2(
         width_mm=width_mm,
         height_mm=height_mm,
         request_id=request_id,
-        hair_retouch=hair_retouch,
+        hair_retouch=False,
+    )
+
+
+def prepare_detail_id_photo(source_id, request_id=""):
+    source = get_detail_source(source_id=source_id)
+    if not source:
+        raise PortraitQualityError(
+            "DETAIL_SOURCE_NOT_FOUND",
+            {"code": "DETAIL_SOURCE_NOT_FOUND", "message": "原始照片已失效，请重新上传。"},
+            status_code=404,
+        )
+    with open(source["sourcePath"], "rb") as handle:
+        img_bytes = handle.read()
+    return _prepare_cutout(
+        img_bytes,
+        request_id=request_id,
+        hair_retouch=True,
+        **source["options"],
     )
 
 

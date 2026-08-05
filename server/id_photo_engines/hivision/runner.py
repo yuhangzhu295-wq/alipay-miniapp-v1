@@ -250,7 +250,13 @@ def _alpha_metrics(alpha: Image.Image) -> dict[str, Any]:
     }
 
 
-def run_human_matting(image: Image.Image, model: str = None, request_id: str = "", timeout: int = 180) -> dict[str, Any]:
+def run_human_matting(
+    image: Image.Image,
+    model: str = None,
+    request_id: str = "",
+    timeout: int = 180,
+    allow_model_fallback: bool = True,
+) -> dict[str, Any]:
     ready, reason = production_ready()
     debug: dict[str, Any] = {
         "ready": ready,
@@ -283,6 +289,8 @@ def run_human_matting(image: Image.Image, model: str = None, request_id: str = "
     image.convert("RGB").save(input_path, format="PNG")
 
     models = _model_order(model or "")
+    if model and not allow_model_fallback:
+        models = [candidate for candidate in models if candidate == model]
     
     if not models:
         return {

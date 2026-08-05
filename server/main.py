@@ -17,6 +17,7 @@ import hmac
 import base64
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,8 +39,11 @@ from services.id_photo_v2 import (
     cleanup_prepare_cache,
     generate_id_photo_v2,
     get_capabilities,
+    get_detail_source,
+    prepare_detail_id_photo,
     prepare_id_photo_v2,
 )
+from services.heavy_task_queue import HeavyTaskBusyError, heavy_task_queue
 from services.face_detector import get_face_detector_status
 from services.portrait_matting import matting_status
 from services.portrait_quality import PortraitQualityError, classify_image_type, validate_portrait_input
@@ -60,12 +64,17 @@ AUTH_SECRET = os.environ.get("ID_PHOTO_AUTH_SECRET") or hashlib.sha256(
     ("id-photo-auth:" + os.path.abspath(BASE_RUNTIME_DIR)).encode("utf-8")
 ).hexdigest()
 CLEANUP_INTERVAL_SECONDS = 3600
-ID_PHOTO_PREPARE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_PREPARE_TIMEOUT_SECONDS", "180"))
+ID_PHOTO_PREPARE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_PREPARE_TIMEOUT_SECONDS", "30"))
 ID_PHOTO_COMPOSE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_COMPOSE_TIMEOUT_SECONDS", "60"))
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 _asset_registry_lock = threading.RLock()
 _user_photo_lock = threading.RLock()
+_detail_job_lock = threading.RLock()
+_detail_jobs = {}
+_detail_job_futures = {}
+_detail_job_executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="id-photo-detail")
+ID_PHOTO_DETAIL_MAX_ACTIVE = max(1, int(os.environ.get("ID_PHOTO_DETAIL_MAX_ACTIVE", "3")))
 
 app = FastAPI(title="Photo ID Generator API")
 
@@ -79,6 +88,62 @@ app.add_middleware(
 # Serve output files so the frontend can download them via URL
 app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+
+def _public_detail_job(job):
+    return {
+        key: value
+        for key, value in job.items()
+        if key not in {"sourceId", "errorDetail"}
+    }
+
+
+def _update_detail_job(job_id, **updates):
+    with _detail_job_lock:
+        job = _detail_jobs.get(job_id)
+        if not job:
+            return None
+        job.update(updates)
+        job["updatedAt"] = _utc_iso()
+        return dict(job)
+
+
+def _run_detail_job(job_id):
+    with _detail_job_lock:
+        job = dict(_detail_jobs.get(job_id) or {})
+    if not job or job.get("status") == "cancelled":
+        return
+
+    def execute():
+        current = _update_detail_job(job_id, status="running", startedAt=_utc_iso())
+        if not current or current.get("status") == "cancelled":
+            return None
+        return prepare_detail_id_photo(job["sourceId"], request_id=job["requestId"])
+
+    try:
+        result, queue_wait_ms = heavy_task_queue.run("birefnet", execute)
+        with _detail_job_lock:
+            current = _detail_jobs.get(job_id)
+            if not current or current.get("status") == "cancelled" or result is None:
+                return
+        prepared, costs = result
+        performance = dict(prepared.get("performance") or {})
+        performance["queueWaitMs"] = queue_wait_ms
+        performance["totalServerMs"] = int(performance.get("totalServerMs") or 0) + queue_wait_ms
+        _update_detail_job(
+            job_id,
+            status="completed",
+            completedAt=_utc_iso(),
+            preparedId=prepared.get("preparedId"),
+            selectedModel=(prepared.get("quality") or {}).get("finalSelectedModel") or "birefnet-v1-lite",
+            quality=prepared.get("quality") or {},
+            performance=performance,
+        )
+    except HeavyTaskBusyError as exc:
+        _update_detail_job(job_id, status="failed", completedAt=_utc_iso(), code="HEAVY_TASK_BUSY", message="精修任务较多，请稍后重试。", errorDetail=str(exc))
+    except Exception as exc:
+        print(f"[id-photo-detail] jobId={job_id} failed={exc!r}", flush=True)
+        _update_detail_job(job_id, status="failed", completedAt=_utc_iso(), code="DETAIL_JOB_FAILED", message="发丝精修失败，已保留快速结果。", errorDetail=repr(exc))
 
 
 def _utc_iso(ts=None):
@@ -1147,6 +1212,7 @@ async def id_photo_prepare(
 ):
     request_id = uuid.uuid4().hex[:10]
     started = time.perf_counter()
+    request_received_epoch = time.time()
     print(f"[id-photo-be] prepare start requestId={request_id}", flush=True)
     upload = image or file
     if upload is None:
@@ -1158,7 +1224,9 @@ async def id_photo_prepare(
     try:
         read_started = time.perf_counter()
         img_bytes = await upload.read()
-        print(f"[id-photo] requestId={request_id} step=load_image cost={int((time.perf_counter() - read_started) * 1000)}ms")
+        save_upload_ms = int((time.perf_counter() - read_started) * 1000)
+        upload_saved_epoch = time.time()
+        print(f"[id-photo] requestId={request_id} step=load_image cost={save_upload_ms}ms")
         result, costs = await asyncio.wait_for(
             asyncio.to_thread(
                 prepare_id_photo_v2,
@@ -1174,7 +1242,7 @@ async def id_photo_prepare(
                 width_mm=widthMm or None,
                 height_mm=heightMm or None,
                 request_id=request_id,
-                hair_retouch=hairRetouch,
+                hair_retouch=False,
             ),
             timeout=ID_PHOTO_PREPARE_TIMEOUT_SECONDS,
         )
@@ -1182,6 +1250,27 @@ async def id_photo_prepare(
             print(f"[id-photo] requestId={request_id} step={key.replace('_ms', '')} cost={value}ms")
         total_ms = int((time.perf_counter() - started) * 1000)
         debug = result.get("debug", {})
+        quality = result.get("quality", {})
+        performance = dict(result.get("performance") or {})
+        performance.update({
+            "saveUploadMs": save_upload_ms,
+            "totalServerMs": total_ms,
+            "hairRetouchRequested": bool(hairRetouch),
+            "selectedModel": quality.get("finalSelectedModel") or quality.get("mattingModel") or "hivision_modnet",
+            "detailFallbackUsed": False,
+            "detailFallbackReasons": [],
+        })
+        timestamp_epochs = dict(result.get("performanceTimestamps") or {})
+        timestamps = {
+            "requestReceivedAt": _utc_iso(request_received_epoch),
+            "uploadSavedAt": _utc_iso(upload_saved_epoch),
+            "decodeFinishedAt": _utc_iso(timestamp_epochs.get("decodeFinishedAtEpoch", upload_saved_epoch)),
+            "fastInferenceFinishedAt": _utc_iso(timestamp_epochs.get("fastInferenceFinishedAtEpoch", time.time())),
+            "qualityGateFinishedAt": _utc_iso(timestamp_epochs.get("qualityGateFinishedAtEpoch", time.time())),
+            "cropFinishedAt": _utc_iso(timestamp_epochs.get("cropFinishedAtEpoch", time.time())),
+            "prepareFinishedAt": _utc_iso(timestamp_epochs.get("prepareFinishedAtEpoch", time.time())),
+            "composeFinishedAt": None,
+        }
         engine_tags = get_engine_runtime_tags()
         actual_engine = debug.get("mattingEngine") or engine_tags.get("engine")
         actual_model = debug.get("mattingModel") or debug.get("rembgModel") or engine_tags.get("engineModel")
@@ -1202,16 +1291,44 @@ async def id_photo_prepare(
         print(f"[id-photo-be] cropParams={debug.get('cropParams')}", flush=True)
         print(f"[id-photo-be] prepare success preparedId={result['preparedId']}", flush=True)
         print(f"[id-photo] requestId={request_id} total={total_ms}ms success=true preparedId={result['preparedId']}")
+        print("[id-photo-speed] " + json.dumps({
+            "requestId": request_id,
+            "hairRetouchRequested": bool(hairRetouch),
+            "selectedModel": performance.get("selectedModel"),
+            "detailFallbackUsed": False,
+            "detailFallbackReasons": [],
+            "queueWaitMs": performance.get("queueWaitMs", 0),
+            "saveUploadMs": performance.get("saveUploadMs", 0),
+            "decodeMs": performance.get("imageDecodeMs", 0),
+            "resizeMs": performance.get("resizeMs", 0),
+            "modelLoadMs": performance.get("modelLoadMs", 0),
+            "inferenceMs": performance.get("fastInferenceMs", 0),
+            "qualityGateMs": performance.get("qualityGateMs", 0),
+            "cropMs": performance.get("cropMs", 0),
+            "cacheWriteMs": performance.get("prepareCacheWriteMs", 0),
+            "totalMs": total_ms,
+        }, ensure_ascii=False), flush=True)
         return {
             "success": True,
             "preparedId": result["preparedId"],
+            "sourceId": result.get("sourceId"),
             "imageType": result["imageType"],
             "mode": result["mode"],
             "spec": result["spec"],
             "cropParams": {
                 "compositionVersion": result["compositionVersion"],
             },
-            "quality": result.get("quality", {}),
+            "quality": quality,
+            "fastResultUsable": bool(quality.get("fastResultUsable", True)),
+            "fastQualityStatus": quality.get("fastQualityStatus") or ("FAST_PASS" if quality.get("mattingPass", True) else "FAST_WARNING"),
+            "mattingPass": bool(quality.get("mattingPass", True)),
+            "cropPass": bool(quality.get("cropPass", True)),
+            "detailRecommended": bool(quality.get("detailRecommended")),
+            "detailReasons": quality.get("detailReasons") or [],
+            "selectedModel": quality.get("finalSelectedModel") or actual_model,
+            "detailFallbackUsed": False,
+            "performance": performance,
+            **timestamps,
             "engine": actual_engine,
             "engineVersion": engine_tags.get("engineVersion"),
             "engineModel": actual_model,
@@ -1234,12 +1351,49 @@ async def id_photo_prepare(
         if response_code in {"MASK_TOO_SMALL", "MASK_FACE_MISSING", "SEGMENTATION_INCOMPLETE"}:
             response_code = "MASK_QUALITY_FAILED"
             response_message = "人像抠图不完整，请重新上传清晰正面照片。"
+        quality = qe.quality or {}
+        error_performance = dict(quality.get("performance") or {})
+        error_performance.setdefault("saveUploadMs", locals().get("save_upload_ms", 0))
+        error_performance.setdefault("imageDecodeMs", 0)
+        error_performance.setdefault("resizeMs", 0)
+        error_performance.setdefault("modelLoadMs", 0)
+        error_performance.setdefault("fastInferenceMs", 0)
+        error_performance.setdefault("qualityGateMs", 0)
+        error_performance.setdefault("cropMs", 0)
+        error_performance.setdefault("prepareCacheWriteMs", 0)
+        error_performance["totalServerMs"] = int((time.perf_counter() - started) * 1000)
+        print("[id-photo-speed] " + json.dumps({
+            "requestId": request_id,
+            "hairRetouchRequested": bool(hairRetouch),
+            "selectedModel": quality.get("selectedModel") or "hivision_modnet",
+            "detailFallbackUsed": False,
+            "detailFallbackReasons": [],
+            **error_performance,
+        }, ensure_ascii=False), flush=True)
         return JSONResponse(status_code=qe.status_code, content={
             "success": False,
             "code": response_code,
             "message": response_message,
             "requestId": request_id,
-            "quality": qe.quality
+            "sourceId": quality.get("sourceId"),
+            "quality": quality,
+            "fastResultUsable": bool(quality.get("fastResultUsable")),
+            "fastQualityStatus": quality.get("fastQualityStatus") or "FAST_BLOCK",
+            "mattingPass": bool(quality.get("mattingPass")),
+            "cropPass": bool(quality.get("cropPass")),
+            "detailRecommended": bool(quality.get("detailRecommended")),
+            "detailReasons": quality.get("detailReasons") or [],
+            "selectedModel": quality.get("selectedModel") or "hivision_modnet",
+            "detailFallbackUsed": False,
+            "performance": error_performance,
+            "requestReceivedAt": _utc_iso(request_received_epoch),
+            "uploadSavedAt": _utc_iso(locals().get("upload_saved_epoch", time.time())),
+            "decodeFinishedAt": _utc_iso((quality.get("performanceTimestamps") or {}).get("decodeFinishedAtEpoch", time.time())),
+            "fastInferenceFinishedAt": _utc_iso((quality.get("performanceTimestamps") or {}).get("fastInferenceFinishedAtEpoch", time.time())),
+            "qualityGateFinishedAt": _utc_iso((quality.get("performanceTimestamps") or {}).get("qualityGateFinishedAtEpoch", time.time())),
+            "cropFinishedAt": _utc_iso((quality.get("performanceTimestamps") or {}).get("cropFinishedAtEpoch", time.time())),
+            "prepareFinishedAt": _utc_iso(),
+            "composeFinishedAt": None,
         })
     except TemplateError as te:
         return JSONResponse(status_code=te.status_code, content={
@@ -1258,6 +1412,74 @@ async def id_photo_prepare(
             "requestId": request_id,
             "message": f"人像预处理失败，请重新上传清晰正面照片。错误：{str(e)[:50]}"
         })
+
+
+@app.post("/api/id-photo/detail-jobs")
+async def create_id_photo_detail_job(
+    preparedId: str = Form(""),
+    sourceId: str = Form(""),
+    fastPreviewUrl: str = Form(""),
+):
+    source = get_detail_source(source_id=sourceId, prepared_id=preparedId)
+    if not source:
+        return JSONResponse(status_code=404, content={
+            "success": False,
+            "code": "DETAIL_SOURCE_NOT_FOUND",
+            "message": "原始照片已失效，请重新上传。",
+        })
+    with _detail_job_lock:
+        active_count = sum(job.get("status") in {"queued", "running"} for job in _detail_jobs.values())
+        if active_count >= ID_PHOTO_DETAIL_MAX_ACTIVE or not heavy_task_queue.can_accept():
+            return JSONResponse(status_code=429, content={
+                "success": False,
+                "code": "HEAVY_TASK_BUSY",
+                "message": "精修任务较多，请稍后重试。",
+                "queue": heavy_task_queue.snapshot(),
+            })
+        job_id = uuid.uuid4().hex
+        request_id = uuid.uuid4().hex[:10]
+        job = {
+            "success": True,
+            "jobId": job_id,
+            "status": "queued",
+            "requestId": request_id,
+            "fastPreviewUrl": fastPreviewUrl,
+            "detailModel": "birefnet-v1-lite",
+            "sourceId": source["sourceId"],
+            "preparedId": "",
+            "createdAt": _utc_iso(),
+            "updatedAt": _utc_iso(),
+        }
+        _detail_jobs[job_id] = job
+        future = _detail_job_executor.submit(_run_detail_job, job_id)
+        _detail_job_futures[job_id] = future
+    return _public_detail_job(job)
+
+
+@app.get("/api/id-photo/detail-jobs/{job_id}")
+async def get_id_photo_detail_job(job_id: str):
+    with _detail_job_lock:
+        job = _detail_jobs.get(job_id)
+        if not job:
+            return JSONResponse(status_code=404, content={"success": False, "code": "DETAIL_JOB_NOT_FOUND", "message": "精修任务不存在。"})
+        payload = _public_detail_job(dict(job))
+    payload["queue"] = heavy_task_queue.snapshot()
+    return payload
+
+
+@app.delete("/api/id-photo/detail-jobs/{job_id}")
+async def cancel_id_photo_detail_job(job_id: str):
+    with _detail_job_lock:
+        job = _detail_jobs.get(job_id)
+        if not job:
+            return JSONResponse(status_code=404, content={"success": False, "code": "DETAIL_JOB_NOT_FOUND", "message": "精修任务不存在。"})
+        if job.get("status") in {"completed", "failed", "cancelled"}:
+            return _public_detail_job(dict(job))
+        job.update({"status": "cancelled", "cancelledAt": _utc_iso(), "updatedAt": _utc_iso()})
+        future = _detail_job_futures.get(job_id)
+        if future:
+            future.cancel()
+        return _public_detail_job(dict(job))
 
 
 @app.post("/api/id-photo/compose")
@@ -1334,6 +1556,7 @@ async def id_photo_compose(
         print(f"[id-photo-be] finalImageUrl={image_url}", flush=True)
         print("[id-photo-be] compose success", flush=True)
         print(f"[id-photo] requestId={request_id} total={total_ms}ms success=true finalImageUrl={image_url}")
+        print("[id-photo-speed] " + json.dumps({"requestId": request_id, "composeMs": total_ms, "totalMs": total_ms}, ensure_ascii=False), flush=True)
         return {
             "success": True,
             "imageUrl": image_url,
@@ -1362,6 +1585,8 @@ async def id_photo_compose(
             "debug": debug,
             "requestId": request_id,
             "message": "生成成功",
+            "performance": {"composeMs": total_ms, "totalServerMs": total_ms},
+            "composeFinishedAt": _utc_iso(),
             "quality": {
                 **result.get("quality", {}),
                 "maskPassed": result.get("quality", {}).get("mattingPass", result.get("quality", {}).get("maskValid", True)),
@@ -1798,7 +2023,12 @@ async def watermark_hd_remove(
             raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
 
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
-        res = do_hd_inpaint(img_bytes, mask_bytes, strength=strength, preserve_detail=preserve_detail)
+        (res, queue_wait_ms) = await asyncio.to_thread(
+            heavy_task_queue.run,
+            "lama",
+            lambda: do_hd_inpaint(img_bytes, mask_bytes, strength=strength, preserve_detail=preserve_detail),
+        )
+        res.setdefault("debug", {}).update({"queueWaitMs": queue_wait_ms})
         saved = save_watermark_output(res["bytes"], "hd", ".jpg")
         image_url = saved["url"]
         if res.get("debug") is not None:
@@ -1818,6 +2048,8 @@ async def watermark_hd_remove(
             "message": res["message"],
             "debug": res.get("debug", {})
         }
+    except HeavyTaskBusyError:
+        return JSONResponse(status_code=503, content={"success": False, "code": "HEAVY_TASK_BUSY", "message": "高清任务较多，请稍后重试。"})
     except HdInpaintError as he:
         return JSONResponse(
             status_code=he.status_code,
@@ -1870,14 +2102,18 @@ async def watermark_remove_v2(
         normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         image_bytes = await image.read()
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
-        result = await asyncio.to_thread(
-            process_stroke_inpaint,
+        task = lambda: process_stroke_inpaint(
             image_bytes,
             normalized_json,
             quality,
             strength,
             preserve_detail,
         )
+        if str(quality).lower() == "hd":
+            result, queue_wait_ms = await asyncio.to_thread(heavy_task_queue.run, "lama", task)
+            result.setdefault("debug", {}).update({"queueWaitMs": queue_wait_ms})
+        else:
+            result = await asyncio.to_thread(task)
         saved = save_watermark_output(result["bytes"], result["mode"], result.get("suffix") or ".png")
         debug = result.get("debug") or {}
         debug.update({"resultUrl": saved["url"], "outputPath": saved["path"], "fileHash": saved["hash"]})
@@ -1894,6 +2130,8 @@ async def watermark_remove_v2(
             "message": result["message"],
             "debug": debug,
         }
+    except HeavyTaskBusyError:
+        return JSONResponse(status_code=503, content={"success": False, "code": "HEAVY_TASK_BUSY", "message": "高清任务较多，请稍后重试。"})
     except HdInpaintError as exc:
         return JSONResponse(status_code=exc.status_code, content={
             "success": False,

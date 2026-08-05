@@ -1246,7 +1246,14 @@ def _finalize_matting_rgba(rgba, face_box, image, engine, model, matting_mode, e
     }
 
 
-def matte_person(image_input, face_box=None, prefer_detail=False, request_id=""):
+def matte_person(
+    image_input,
+    face_box=None,
+    prefer_detail=False,
+    request_id="",
+    allow_fallback=True,
+    timeout=180,
+):
     image = _read_rgba(image_input)
     fallback_debug = None
 
@@ -1255,7 +1262,13 @@ def matte_person(image_input, face_box=None, prefer_detail=False, request_id="")
 
         routing = get_model_routing()
         requested_model = routing.get("detail" if prefer_detail else "standard") or None
-        hivision = run_human_matting(image, model=requested_model, request_id=request_id)
+        hivision = run_human_matting(
+            image,
+            model=requested_model,
+            request_id=request_id,
+            timeout=timeout,
+            allow_model_fallback=allow_fallback,
+        )
         if hivision.get("success"):
             return _finalize_matting_rgba(
                 hivision["rgba"],
@@ -1271,9 +1284,27 @@ def matte_person(image_input, face_box=None, prefer_detail=False, request_id="")
                 },
             )
         fallback_debug = hivision.get("debug") or {"error": hivision.get("message")}
+        if not allow_fallback:
+            return {
+                "success": False,
+                "code": hivision.get("code") or "FAST_MODEL_FAILED",
+                "message": hivision.get("message") or "快速抠图暂不可用，请稍后重试。",
+                "engine": "hivision",
+                "model": requested_model or "hivision_modnet",
+                "debug": fallback_debug,
+            }
         print(f"[id-photo] Hivision matting fallback: {hivision.get('code')} {hivision.get('message')}", flush=True)
     except Exception as exc:
         fallback_debug = {"error": repr(exc)}
+        if not allow_fallback:
+            return {
+                "success": False,
+                "code": "FAST_MODEL_FAILED",
+                "message": "快速抠图暂不可用，请稍后重试。",
+                "engine": "hivision",
+                "model": "hivision_modnet",
+                "debug": fallback_debug,
+            }
         print(f"[id-photo] Hivision matting exception fallback: {exc}", flush=True)
 
     engine = "rembg"
