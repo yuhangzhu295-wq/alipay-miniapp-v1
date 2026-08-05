@@ -1,11 +1,11 @@
 {
   "status": "PASS",
-  "baseUrl": "http://127.0.0.1:8000",
-  "generatedAt": "2026-08-06 04:14:22",
+  "baseUrl": "https://tupzjianzhao.chat",
+  "generatedAt": "2026-08-06 05:04:39",
   "health": {
     "ok": true,
     "statusCode": 200,
-    "durationMs": 13,
+    "durationMs": 470,
     "attempts": 1,
     "data": {
       "success": true,
@@ -83,13 +83,13 @@
     "response": {
       "ok": false,
       "statusCode": 400,
-      "durationMs": 226,
+      "durationMs": 633,
       "attempts": 1,
       "data": {
         "success": false,
         "code": "INVALID_ID_PHOTO_INPUT",
         "message": "\u8bf7\u4e0a\u4f20\u6e05\u6670\u7684\u771f\u4eba\u6b63\u9762\u7167\u7247\u3002",
-        "requestId": "3b2fb0b4a8",
+        "requestId": "6d64c42422",
         "sourceId": null,
         "quality": {
           "imageType": "illustration",
@@ -120,15 +120,15 @@
           "qualityGateMs": 0,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalServerMs": 222
+          "totalServerMs": 290
         },
-        "requestReceivedAt": "2026-08-05T20:14:22.506734Z",
-        "uploadSavedAt": "2026-08-05T20:14:22.507067Z",
-        "decodeFinishedAt": "2026-08-05T20:14:22.729978Z",
-        "fastInferenceFinishedAt": "2026-08-05T20:14:22.729981Z",
-        "qualityGateFinishedAt": "2026-08-05T20:14:22.729984Z",
-        "cropFinishedAt": "2026-08-05T20:14:22.729986Z",
-        "prepareFinishedAt": "2026-08-05T20:14:22.729989Z",
+        "requestReceivedAt": "2026-08-05T21:04:37.401894Z",
+        "uploadSavedAt": "2026-08-05T21:04:37.401922Z",
+        "decodeFinishedAt": "2026-08-05T21:04:37.692495Z",
+        "fastInferenceFinishedAt": "2026-08-05T21:04:37.692499Z",
+        "qualityGateFinishedAt": "2026-08-05T21:04:37.692502Z",
+        "cropFinishedAt": "2026-08-05T21:04:37.692505Z",
+        "prepareFinishedAt": "2026-08-05T21:04:37.692508Z",
         "composeFinishedAt": null
       }
     }

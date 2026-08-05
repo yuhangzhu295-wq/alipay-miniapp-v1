@@ -2,7 +2,7 @@
 
 ## Status
 
-- Overall: PASS before cloud deployment
+- Overall: PASS after cloud deployment
 - Scope: ID-photo entry, capture guide, custom camera, FAST failure UX, async hair refinement, five backgrounds, specifications, preview/download/save/delete, watermark regression
 - Unrelated authentication, payment, membership, profile, and watermark algorithms were not changed.
 
@@ -54,6 +54,16 @@
 ## Deployment
 
 - Local verification: PASS
-- GitHub `master`: pending commit
-- Tencent Cloud: pending deployment
-- Three-way SHA check: pending deployment
+- GitHub `master`: PASS
+- Tencent Cloud: PASS; `photo-generator`, `hivision-worker`, and `iopaint` are active.
+- Deployed code commit: `57c00159e8c7ee9ee1def9e8f18f85ae0f4a0ab3`
+- Server backup `backups/20260803-cloud/`: preserved.
+
+## Post-Deployment Verification
+
+- Production health, engine-info, and watermark health endpoints: PASS.
+- Three supplied slow images: PASS; P50 2445ms, P95/max 3302ms, over-30-second count 0, synchronous DETAIL count 0.
+- Production async DETAIL: create 506ms; `queued -> running -> completed`; selected model `birefnet-v1-lite`; returned a new `preparedId`.
+- Production one-inch/two-inch/large-one-inch five-color matrix: PASS, 15/15 outputs.
+- Production watermark manual/HD nine-sample matrix: PASS, 9/9; LaMa loaded and no fallback.
+- Final three-way SHA is reported in the deployment closeout after the report-only synchronization commit.

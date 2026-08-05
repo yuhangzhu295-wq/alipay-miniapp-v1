@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "baseUrl": "https://tupzjianzhao.chat",
+  "deployedCodeCommit": "57c00159e8c7ee9ee1def9e8f18f85ae0f4a0ab3",
+  "services": {
+    "photo-generator": "active",
+    "hivision-worker": "active",
+    "iopaint": "active"
+  },
+  "fastSamples": {
+    "runs": 3,
+    "p50Ms": 2445,
+    "p95Ms": 3302,
+    "maxMs": 3302,
+    "over30Seconds": 0,
+    "synchronousDetailCount": 0,
+    "selectedModel": "hivision_modnet",
+    "terminalCode": "ID_PHOTO_FAST_BLOCKED"
+  },
+  "asyncDetail": {
+    "createMs": 506,
+    "history": ["queued", "running", "completed"],
+    "selectedModel": "birefnet-v1-lite",
+    "preparedIdReplaced": true
+  },
+  "specColorMatrix": {
+    "specs": "3/3",
+    "colors": "15/15"
+  },
+  "watermarkMatrix": {
+    "samples": "9/9",
+    "hdEngine": "lama",
+    "fallbackUsed": false
+  },
+  "backupPreserved": "backups/20260803-cloud/"
+}

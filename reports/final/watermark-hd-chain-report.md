@@ -1,7 +1,7 @@
 # Watermark HD Chain Validation Report
 
 - Status: PASS
-- Base URL: `http://127.0.0.1:8000`
+- Base URL: `https://tupzjianzhao.chat`
 - Generated samples: 9
 - Contact sheet: `C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\reports\final\watermark-comparison-contact-sheet.jpg`
 - Diff images: `C:\Users\zyu33\.openclaw-workspaces\assistant\projects\证件照生成器\reports\final\watermark-samples\diff`
@@ -16,8 +16,8 @@
 - fallbackUsed: `False`
 
 ## Chain Isolation
-- First manual resultUrl: `/uploads/watermark/manual/result_1785960720519_17c08825c2a6.jpg`
-- First hd resultUrl: `/uploads/watermark/hd/result_1785960722740_057cce864e0e.jpg`
+- First manual resultUrl: `/uploads/watermark/manual/result_1785963891609_9102b8242dfa.jpg`
+- First hd resultUrl: `/uploads/watermark/hd/result_1785963909065_6a4ffd3e0113.jpg`
 - First manual/hd same URL: `False`
 - First manual/hd same hash: `False`
 

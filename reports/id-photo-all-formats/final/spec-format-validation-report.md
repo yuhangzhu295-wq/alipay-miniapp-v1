@@ -1,7 +1,7 @@
 # Spec Format Validation Report
 
 - Status: PASS
-- Base URL: `http://127.0.0.1:8000`
+- Base URL: `https://tupzjianzhao.chat`
 - Frontend specs verified: 3/3
 - Color checks: 15/15
 - Prepare failures: 0
