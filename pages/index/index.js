@@ -1,4 +1,5 @@
 // ====== 首页 ======
+var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 Page({
   data: {
     coreFeatures: [
@@ -69,7 +70,7 @@ Page({
 
   selectHotSpec: function(e) {
     var id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: '/pages/generate/generate?specId=' + id });
+    idPhotoEntry.openCaptureGuide(id);
   },
 
   goTool: function(e) {

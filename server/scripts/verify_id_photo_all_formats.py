@@ -37,6 +37,10 @@ EXTRA_SAMPLES = [
     Path(r"C:\Users\zyu33\Desktop\hv-qfFEF9eT275863cae88cc29b7a8a07cc16208a5dc.jpg"),
     Path(r"C:\Users\zyu33\Desktop\KiszNixLAvn9762c1e322e0653b1f816be08a918b1f6.jpg"),
 ]
+REPO_SAMPLE_FALLBACKS = [
+    ROOT / "reports" / "cloud-deploy-e2e" / "id-photo-camera-flow-valid-source-20260805" / "cloud-tests" / "input-id-photo-source.jpg",
+    ROOT / "reports" / "id-photo-current-fail-fix" / "samples" / "real-source.jpg",
+]
 
 NODE_SPEC_JS = r"""
 const specs = require('./utils/specs.js');
@@ -155,7 +159,7 @@ def purpose_for_spec(spec: dict[str, Any]) -> str:
 
 
 def available_source_images() -> list[Path]:
-    ordered = [PRIMARY_SAMPLE, SECONDARY_SAMPLE, *EXTRA_SAMPLES]
+    ordered = [PRIMARY_SAMPLE, SECONDARY_SAMPLE, *EXTRA_SAMPLES, *REPO_SAMPLE_FALLBACKS]
     return [p for p in ordered if p.exists()]
 
 

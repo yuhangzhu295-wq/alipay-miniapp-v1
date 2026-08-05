@@ -1,0 +1,52 @@
+<view class="camera-page">
+  <block wx:if="{{cameraMode === 'live' && !cameraError && cameraVisible}}">
+    <camera
+      class="camera-view"
+      device-position="{{cameraPosition}}"
+      flash="{{flashMode}}"
+      mode="normal"
+      binderror="onCameraError"
+      bindinitdone="onCameraReady"
+    >
+      <cover-view class="camera-copy">
+        <cover-view class="camera-title">站在纯色背景前，拍摄效果最佳</cover-view>
+        <cover-view class="camera-subtitle">请将头部和肩膀放入轮廓内</cover-view>
+      </cover-view>
+      <cover-image class="portrait-guide" style="width: {{guideWidthVw}}vw; height: {{guideHeightVw}}vw;" src="/images/id-photo-camera-guide.svg"></cover-image>
+      <cover-view class="eye-label">眼睛保持在虚线附近</cover-view>
+    </camera>
+
+    <cover-view class="camera-controls">
+      <cover-view class="control-side">
+        <cover-view class="control-icon album-icon" bindtap="chooseFromAlbum">▣</cover-view>
+        <cover-view class="control-label">相册</cover-view>
+      </cover-view>
+      <cover-view class="shutter-outer {{capturing ? 'shutter-active' : ''}}" bindtap="takePhoto">
+        <cover-view class="shutter-inner"></cover-view>
+      </cover-view>
+      <cover-view class="control-side" bindtap="switchCamera">
+        <cover-view class="control-icon">↻</cover-view>
+        <cover-view class="control-label">切换</cover-view>
+      </cover-view>
+    </cover-view>
+  </block>
+
+  <view wx:elif="{{cameraMode === 'confirm'}}" class="confirm-view">
+    <image class="captured-preview" src="{{capturedImage}}" mode="aspectFit" />
+    <view class="confirm-caption">请确认照片效果</view>
+    <view class="confirm-actions">
+      <view class="confirm-button retake-button" bindtap="retakePhoto"><text>↻</text><text>重拍</text></view>
+      <view class="confirm-button use-button" bindtap="usePhoto"><text>✓</text><text>{{submitting ? '正在使用' : '使用照片'}}</text></view>
+    </view>
+  </view>
+
+  <view wx:else class="camera-error-view">
+    <view class="error-symbol">!</view>
+    <text class="error-title">相机不可用</text>
+    <text class="error-text">{{cameraErrorText}}</text>
+    <view wx:if="{{permissionDenied}}" class="error-button primary-error-button" bindtap="openCameraSettings">去设置</view>
+    <view wx:else class="error-button primary-error-button" bindtap="retryCamera">重新尝试</view>
+    <view class="error-button secondary-error-button" bindtap="chooseFromAlbum">返回选择相册</view>
+  </view>
+</view>
+

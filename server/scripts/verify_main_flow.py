@@ -169,8 +169,21 @@ function loadPage(route) {
   await sleep(80);
   const reuploadOk = page.data.photoSrc.indexOf('album') >= 0 && page.data.canDownload === true;
   page.takePhoto();
+  const retakeRoutedToCustomCamera = wxCalls.some(call =>
+    call.fn === 'navigateTo' && String(call.opts.url).includes('/pages/id-camera/id-camera?specId=yicun')
+  );
+  page.handleIncomingPhoto({
+    token: 'main-flow-camera-transfer',
+    tempFilePath: 'tmp://camera-sample.jpg',
+    source: 'camera',
+    specId: 'yicun',
+    createdAt: Date.now()
+  });
   await sleep(80);
-  checks.reuploadAndRetakeWork = reuploadOk && page.data.photoSrc.indexOf('camera') >= 0 && page.data.canDownload === true;
+  checks.reuploadAndRetakeWork = reuploadOk
+    && retakeRoutedToCustomCamera
+    && page.data.photoSrc.indexOf('camera') >= 0
+    && page.data.canDownload === true;
 
   page.goSpecs();
   checks.changeSpecNavigationWorks = wxCalls.some(call => call.fn === 'navigateTo' && String(call.opts.url).includes('/pages/specs/specs'));

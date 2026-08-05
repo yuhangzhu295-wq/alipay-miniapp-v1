@@ -4,6 +4,7 @@ var imageUtil = require('../../utils/image.js');
 var aiImageApi = require('../../utils/aiImageApi.js');
 var apiConfig = require('../../utils/apiConfig.js');
 var imageService = require('../../utils/imageService.js');
+var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 
 Page({
   data: {
@@ -35,13 +36,16 @@ Page({
     detailJobId: '',
     detailJobStatus: '',
     detailProcessing: false,
+    failureKind: '',
+    failureMessage: '',
     elapsedSeconds: 0,
     resultImage: '',
     resultPreviewSrc: '',
     resultRemoteUrl: '',
     layoutImage: '',
     resultColorId: '',
-    layoutColorId: ''
+    layoutColorId: '',
+    incomingSource: ''
   },
 
   computePreviewSize: function(spec) {
@@ -80,6 +84,8 @@ Page({
   },
 
   onLoad: function(options) {
+    options = options || {};
+    var that = this;
     this.logCurrentPage('onLoad');
     var specId = options.specId;
     var spec = null;
@@ -99,13 +105,20 @@ Page({
     this.applySpec(spec);
     wx.setNavigationBarTitle({ title: '选择底色' });
 
-    if (options.mode === 'capture') {
-      this.takePhoto();
+    var channel = this.getOpenerEventChannel ? this.getOpenerEventChannel() : null;
+    if (channel && channel.on) {
+      channel.on('idPhotoSource', function(transfer) {
+        that.handleIncomingPhoto(transfer);
+      });
     }
+    this.handleIncomingPhoto(idPhotoEntry.consumePendingPhoto(options.transferToken, spec.id));
   },
 
   onShow: function() {
     this.logCurrentPage('onShow');
+    if (this.data.currentSpecId) {
+      this.handleIncomingPhoto(idPhotoEntry.consumePendingPhoto('', this.data.currentSpecId));
+    }
   },
 
   onUnload: function() {
@@ -150,6 +163,8 @@ Page({
       detailJobId: '',
       detailJobStatus: '',
       detailProcessing: false,
+      failureKind: '',
+      failureMessage: '',
       elapsedSeconds: 0,
       resultImage: '',
       resultPreviewSrc: '',
@@ -217,33 +232,85 @@ Page({
     }, durationMs || 30000);
   },
 
+  handleIncomingPhoto: function(transfer) {
+    if (!transfer || !transfer.tempFilePath) return;
+    if (transfer.specId && this.data.currentSpecId && transfer.specId !== this.data.currentSpecId) {
+      idPhotoEntry.clearPendingPhoto(transfer.token);
+      return;
+    }
+    var identity = transfer.token || transfer.tempFilePath;
+    if (this.lastIncomingPhotoIdentity === identity) return;
+    this.lastIncomingPhotoIdentity = identity;
+    idPhotoEntry.clearPendingPhoto(transfer.token);
+    this.acceptIncomingPhoto(transfer.tempFilePath, transfer.source, identity);
+  },
+
+  acceptIncomingPhoto: function(tempFilePath, source, identity) {
+    var that = this;
+    if (!tempFilePath || typeof tempFilePath !== 'string') {
+      this.lastIncomingPhotoIdentity = '';
+      wx.showToast({ title: '照片无效，请重新选择', icon: 'none' });
+      return;
+    }
+    var applyPhoto = function() {
+      var oldJobId = that.data.detailJobId;
+      that.currentGenerateToken = 'source_changed_' + Date.now();
+      that.clearProcessTimer();
+      that.clearElapsedTimer();
+      that.stopDetailPolling();
+      if (oldJobId && that.data.detailProcessing) aiImageApi.cancelIdPhotoDetailJob(oldJobId);
+      that.idPhotoCropCache = null;
+      that.setData({
+        photoSrc: tempFilePath,
+        incomingSource: source === 'camera' ? 'camera' : 'album',
+        outputTab: 'photo',
+        generating: false,
+        processState: 'idle',
+        statusText: '照片已载入，正在制作',
+        preparedId: '',
+        preparedKey: '',
+        sourceId: '',
+        detailJobId: '',
+        detailJobStatus: '',
+        detailProcessing: false,
+        failureKind: '',
+        failureMessage: '',
+        elapsedSeconds: 0,
+        resultImage: '',
+        resultPreviewSrc: '',
+        resultRemoteUrl: '',
+        layoutImage: '',
+        resultColorId: '',
+        layoutColorId: '',
+        canDownload: false
+      }, function() {
+        that.generatePhoto();
+      });
+    };
+    if (/^(https?:|wxfile:|tmp:)/.test(tempFilePath) || !wx.getFileSystemManager) {
+      applyPhoto();
+      return;
+    }
+    wx.getFileSystemManager().access({
+      path: tempFilePath,
+      success: applyPhoto,
+      fail: function() {
+        if (that.lastIncomingPhotoIdentity === identity) that.lastIncomingPhotoIdentity = '';
+        wx.showToast({ title: '照片已失效，请重新选择', icon: 'none' });
+      }
+    });
+  },
+
   choosePhoto: function() {
     var that = this;
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
-      sourceType: ['album', 'camera'],
+      sourceType: ['album'],
       success: function(res) {
-        that.setData({
-          photoSrc: res.tempFiles[0].tempFilePath,
-          preparedId: '',
-          preparedKey: '',
-          sourceId: '',
-          detailJobId: '',
-          detailJobStatus: '',
-          detailProcessing: false,
-          elapsedSeconds: 0,
-          resultImage: '',
-          resultPreviewSrc: '',
-          resultRemoteUrl: '',
-          layoutImage: '',
-          resultColorId: '',
-          layoutColorId: '',
-          canDownload: false
-        }, function() {
-          that.idPhotoCropCache = null;
-          that.generatePhoto();
-        });
+        var file = res.tempFiles && res.tempFiles[0];
+        if (!file || !file.tempFilePath) return;
+        that.handleIncomingPhoto(idPhotoEntry.createPhotoTransfer(file.tempFilePath, 'album', that.data.currentSpecId));
       },
       fail: function(err) {
         if (err.errMsg.indexOf('cancel') === -1) {
@@ -255,29 +322,14 @@ Page({
 
   takePhoto: function() {
     var that = this;
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['camera'],
+    idPhotoEntry.openCustomCamera(this.data.currentSpecId, {
+      custom: this.data.currentSpecId === 'custom_pass',
+      returnMode: 'replace',
       success: function(res) {
-        that.setData({
-          photoSrc: res.tempFiles[0].tempFilePath,
-          preparedId: '',
-          preparedKey: '',
-          resultImage: '',
-          resultRemoteUrl: '',
-          layoutImage: '',
-          resultColorId: '',
-          layoutColorId: '',
-          canDownload: false
-        }, function() {
-          that.idPhotoCropCache = null;
-          that.generatePhoto();
-        });
-      },
-      fail: function(err) {
-        if (err.errMsg.indexOf('cancel') === -1) {
-          wx.showToast({ title: '拍照失败', icon: 'none' });
+        if (res && res.eventChannel && res.eventChannel.on) {
+          res.eventChannel.on('idPhotoSource', function(transfer) {
+            that.handleIncomingPhoto(transfer);
+          });
         }
       }
     });
@@ -404,7 +456,7 @@ Page({
       composition: requestSpec.backendComposition || requestSpec.composition || 'head_shoulder',
       enhanceLevel: 'standard',
       outputType: 'jpg',
-      hairRetouch: false
+      hairRetouch: that.data.hairRetouch || false
     };
     var requestToken = Date.now() + '_' + requestBgColorId;
     var prepareKey = [
@@ -412,7 +464,8 @@ Page({
       requestPayload.specId,
       requestPayload.widthPx,
       requestPayload.heightPx,
-      requestPayload.composition
+      requestPayload.composition,
+      requestPayload.hairRetouch
     ].join('|');
     var hasPrepared = that.data.preparedId && that.data.preparedKey === prepareKey;
     var currentRoute = that.getCurrentRouteForLog();
@@ -424,6 +477,8 @@ Page({
       generating: true,
       processState: hasPrepared ? 'composing' : 'optimizing',
       statusText: hasPrepared ? ((typeof statusText === 'string' ? statusText : null) || '正在生成底色') : '正在优化上传图片',
+      failureKind: '',
+      failureMessage: '',
       resultImage: '',
       resultPreviewSrc: '',
       resultRemoteUrl: '',
@@ -579,6 +634,7 @@ Page({
         console.error('[id-photo-generate] code:', err && err.code);
         console.error('[id-photo-generate] requestId:', err && err.requestId);
         var message = '底色生成失败，请重新选择底色或重新上传照片。';
+        var failureKind = '';
         if (err && err.code === 'SERVICE_UNAVAILABLE') {
           message = '生成服务暂不可用，请稍后重试。';
         } else if (err && err.code === 'ENDPOINT_NOT_FOUND') {
@@ -590,7 +646,28 @@ Page({
         } else if (err && err.code === 'MASK_QUALITY_FAILED') {
           message = '人像抠图不完整，请重新上传清晰正面照片。';
         } else if (err && err.code === 'ID_PHOTO_FAST_BLOCKED') {
-          message = '快速抠图未通过，请重新上传或开启发丝精修。';
+          if (that.data.hairRetouch && err.sourceId) {
+            that.setData({
+              generating: false,
+              processState: 'detailSwitching',
+              statusText: '已为你切换到更精细的人像处理，请稍候',
+              sourceId: err.sourceId,
+              failureKind: '',
+              failureMessage: '',
+              resultImage: '',
+              resultPreviewSrc: '',
+              resultRemoteUrl: '',
+              layoutImage: '',
+              resultColorId: '',
+              layoutColorId: '',
+              canDownload: false
+            }, function() {
+              that.startDetailRetouch(err.sourceId, { automatic: true });
+            });
+            return;
+          }
+          failureKind = 'fastBlocked';
+          message = '本次照片自动优化未达到证件照标准';
         } else if (err && (err.code === 'ID_PHOTO_QUALITY_FAILED' || err.code === 'ID_PHOTO_BACKGROUND_NOT_PURE')) {
           message = '证件照生成质量未达标，请重新上传清晰正面照片。';
         } else if (err && (err.code === 'SERVICE_TIMEOUT' || err.code === 'ID_PHOTO_TIMEOUT')) {
@@ -604,6 +681,8 @@ Page({
           generating: false,
           processState: (err && (err.code === 'SERVICE_TIMEOUT' || err.code === 'ID_PHOTO_TIMEOUT')) ? 'timeout' : 'failed',
           statusText: message,
+          failureKind: failureKind,
+          failureMessage: failureKind === 'fastBlocked' ? '为了尽量帮你生成合格证件照，建议更换更清晰的正面照片，或继续使用发丝精修。' : message,
           sourceId: (err && err.sourceId) || that.data.sourceId,
           preparedId: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedId,
           preparedKey: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedKey,
@@ -615,10 +694,7 @@ Page({
           layoutColorId: '',
           canDownload: false
         });
-        wx.showToast({ title: message, icon: 'none' });
-        if (err && err.code === 'ID_PHOTO_FAST_BLOCKED' && that.data.hairRetouch && err.sourceId) {
-          that.startDetailRetouch();
-        }
+        if (failureKind !== 'fastBlocked') wx.showToast({ title: message, icon: 'none' });
       });
   },
 
@@ -649,8 +725,9 @@ Page({
     }
   },
 
-  startDetailRetouch: function(sourceIdOverride) {
+  startDetailRetouch: function(sourceIdOverride, options) {
     var that = this;
+    options = options || {};
     if (that.data.detailProcessing) return;
     var sourceId = sourceIdOverride || that.data.sourceId;
     if (!sourceId && !that.data.preparedId) {
@@ -662,7 +739,10 @@ Page({
     that.setData({
       detailProcessing: true,
       detailJobStatus: 'queued',
-      statusText: '发丝精修排队中 · 已等待0秒'
+      processState: 'detailProcessing',
+      failureKind: '',
+      failureMessage: '',
+      statusText: options.automatic ? '已为你切换到更精细的人像处理，请稍候' : '正在进行发丝精修，请稍候'
     });
     aiImageApi.createIdPhotoDetailJob({
       preparedId: that.data.preparedId,
@@ -676,9 +756,12 @@ Page({
       that.setData({
         detailProcessing: false,
         detailJobStatus: 'failed',
-        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : (err.message || '发丝精修任务创建失败')
+        processState: that.data.resultImage ? 'ready' : 'detailFailed',
+        failureKind: that.data.resultImage ? '' : 'detailFailed',
+        failureMessage: that.data.resultImage ? '' : '精细人像处理暂未完成，请稍后重试或更换一张清晰正面照片。',
+        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : '精细人像处理暂未完成'
       });
-      wx.showToast({ title: err.message || '发丝精修任务创建失败', icon: 'none' });
+      if (that.data.resultImage) wx.showToast({ title: '精修暂未完成，已保留快速结果', icon: 'none' });
     });
   },
 
@@ -708,6 +791,9 @@ Page({
           that.setData({
             detailProcessing: false,
             detailJobStatus: 'completed',
+            processState: 'ready',
+            failureKind: '',
+            failureMessage: '',
             preparedId: job.preparedId,
             resultImage: result.tempFilePath,
             resultPreviewSrc: result.previewUrl || result.finalImageUrl || result.tempFilePath,
@@ -723,17 +809,23 @@ Page({
           that.setData({
             detailProcessing: false,
             detailJobStatus: 'failed',
-            statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : '精修结果未通过质量检查，请重新上传'
+            processState: that.data.resultImage ? 'ready' : 'detailFailed',
+            failureKind: that.data.resultImage ? '' : 'detailFailed',
+            failureMessage: that.data.resultImage ? '' : '精细人像处理结果暂未达到证件照标准，请更换一张清晰正面照片后重试。',
+            statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : '精细人像处理暂未达到标准'
           });
-          wx.showToast({ title: that.data.resultImage ? '精修失败，已保留快速结果' : '精修结果未通过质量检查', icon: 'none' });
+          if (that.data.resultImage) wx.showToast({ title: '精修暂未完成，已保留快速结果', icon: 'none' });
         });
       }
       that.setData({
         detailProcessing: false,
         detailJobStatus: job.status || 'failed',
-        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : (job.message || '发丝精修失败，请重新上传')
+        processState: that.data.resultImage ? 'ready' : 'detailFailed',
+        failureKind: that.data.resultImage ? '' : 'detailFailed',
+        failureMessage: that.data.resultImage ? '' : '精细人像处理暂未完成，请更换一张清晰正面照片后重试。',
+        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : '精细人像处理暂未完成'
       });
-      if (job.status === 'failed') wx.showToast({ title: job.message || '发丝精修失败，已保留快速结果', icon: 'none' });
+      if (job.status === 'failed' && that.data.resultImage) wx.showToast({ title: '精修暂未完成，已保留快速结果', icon: 'none' });
     }).catch(function(err) {
       console.error('[id-photo-detail] poll failed:', err);
       if (!that.data.detailProcessing || that.data.detailJobId !== jobId) return;
@@ -744,14 +836,40 @@ Page({
   onToggleHairRetouch: function() {
     var enabled = !this.data.hairRetouch;
     var jobId = this.data.detailJobId;
-    this.setData({ hairRetouch: enabled });
-    if (enabled && this.data.photoSrc && !this.data.generating) {
-      this.startDetailRetouch();
-    } else if (!enabled && this.data.detailProcessing) {
+    var that = this;
+    this.setData({ hairRetouch: enabled }, function() {
+      if (enabled && that.data.photoSrc && !that.data.generating) {
+        if (that.data.sourceId || that.data.preparedId) that.startDetailRetouch();
+        else that.generatePhoto();
+      }
+    });
+    if (!enabled && this.data.detailProcessing) {
       this.stopDetailPolling();
-      this.setData({ detailProcessing: false, detailJobStatus: 'cancelled', statusText: this.data.resultImage ? (this.data.bgColorName + ' · 快速结果可下载') : '已取消发丝精修' });
+      this.setData({
+        detailProcessing: false,
+        detailJobStatus: 'cancelled',
+        processState: this.data.resultImage ? 'ready' : 'idle',
+        failureKind: '',
+        failureMessage: '',
+        statusText: this.data.resultImage ? (this.data.bgColorName + ' · 快速结果可下载') : '已取消发丝精修'
+      });
       if (jobId) aiImageApi.cancelIdPhotoDetailJob(jobId);
     }
+  },
+
+  useHairRetouch: function() {
+    if (this.data.detailProcessing) return;
+    var that = this;
+    this.setData({ hairRetouch: true, failureKind: '', failureMessage: '' }, function() {
+      if (that.data.sourceId || that.data.preparedId) that.startDetailRetouch('', { automatic: true });
+      else that.generatePhoto();
+    });
+  },
+
+  retryDetailRetouch: function() {
+    if (this.data.detailProcessing) return;
+    this.setData({ failureKind: '', failureMessage: '' });
+    this.startDetailRetouch('', { automatic: true });
   },
 
   primaryAction: function(statusText) {

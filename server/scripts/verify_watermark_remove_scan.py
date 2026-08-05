@@ -189,7 +189,13 @@ def static_checks() -> list[dict[str, Any]]:
                 )
             ),
         ),
-        ("fast mode uses quick endpoint", "/api/watermark/quick-remove" in page_js and "wmApi.quickRemove" in page_js),
+        (
+            "fast mode uses quick endpoint",
+            "/api/watermark/remove-v2" in page_js
+            and "wmApi.removeV2" in page_js
+            and "modeKey" in page_js
+            and "'quick'" in page_js,
+        ),
         ("manual and stamp remain", 'data-mode="manual"' in page_wxml and 'data-mode="stamp"' in page_wxml),
     ]
     return [{"name": name, "passed": bool(passed)} for name, passed in checks]

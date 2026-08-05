@@ -1,5 +1,6 @@
 // ====== 搜索证件照规格 ======
 var specs = require('../../utils/specs.js');
+var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 
 Page({
   data: {
@@ -149,6 +150,6 @@ Page({
       wx.navigateTo({ url: '/pages/specs/specs?groupId=' + (groupId || id) });
       return;
     }
-    wx.navigateTo({ url: '/pages/generate/generate?specId=' + (specId || id) });
+    idPhotoEntry.openCaptureGuide(specId || id);
   }
 });

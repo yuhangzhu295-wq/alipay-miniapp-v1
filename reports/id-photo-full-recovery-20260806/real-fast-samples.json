@@ -1,0 +1,181 @@
+{
+  "status": "PASS",
+  "baseUrl": "http://127.0.0.1:8000",
+  "summary": {
+    "runs": 3,
+    "p50Ms": 14546,
+    "p95Ms": 15446,
+    "maxMs": 15446,
+    "synchronousDetailCount": 0,
+    "over30Seconds": 0
+  },
+  "rows": [
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "width": 960,
+      "height": 1886,
+      "bytes": 121027,
+      "httpStatus": 400,
+      "success": false,
+      "code": "ID_PHOTO_FAST_BLOCKED",
+      "requestId": "14de9c28eb",
+      "sourceId": "b9e0c2fc825c4f34a1ccee8c8c913bee",
+      "selectedModel": "hivision_modnet",
+      "fastQualityStatus": "FAST_BLOCK",
+      "fastResultUsable": false,
+      "mattingPass": false,
+      "cropPass": false,
+      "detailRecommended": true,
+      "detailReasons": [
+        "FAST_MODEL_FAILED",
+        "abnormalAlpha"
+      ],
+      "detailFallbackUsed": false,
+      "detailFallbackReasons": [],
+      "queueWaitMs": 0,
+      "uploadMs": 0,
+      "imageDecodeMs": 68,
+      "modelLoadMs": 0,
+      "fastInferenceMs": 0,
+      "qualityGateMs": 0,
+      "cropMs": 0,
+      "prepareCacheWriteMs": 0,
+      "totalServerMs": 14520,
+      "totalClientMs": 14546,
+      "timestamps": {
+        "requestReceivedAt": "2026-08-05T20:05:04.940663Z",
+        "uploadSavedAt": "2026-08-05T20:05:04.940969Z",
+        "decodeFinishedAt": "2026-08-05T20:05:05.009840Z",
+        "fastInferenceFinishedAt": "2026-08-05T20:05:19.460472Z",
+        "qualityGateFinishedAt": "2026-08-05T20:05:19.460481Z",
+        "cropFinishedAt": "2026-08-05T20:05:19.460481Z",
+        "prepareFinishedAt": "2026-08-05T20:05:19.461337Z",
+        "composeFinishedAt": null
+      }
+    },
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "width": 1179,
+      "height": 1526,
+      "bytes": 209933,
+      "httpStatus": 400,
+      "success": false,
+      "code": "ID_PHOTO_FAST_BLOCKED",
+      "requestId": "54e45093ed",
+      "sourceId": "5dd1e4fe22aa4abb9576f5e3edc4a98e",
+      "selectedModel": "hivision_modnet",
+      "fastQualityStatus": "FAST_BLOCK",
+      "fastResultUsable": false,
+      "mattingPass": false,
+      "cropPass": false,
+      "detailRecommended": true,
+      "detailReasons": [
+        "FAST_MODEL_FAILED",
+        "abnormalAlpha"
+      ],
+      "detailFallbackUsed": false,
+      "detailFallbackReasons": [],
+      "queueWaitMs": 0,
+      "uploadMs": 0,
+      "imageDecodeMs": 171,
+      "modelLoadMs": 0,
+      "fastInferenceMs": 0,
+      "qualityGateMs": 0,
+      "cropMs": 0,
+      "prepareCacheWriteMs": 0,
+      "totalServerMs": 15421,
+      "totalClientMs": 15446,
+      "timestamps": {
+        "requestReceivedAt": "2026-08-05T20:05:19.489964Z",
+        "uploadSavedAt": "2026-08-05T20:05:19.490360Z",
+        "decodeFinishedAt": "2026-08-05T20:05:19.661648Z",
+        "fastInferenceFinishedAt": "2026-08-05T20:05:34.909756Z",
+        "qualityGateFinishedAt": "2026-08-05T20:05:34.909762Z",
+        "cropFinishedAt": "2026-08-05T20:05:34.909762Z",
+        "prepareFinishedAt": "2026-08-05T20:05:34.911288Z",
+        "composeFinishedAt": null
+      }
+    },
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\217139c99959fa2888673f2100612b8f.jpg",
+      "width": 1280,
+      "height": 1707,
+      "bytes": 325536,
+      "httpStatus": 400,
+      "success": false,
+      "code": "ID_PHOTO_FAST_BLOCKED",
+      "requestId": "10932338d5",
+      "sourceId": "2909fb7c55544bc3b078cee13dc92bd3",
+      "selectedModel": "hivision_modnet",
+      "fastQualityStatus": "FAST_BLOCK",
+      "fastResultUsable": false,
+      "mattingPass": false,
+      "cropPass": true,
+      "detailRecommended": true,
+      "detailReasons": [
+        "backgroundSheetRetained"
+      ],
+      "detailFallbackUsed": false,
+      "detailFallbackReasons": [],
+      "queueWaitMs": 0,
+      "uploadMs": 0,
+      "imageDecodeMs": 90,
+      "modelLoadMs": 0,
+      "fastInferenceMs": 626,
+      "qualityGateMs": 278,
+      "cropMs": 0,
+      "prepareCacheWriteMs": 0,
+      "totalServerMs": 6518,
+      "totalClientMs": 6536,
+      "timestamps": {
+        "requestReceivedAt": "2026-08-05T20:05:34.931590Z",
+        "uploadSavedAt": "2026-08-05T20:05:34.931905Z",
+        "decodeFinishedAt": "2026-08-05T20:05:35.023057Z",
+        "fastInferenceFinishedAt": "2026-08-05T20:05:41.168267Z",
+        "qualityGateFinishedAt": "2026-08-05T20:05:41.446474Z",
+        "cropFinishedAt": "2026-08-05T20:05:41.446474Z",
+        "prepareFinishedAt": "2026-08-05T20:05:41.450227Z",
+        "composeFinishedAt": null
+      }
+    }
+  ],
+  "asyncDetail": {
+    "createHttpStatus": 200,
+    "createMs": 28,
+    "jobId": "b1602e35f72d42d1861f4c35bf3c469f",
+    "requestId": "3f51acbb43",
+    "detailModel": "birefnet-v1-lite",
+    "history": [
+      {
+        "status": "queued",
+        "atMs": 28
+      },
+      {
+        "status": "running",
+        "atMs": 2534
+      },
+      {
+        "status": "completed",
+        "atMs": 30364
+      }
+    ],
+    "status": "completed",
+    "preparedId": "7f05742585c442468a7a6ae1b1e1fe68",
+    "selectedModel": "birefnet-v1-lite",
+    "performance": {
+      "resizeMs": 11,
+      "imageDecodeMs": 11,
+      "faceDetectMs": 264,
+      "modelLoadMs": 0,
+      "fastInferenceMs": 0,
+      "detailInferenceMs": 6762,
+      "qualityGateMs": 0,
+      "cropMs": 0,
+      "queueWaitMs": 0,
+      "detailFallbackUsed": false,
+      "prepareCacheWriteMs": 0,
+      "totalServerMs": 28803
+    },
+    "message": null
+  }
+}

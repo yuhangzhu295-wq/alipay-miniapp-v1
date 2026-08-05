@@ -41,7 +41,16 @@
       <text>{{statusText}}</text>
     </view>
     <view wx:if="{{detailProcessing}}" class="detail-status">
-      <text>{{detailJobStatus === 'queued' ? '排队中' : '发丝精修中'}}</text>
+      <text>{{detailJobStatus === 'queued' ? '精细处理中' : '发丝精修中'}}</text>
+    </view>
+    <view wx:if="{{failureKind}}" class="failure-panel">
+      <text class="failure-title">{{failureKind === 'fastBlocked' ? '这张照片需要进一步优化' : '本次精细处理暂未完成'}}</text>
+      <text class="failure-copy">{{failureMessage}}</text>
+      <view class="failure-actions">
+        <view class="failure-button failure-secondary" bindtap="choosePhoto">重新上传</view>
+        <view wx:if="{{failureKind === 'fastBlocked'}}" class="failure-button failure-primary" bindtap="useHairRetouch">使用发丝精修</view>
+        <view wx:else class="failure-button failure-primary" bindtap="retryDetailRetouch">再次精修</view>
+      </view>
     </view>
   </view>
 

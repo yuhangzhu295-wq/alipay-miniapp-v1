@@ -6,6 +6,8 @@
     "pages/profile/profile",
     "pages/login/login",
     "pages/specs/specs",
+    "pages/capture-guide/capture-guide",
+    "pages/id-camera/id-camera",
     "pages/generate/generate",
     "pages/preview/preview",
     "pages/tool-detail/tool-detail"
@@ -15,6 +17,11 @@
     "connectSocket": 60000,
     "uploadFile": 360000,
     "downloadFile": 120000
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于直接拍摄证件照"
+    }
   },
   "window": {
     "navigationBarBackgroundColor": "#ffffff",

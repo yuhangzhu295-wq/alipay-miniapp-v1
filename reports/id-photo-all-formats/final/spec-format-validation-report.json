@@ -1,0 +1,139 @@
+{
+  "status": "PASS",
+  "baseUrl": "http://127.0.0.1:8000",
+  "generatedAt": "2026-08-06 04:14:22",
+  "health": {
+    "ok": true,
+    "statusCode": 200,
+    "durationMs": 13,
+    "attempts": 1,
+    "data": {
+      "success": true,
+      "message": "server running"
+    }
+  },
+  "sampleManifest": {
+    "realSources": [
+      {
+        "label": "real_source_1",
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\cloud-deploy-e2e\\id-photo-camera-flow-valid-source-20260805\\cloud-tests\\input-id-photo-source.jpg",
+        "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\real_source_1.jpg",
+        "size": {
+          "width": 540,
+          "height": 960
+        }
+      }
+    ],
+    "variants": [
+      {
+        "label": "png_real_person",
+        "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\format_png_real_person.png",
+        "size": {
+          "width": 540,
+          "height": 960
+        }
+      },
+      {
+        "label": "large_jpg_real_person",
+        "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\large_jpg_real_person.jpg",
+        "size": {
+          "width": 1800,
+          "height": 3200
+        }
+      },
+      {
+        "label": "small_jpg_real_person",
+        "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\small_jpg_real_person.jpg",
+        "size": {
+          "width": 315,
+          "height": 560
+        }
+      },
+      {
+        "label": "exif_rotated_phone",
+        "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\exif_rotated_phone.jpg",
+        "size": {
+          "width": 960,
+          "height": 540
+        },
+        "normalizedSize": {
+          "width": 540,
+          "height": 960
+        }
+      }
+    ],
+    "negative": {
+      "label": "negative_landscape_no_person",
+      "path": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\samples\\negative_landscape_no_person.png"
+    }
+  },
+  "specCount": 3,
+  "validatedSpecCount": 3,
+  "colorChecks": 15,
+  "passedColorChecks": 15,
+  "failedColorChecks": 0,
+  "prepareFailures": [],
+  "failedRows": [],
+  "negative": {
+    "passed": true,
+    "expected": "reject non-real/no-face input",
+    "statusCode": 400,
+    "code": "INVALID_ID_PHOTO_INPUT",
+    "message": "\u8bf7\u4e0a\u4f20\u6e05\u6670\u7684\u771f\u4eba\u6b63\u9762\u7167\u7247\u3002",
+    "response": {
+      "ok": false,
+      "statusCode": 400,
+      "durationMs": 226,
+      "attempts": 1,
+      "data": {
+        "success": false,
+        "code": "INVALID_ID_PHOTO_INPUT",
+        "message": "\u8bf7\u4e0a\u4f20\u6e05\u6670\u7684\u771f\u4eba\u6b63\u9762\u7167\u7247\u3002",
+        "requestId": "3b2fb0b4a8",
+        "sourceId": null,
+        "quality": {
+          "imageType": "illustration",
+          "realPerson": false,
+          "faceDetected": false,
+          "singlePerson": false,
+          "faceCount": 0,
+          "imageSize": "640x420",
+          "blurScore": 136.07,
+          "inputType": "illustration",
+          "code": "INVALID_ID_PHOTO_INPUT",
+          "message": "\u8bf7\u4e0a\u4f20\u6e05\u6670\u7684\u771f\u4eba\u6b63\u9762\u7167\u7247\u3002"
+        },
+        "fastResultUsable": false,
+        "fastQualityStatus": "FAST_BLOCK",
+        "mattingPass": false,
+        "cropPass": false,
+        "detailRecommended": false,
+        "detailReasons": [],
+        "selectedModel": "hivision_modnet",
+        "detailFallbackUsed": false,
+        "performance": {
+          "saveUploadMs": 0,
+          "imageDecodeMs": 0,
+          "resizeMs": 0,
+          "modelLoadMs": 0,
+          "fastInferenceMs": 0,
+          "qualityGateMs": 0,
+          "cropMs": 0,
+          "prepareCacheWriteMs": 0,
+          "totalServerMs": 222
+        },
+        "requestReceivedAt": "2026-08-05T20:14:22.506734Z",
+        "uploadSavedAt": "2026-08-05T20:14:22.507067Z",
+        "decodeFinishedAt": "2026-08-05T20:14:22.729978Z",
+        "fastInferenceFinishedAt": "2026-08-05T20:14:22.729981Z",
+        "qualityGateFinishedAt": "2026-08-05T20:14:22.729984Z",
+        "cropFinishedAt": "2026-08-05T20:14:22.729986Z",
+        "prepareFinishedAt": "2026-08-05T20:14:22.729989Z",
+        "composeFinishedAt": null
+      }
+    }
+  },
+  "contactSheet": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\screenshots\\spec-format-contact-sheet.jpg",
+  "allRowsDebugDir": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\debug-json",
+  "localResultsDir": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\id-photo-all-formats\\local-results"
+}

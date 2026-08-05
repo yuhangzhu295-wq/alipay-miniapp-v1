@@ -1,6 +1,7 @@
 // ====== 我的电子照 ======
 var imageService = require('../../utils/imageService.js');
 var authService = require('../../utils/authService.js');
+var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 
 Page({
   data: {
@@ -63,7 +64,7 @@ Page({
       wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
-    wx.navigateTo({ url: '/pages/generate/generate?mode=capture' });
+    idPhotoEntry.openCaptureGuide('yicun');
   },
 
   previewPhoto: function(e) {

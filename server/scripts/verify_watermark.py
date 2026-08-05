@@ -382,11 +382,11 @@ def audit_frontend() -> dict[str, Any]:
 
     checks = {
         "healthUsesWatermarkHealth": "/api/watermark/health" in api,
-        "manualEndpointPresent": "/api/watermark/manual-remove" in api and "manualRemove" in api,
-        "quickEndpointPresent": "/api/watermark/quick-remove" in api and "quickRemove" in api,
-        "hdEndpointPresent": "/api/watermark/hd-remove" in api and "hdRemove" in api,
-        "pageCallsQuickForScan": "wmApi.quickRemove" in js and "/api/watermark/quick-remove" in js,
-        "pageCallsHdForHd": "wmApi.hdRemove" in js and "/api/watermark/hd-remove" in js,
+        "manualEndpointPresent": "/api/watermark/remove-v2" in api and "quality === 'manual'" in api,
+        "quickEndpointPresent": "/api/watermark/remove-v2" in api and "'quick'" in api,
+        "hdEndpointPresent": "/api/watermark/remove-v2" in api and "quality === 'hd'" in api,
+        "pageCallsQuickForScan": "wmApi.removeV2" in js and "modeKey" in js and "'quick'" in js,
+        "pageCallsHdForHd": "wmApi.removeV2" in js and "/api/watermark/remove-v2" in js and "quality === 'hd'" in js,
         "separateStateManual": "manualResultUrl" in js and "manualResultLocalPath" in js,
         "separateStateQuick": "quickResultUrl" in js and "quickResultLocalPath" in js,
         "separateStateHd": "hdResultUrl" in js and "hdResultLocalPath" in js,

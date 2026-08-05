@@ -7,10 +7,10 @@
     "functionalFailures": 0
   },
   "runtime": {
-    "startedAt": "2026-08-05T16:23:26.569Z",
+    "startedAt": "2026-08-05T20:24:13.182Z",
     "automatorPort": 9430,
     "cliPath": "C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.bat",
-    "backendBaseUrl": "http://127.0.0.1:8000",
+    "backendBaseUrl": "https://tupzjianzhao.chat",
     "consoleErrors": [],
     "exceptions": [],
     "screenshots": [
@@ -28,7 +28,7 @@
       "outfitItemCount": 0,
       "outfitOptionsAbsent": true
     },
-    "finishedAt": "2026-08-05T16:26:02.647Z"
+    "finishedAt": "2026-08-05T20:26:49.303Z"
   },
   "results": [
     {
@@ -172,14 +172,14 @@
       "passed": true,
       "details": {
         "statusCode": 200,
-        "tempFilePath": "http://tmp/rSPXcSMgNruy763f8ef8486f426d257586d98cb56cd4.jpg"
+        "tempFilePath": "http://tmp/sEgh2h-X-72X763f8ef8486f426d257586d98cb56cd4.jpg"
       }
     },
     {
       "name": "Fresh random-sample result injected into real preview",
       "passed": true,
       "details": {
-        "sampleId": "cloud-repair-S07",
+        "sampleId": "fresh-cloud-20260806",
         "idReportStatus": "PASS"
       }
     },
@@ -188,7 +188,7 @@
       "passed": true,
       "details": {
         "processState": "ready",
-        "resultImage": "http://tmp/1pU7Im78d7Vucd83aa5272465f5ec2c96c56db55ccc1.jpg",
+        "resultImage": "http://tmp/R5MbQCivM1du3f9611c8bb174c6f88714d656afebfac.jpg",
         "statusText": "红色底 · 可下载"
       }
     },
@@ -207,7 +207,7 @@
       "details": {
         "savedBefore": 1,
         "savedAfter": 2,
-        "resultImage": "http://tmp/1pU7Im78d7Vucd83aa5272465f5ec2c96c56db55ccc1.jpg"
+        "resultImage": "http://tmp/R5MbQCivM1du3f9611c8bb174c6f88714d656afebfac.jpg"
       }
     },
     {
@@ -221,7 +221,7 @@
       "name": "My photos preview action completes",
       "passed": true,
       "details": {
-        "recordId": "photo_1785947072485"
+        "recordId": "photo_1785961518809"
       }
     },
     {
@@ -405,7 +405,7 @@
       "details": {
         "savedBefore": 0,
         "savedAfter": 1,
-        "resultImage": "http://tmp/rSPXcSMgNruy763f8ef8486f426d257586d98cb56cd4.jpg"
+        "resultImage": "http://tmp/sEgh2h-X-72X763f8ef8486f426d257586d98cb56cd4.jpg"
       }
     },
     {

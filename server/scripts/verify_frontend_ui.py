@@ -86,7 +86,10 @@ global.wx = {
   setStorageSync(key, value) { storage[key] = value; },
   getAccountInfoSync() { return { miniProgram: { envVersion: 'release' } }; },
   getFileSystemManager() {
-    return { readFileSync() { return 'ZmFrZQ=='; } };
+    return {
+      readFileSync() { return 'ZmFrZQ=='; },
+      access(opts) { if (opts && opts.success) opts.success(); }
+    };
   },
   createSelectorQuery() {
     return { in() { return this; }, select() { return this; }, fields() { return this; }, exec(cb) { cb([null]); } };
@@ -199,8 +202,16 @@ async function runCheck(name, fn) {
     const page = loadPage('pages/generate/generate');
     page.onLoad({ specId: 'yicun' });
     page.takePhoto();
+    assert(wxCalls.some(c => c.fn === 'navigateTo' && c.opts.url.includes('/pages/id-camera/id-camera?specId=yicun')), 'retake did not open custom camera');
+    page.handleIncomingPhoto({
+      token: 'frontend-camera-transfer',
+      tempFilePath: 'tmp://camera-id-photo.jpg',
+      source: 'camera',
+      specId: 'yicun',
+      createdAt: Date.now()
+    });
     await sleep(60);
-    assert(page.data.photoSrc, 'camera photo not set');
+    assert(page.data.photoSrc === 'tmp://camera-id-photo.jpg', 'confirmed camera photo not accepted');
     page.selectBg({ currentTarget: { dataset: { id: 'red' } } });
     await sleep(60);
     assert(page.data.bgColorId === 'red', 'red background not selected');

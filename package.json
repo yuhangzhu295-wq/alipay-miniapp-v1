@@ -62,6 +62,13 @@
     "verify:user-photo-isolation": "node server/scripts/run_python.js server/scripts/verify_user_photo_isolation.py --base-url http://127.0.0.1:8000 --target local",
     "verify:user-auth-isolation": "node server/scripts/run_python.js server/scripts/verify_user_auth_isolation.py",
     "verify:cloud-user-photo-isolation": "node server/scripts/run_python.js server/scripts/verify_cloud_user_photo_isolation.py --base-url https://tupzjianzhao.chat",
-    "verify:user-photo-isolation:all": "node server/scripts/run_python.js server/scripts/verify_user_photo_isolation_all.py --base-url http://127.0.0.1:8000 --cloud-url https://tupzjianzhao.chat"
+    "verify:user-photo-isolation:all": "node server/scripts/run_python.js server/scripts/verify_user_photo_isolation_all.py --base-url http://127.0.0.1:8000 --cloud-url https://tupzjianzhao.chat",
+    "verify:id-photo-entry-guide": "node server/scripts/verify_id_photo_camera_flow.js guide",
+    "verify:id-photo-camera-page": "node server/scripts/verify_id_photo_camera_flow.js camera",
+    "verify:id-photo-photo-transfer": "node server/scripts/verify_id_photo_camera_flow.js transfer",
+    "verify:id-photo-camera-permission": "node server/scripts/verify_id_photo_camera_flow.js permission",
+    "verify:id-photo-all-entry-points": "node server/scripts/verify_id_photo_camera_flow.js entry",
+    "verify:id-photo-full-capture-flow": "node server/scripts/verify_id_photo_camera_flow.js full",
+    "verify:id-photo-detail-ux": "node server/scripts/verify_id_photo_detail_ux.js"
   }
 }

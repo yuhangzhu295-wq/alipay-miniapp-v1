@@ -1,8 +1,8 @@
 # WeChat DevTools Business Flow Report
 
 - Status: PASS
-- Started: 2026-08-05T16:23:26.569Z
-- Finished: 2026-08-05T16:26:02.647Z
+- Started: 2026-08-05T20:24:13.182Z
+- Finished: 2026-08-05T20:26:49.303Z
 - Passed checks: 52/52
 - Failed checks: 0
 - Business gaps: 0
@@ -64,7 +64,7 @@
 ## Business Gaps
 
 ## Runtime Evidence
-- Backend: http://127.0.0.1:8000
+- Backend: https://tupzjianzhao.chat
 - DevTools automator port: 9430
 - Console errors captured: 0
 - Runtime exceptions captured: 0

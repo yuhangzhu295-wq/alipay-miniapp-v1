@@ -1,0 +1,113 @@
+{
+  "status": "PASS",
+  "baseUrl": "http://127.0.0.1:8000",
+  "checks": {
+    "iopaintModuleInstalled": true,
+    "torchInstalled": true,
+    "opencvInstalled": true,
+    "pillowInstalled": true,
+    "iopaintHttpReachable": true,
+    "iopaintModelIsLama": true,
+    "gatewayReachable": true,
+    "gatewayHdAvailableTrue": true,
+    "gatewayRealModelLoaded": true,
+    "gatewayFallbackNotUsed": true,
+    "gatewayEngineNotFallback": true,
+    "gatewayHasFallbackFields": true
+  },
+  "iopaintStart": {
+    "attempted": true,
+    "alreadyRunning": false,
+    "cmd": [
+      "C:\\Users\\zyu33\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "-m",
+      "iopaint",
+      "start",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8081",
+      "--model",
+      "lama",
+      "--device",
+      "cpu",
+      "--no-inbrowser",
+      "--quality",
+      "100"
+    ],
+    "stdout": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\checkpoints\\verify-iopaint-8081.out.log",
+    "stderr": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\\u8bc1\u4ef6\u7167\u751f\u6210\u5668\\reports\\checkpoints\\verify-iopaint-8081.err.log",
+    "pid": 42196,
+    "health": {
+      "passed": true,
+      "statusCode": 200,
+      "durationMs": 2074,
+      "data": {
+        "name": "lama",
+        "path": "lama",
+        "model_type": "inpaint",
+        "is_single_file_diffusers": false,
+        "need_prompt": false,
+        "controlnets": [],
+        "brushnets": [],
+        "support_strength": false,
+        "support_outpainting": false,
+        "support_lcm_lora": false,
+        "support_controlnet": false,
+        "support_brushnet": false,
+        "support_powerpaint_v2": false
+      }
+    }
+  },
+  "iopaintHealth": {
+    "passed": true,
+    "statusCode": 200,
+    "durationMs": 22,
+    "data": {
+      "name": "lama",
+      "path": "lama",
+      "model_type": "inpaint",
+      "is_single_file_diffusers": false,
+      "need_prompt": false,
+      "controlnets": [],
+      "brushnets": [],
+      "support_strength": false,
+      "support_outpainting": false,
+      "support_lcm_lora": false,
+      "support_controlnet": false,
+      "support_brushnet": false,
+      "support_powerpaint_v2": false
+    }
+  },
+  "watermarkHealth": {
+    "passed": true,
+    "statusCode": 200,
+    "durationMs": 7,
+    "data": {
+      "ok": true,
+      "success": true,
+      "service": "watermark-opencv-lama",
+      "port": 8000,
+      "engines": [
+        "opencv_manual",
+        "opencv_quick",
+        "lama"
+      ],
+      "opencvAvailable": true,
+      "manualAvailable": true,
+      "quickAvailable": true,
+      "hdAvailable": true,
+      "manualEngine": "opencv_manual",
+      "quickEngine": "opencv_quick",
+      "hdEngine": "lama",
+      "hdRealModelLoaded": true,
+      "fallbackUsed": false,
+      "fallbackAvailable": true,
+      "fallbackEngine": "opencv_hd_fallback",
+      "iopaintUrl": "http://127.0.0.1:8081",
+      "removeV2": "/api/watermark/remove-v2",
+      "maskTransport": "normalized_strokes_json",
+      "base64MaskAccepted": false
+    }
+  }
+}

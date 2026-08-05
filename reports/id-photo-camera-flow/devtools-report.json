@@ -1,0 +1,500 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "official WeChat DevTools page channel connected",
+      "passed": true,
+      "details": {
+        "path": "pages/index/index"
+      }
+    },
+    {
+      "name": "home one-inch entry opens capture guide",
+      "passed": true,
+      "details": {
+        "specId": "yicun"
+      }
+    },
+    {
+      "name": "home entry preserves one-inch specId",
+      "passed": true,
+      "details": {
+        "specId": "yicun"
+      }
+    },
+    {
+      "name": "一寸 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "yicun",
+        "specName": "一寸照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "red",
+            "name": "红色",
+            "hex": "#e53935"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          },
+          {
+            "id": "gray",
+            "name": "灰色",
+            "hex": "#9e9e9e"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "一寸 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "yicun",
+        "specName": "一寸照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "red",
+            "name": "红色",
+            "hex": "#e53935"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          },
+          {
+            "id": "gray",
+            "name": "灰色",
+            "hex": "#9e9e9e"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "一寸 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "二寸 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "ercun",
+        "specName": "二寸照",
+        "pixels": "413 × 579px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "red",
+            "name": "红色",
+            "hex": "#e53935"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          },
+          {
+            "id": "gray",
+            "name": "灰色",
+            "hex": "#9e9e9e"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "二寸 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "ercun",
+        "specName": "二寸照",
+        "pixels": "413 × 579px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "red",
+            "name": "红色",
+            "hex": "#e53935"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          },
+          {
+            "id": "gray",
+            "name": "灰色",
+            "hex": "#9e9e9e"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "二寸 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "身份证 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "id_card_cn_358_441",
+        "specName": "身份证数码照",
+        "pixels": "358 × 441px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "身份证 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "id_card_cn_358_441",
+        "specName": "身份证数码照",
+        "pixels": "358 × 441px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "身份证 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "护照 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "passport_cn_390_567",
+        "specName": "普通护照",
+        "pixels": "390 × 567px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "护照 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "passport_cn_390_567",
+        "specName": "普通护照",
+        "pixels": "390 × 567px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "lightBlue",
+            "name": "浅蓝色",
+            "hex": "#81d4fa"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "护照 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "驾驶证 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "driver_common",
+        "specName": "驾驶证照片",
+        "pixels": "260 × 378px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "驾驶证 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "driver_common",
+        "specName": "驾驶证照片",
+        "pixels": "260 × 378px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "驾驶证 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "教师资格证 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "teacher_cert_295_413",
+        "specName": "教师资格证报名照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "教师资格证 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "teacher_cert_295_413",
+        "specName": "教师资格证报名照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          },
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "教师资格证 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "公务员考试 guide keeps specId",
+      "passed": true,
+      "details": {
+        "specId": "civil_service_common",
+        "specName": "公务员考试报名照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "公务员考试 guide renders dynamic specification data",
+      "passed": true,
+      "details": {
+        "specId": "civil_service_common",
+        "specName": "公务员考试报名照",
+        "pixels": "295 × 413px",
+        "colors": [
+          {
+            "id": "blue",
+            "name": "蓝色",
+            "hex": "#1a73e8"
+          },
+          {
+            "id": "white",
+            "name": "白色",
+            "hex": "#ffffff"
+          }
+        ],
+        "dpi": "300dpi"
+      }
+    },
+    {
+      "name": "公务员考试 guide renders both real actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "guide pose card renders",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "guide specification card renders",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "guide five background swatches render for one-inch",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "direct capture action opens custom camera",
+      "passed": true,
+      "details": {
+        "specId": "yicun"
+      }
+    },
+    {
+      "name": "custom camera keeps selected specId",
+      "passed": true,
+      "details": {
+        "specId": "yicun"
+      }
+    },
+    {
+      "name": "native camera page renders",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "portrait guide overlay renders",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "eye line label renders",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "camera controls render",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "camera switch changes to front",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "capture confirmation exposes retake and use actions",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "retake clears captured image",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "permission rejection renders recovery UI",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "permission screen offers settings and album fallback",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "DevTools runtime has no uncaught page exception",
+      "passed": true,
+      "details": []
+    }
+  ],
+  "runtime": {
+    "startedAt": "2026-08-05T20:19:01.828Z",
+    "port": 9430,
+    "exceptions": [],
+    "screenshots": [
+      "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-camera-flow\\devtools-screenshots\\01-capture-guide-yicun.png",
+      "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-camera-flow\\devtools-screenshots\\02-id-camera-live.png",
+      "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-camera-flow\\devtools-screenshots\\03-id-camera-confirm.png",
+      "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-camera-flow\\devtools-screenshots\\04-id-camera-permission.png"
+    ],
+    "finishedAt": "2026-08-05T20:19:46.741Z"
+  }
+}

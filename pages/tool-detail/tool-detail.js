@@ -9,6 +9,7 @@ var watermarkApi = require('../../utils/watermarkApi.js');
 var apiConfig = require('../../utils/apiConfig.js');
 var aiImageApi = require('../../utils/aiImageApi.js');
 var professionalApi = require('../../utils/professionalApi.js');
+var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 
 var TOOL_CONFIGS = {
   verifyPhoto: { title: 'AI 证件照质检', icon: '🔍' },
@@ -1105,7 +1106,7 @@ Page({
       isCustom: true
     };
     getApp().globalData.customSpec = customSpec;
-    wx.navigateTo({ url: '/pages/generate/generate?specId=custom_pass&custom=true' });
+    idPhotoEntry.openCaptureGuide('custom_pass', { custom: true });
   },
 
   // ========== EDIT / COMPRESS — STRING INPUT ==========

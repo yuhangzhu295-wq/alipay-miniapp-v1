@@ -1028,9 +1028,12 @@ def build_quality_report(
         score -= 34
     background_sheet_signal = float(metrics.get("remainingBackgroundSheetRatio") or 0) > 0.006
     head_side_signal = float(metrics.get("remainingHeadSideBackgroundRatio") or 0) > 0.003
+    # Neutral gray is close to low-saturation clothing edges, so component size
+    # alone is not enough evidence of retained source background.
+    side_residual_max_limit = 900 if neutral_gray_bg else 520
     side_residual_failed = (
         side_residual["sideBoundaryLineMaxComponentPixels"] > 760
-        or side_residual["sideResidualArtifactMaxComponentPixels"] > 520
+        or side_residual["sideResidualArtifactMaxComponentPixels"] > side_residual_max_limit
         or (side_residual["sideBoundaryLineMaxComponentPixels"] > 520 and head_side_signal)
         or (side_residual["sideResidualArtifactMaxComponentPixels"] > 260 and background_sheet_signal)
         or (side_residual["sideResidualArtifactPixels"] > 900 and (background_sheet_signal or head_side_signal))
