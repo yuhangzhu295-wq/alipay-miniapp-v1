@@ -1,38 +1,38 @@
 {
   "status": "PASS",
-  "baseUrl": "http://127.0.0.1:8000",
-  "generatedAt": "2026-08-05T16:02:01Z",
+  "baseUrl": "https://tupzjianzhao.chat",
+  "generatedAt": "2026-08-05T16:44:52Z",
   "fastImage": "C:\\Users\\zyu33\\Desktop\\6a83d1e010f6e9ed8c35af94f0c33936.jpg",
   "detailImage": "C:\\Users\\zyu33\\Desktop\\610a7b3fadac6b4452736f72b8f3a492.jpg",
   "tenFast": {
     "timing": {
       "count": 10,
-      "p50Ms": 721,
-      "p95Ms": 801,
-      "maxMs": 801
+      "p50Ms": 1865,
+      "p95Ms": 4103,
+      "maxMs": 4103
     },
     "rows": [
       {
         "statusCode": 400,
-        "durationMs": 801,
-        "requestId": "ff37eeb381",
-        "sourceId": "492362d538334b7fb6806ed54ac54e3f",
+        "durationMs": 4103,
+        "requestId": "b87e72234a",
+        "sourceId": "6ce74de0980349e590af515c03e2974c",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 129,
+          "fastInferenceMs": 895,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 447,
-          "qualityGateMs": 137,
-          "imageDecodeMs": 26,
-          "resizeMs": 26,
+          "fastDurationMs": 1828,
+          "qualityGateMs": 267,
+          "imageDecodeMs": 389,
+          "resizeMs": 389,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 770,
-          "totalServerMs": 772,
+          "totalMs": 3386,
+          "totalServerMs": 3437,
           "saveUploadMs": 0
         },
         "success": false,
@@ -40,25 +40,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 732,
-        "requestId": "ab54e850f7",
-        "sourceId": "e3e58ce00fb444c99dd317bbf3cfa151",
+        "durationMs": 2228,
+        "requestId": "48f6f75b3c",
+        "sourceId": "81d1323cdbe545a8b5229f76a82a0e1e",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 121,
+          "fastInferenceMs": 279,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 420,
-          "qualityGateMs": 126,
-          "imageDecodeMs": 29,
-          "resizeMs": 29,
+          "fastDurationMs": 867,
+          "qualityGateMs": 174,
+          "imageDecodeMs": 40,
+          "resizeMs": 40,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 705,
-          "totalServerMs": 706,
+          "totalMs": 1331,
+          "totalServerMs": 1335,
           "saveUploadMs": 0
         },
         "success": false,
@@ -66,25 +66,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 780,
-        "requestId": "972b063eb9",
-        "sourceId": "2d384a5deeee4d4586dcab5fa9b23359",
+        "durationMs": 1879,
+        "requestId": "3a26e5a9b4",
+        "sourceId": "13b82632d24d46db904bba710131be49",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 128,
+          "fastInferenceMs": 288,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 443,
-          "qualityGateMs": 142,
-          "imageDecodeMs": 31,
-          "resizeMs": 31,
+          "fastDurationMs": 858,
+          "qualityGateMs": 177,
+          "imageDecodeMs": 37,
+          "resizeMs": 37,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 760,
-          "totalServerMs": 767,
+          "totalMs": 1303,
+          "totalServerMs": 1307,
           "saveUploadMs": 0
         },
         "success": false,
@@ -92,25 +92,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 719,
-        "requestId": "6714ec9480",
-        "sourceId": "fb0fb2f2c2d144118acc3045e0cf0aa7",
+        "durationMs": 1824,
+        "requestId": "623cf6eb19",
+        "sourceId": "38dd30de3c064991a1c352d7fcb89301",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 122,
+          "fastInferenceMs": 278,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 405,
-          "qualityGateMs": 125,
-          "imageDecodeMs": 31,
-          "resizeMs": 31,
+          "fastDurationMs": 853,
+          "qualityGateMs": 178,
+          "imageDecodeMs": 38,
+          "resizeMs": 38,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 695,
-          "totalServerMs": 697,
+          "totalMs": 1296,
+          "totalServerMs": 1297,
           "saveUploadMs": 0
         },
         "success": false,
@@ -118,25 +118,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 750,
-        "requestId": "adf7bcd50a",
-        "sourceId": "cdcdf4871ed043c1955f96420a9fd8c2",
+        "durationMs": 1806,
+        "requestId": "ac9ac6a963",
+        "sourceId": "644c283475494887b7d6ad2a8126ca74",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 129,
+          "fastInferenceMs": 272,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 448,
-          "qualityGateMs": 135,
-          "imageDecodeMs": 30,
-          "resizeMs": 30,
+          "fastDurationMs": 840,
+          "qualityGateMs": 176,
+          "imageDecodeMs": 37,
+          "resizeMs": 37,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 730,
-          "totalServerMs": 731,
+          "totalMs": 1278,
+          "totalServerMs": 1282,
           "saveUploadMs": 0
         },
         "success": false,
@@ -144,25 +144,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 700,
-        "requestId": "b14aa74e7e",
-        "sourceId": "c44c5eccec1e4c66b6bdc927a449b0d8",
+        "durationMs": 1824,
+        "requestId": "1b7c0dc77f",
+        "sourceId": "db684f66ca9c4035bed1daf3d2081699",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 113,
+          "fastInferenceMs": 275,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 403,
-          "qualityGateMs": 124,
-          "imageDecodeMs": 36,
-          "resizeMs": 36,
+          "fastDurationMs": 835,
+          "qualityGateMs": 172,
+          "imageDecodeMs": 37,
+          "resizeMs": 37,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 682,
-          "totalServerMs": 684,
+          "totalMs": 1266,
+          "totalServerMs": 1269,
           "saveUploadMs": 0
         },
         "success": false,
@@ -170,25 +170,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 683,
-        "requestId": "ab69bd3948",
-        "sourceId": "afc5078011f14cfb9baf1774367b053f",
+        "durationMs": 1851,
+        "requestId": "ec499c66b9",
+        "sourceId": "3ade041a65e143caa6a254c8e2aa7bea",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 117,
+          "fastInferenceMs": 275,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 381,
-          "qualityGateMs": 127,
-          "imageDecodeMs": 30,
-          "resizeMs": 30,
+          "fastDurationMs": 847,
+          "qualityGateMs": 176,
+          "imageDecodeMs": 39,
+          "resizeMs": 39,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 664,
-          "totalServerMs": 665,
+          "totalMs": 1300,
+          "totalServerMs": 1310,
           "saveUploadMs": 0
         },
         "success": false,
@@ -196,25 +196,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 723,
-        "requestId": "21520ded64",
-        "sourceId": "1a81f3c2a7d64b3ab989e77ce89d756e",
+        "durationMs": 1819,
+        "requestId": "1a352da23b",
+        "sourceId": "bf387e61ba744dbc9203de61a399bd5c",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 123,
+          "fastInferenceMs": 276,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 431,
-          "qualityGateMs": 131,
-          "imageDecodeMs": 30,
-          "resizeMs": 30,
+          "fastDurationMs": 838,
+          "qualityGateMs": 172,
+          "imageDecodeMs": 37,
+          "resizeMs": 37,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 717,
-          "totalServerMs": 719,
+          "totalMs": 1277,
+          "totalServerMs": 1285,
           "saveUploadMs": 0
         },
         "success": false,
@@ -222,25 +222,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 719,
-        "requestId": "4627404075",
-        "sourceId": "c80519c624844d9588d2a5a7a2741bfc",
+        "durationMs": 2399,
+        "requestId": "736fbc402b",
+        "sourceId": "3b62816845374270a5fe91336123d055",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 118,
+          "fastInferenceMs": 273,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 403,
-          "qualityGateMs": 120,
-          "imageDecodeMs": 31,
-          "resizeMs": 31,
+          "fastDurationMs": 826,
+          "qualityGateMs": 173,
+          "imageDecodeMs": 37,
+          "resizeMs": 37,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 676,
-          "totalServerMs": 677,
+          "totalMs": 1269,
+          "totalServerMs": 1284,
           "saveUploadMs": 0
         },
         "success": false,
@@ -248,25 +248,25 @@
       },
       {
         "statusCode": 400,
-        "durationMs": 717,
-        "requestId": "81b96a29d8",
-        "sourceId": "49eaa81d22a349f486817aaa213f6685",
+        "durationMs": 2037,
+        "requestId": "c8b1f5aa67",
+        "sourceId": "dc57a89b9f434da1aa0679b1b4cebbc1",
         "preparedId": null,
         "fastQualityStatus": "FAST_BLOCK",
         "selectedModel": "hivision_modnet",
         "detailFallbackUsed": false,
         "performance": {
-          "fastInferenceMs": 125,
+          "fastInferenceMs": 293,
           "modelLoadMs": 0,
           "queueWaitMs": 0,
-          "fastDurationMs": 411,
-          "qualityGateMs": 130,
-          "imageDecodeMs": 34,
-          "resizeMs": 34,
+          "fastDurationMs": 851,
+          "qualityGateMs": 173,
+          "imageDecodeMs": 38,
+          "resizeMs": 38,
           "cropMs": 0,
           "prepareCacheWriteMs": 0,
-          "totalMs": 701,
-          "totalServerMs": 703,
+          "totalMs": 1286,
+          "totalServerMs": 1296,
           "saveUploadMs": 0
         },
         "success": false,
@@ -277,28 +277,28 @@
   "fastWithDetail": {
     "detailCreate": {
       "success": true,
-      "jobId": "6d24ed8e1321406ea1c976a7bccca4c6",
+      "jobId": "e0521a10f0984a56ba56a7946cc0a249",
       "status": "queued",
-      "requestId": "96a128433a",
+      "requestId": "ad7d457ffc",
       "fastPreviewUrl": "",
       "detailModel": "birefnet-v1-lite",
       "preparedId": "",
-      "createdAt": "2026-08-05T16:01:46.898505Z",
-      "updatedAt": "2026-08-05T16:01:46.898519Z",
+      "createdAt": "2026-08-05T16:38:30.437708Z",
+      "updatedAt": "2026-08-05T16:38:30.437729Z",
       "statusCode": 200,
-      "createMs": 12
+      "createMs": 351
     },
     "detailInitialState": {
       "success": true,
-      "jobId": "6d24ed8e1321406ea1c976a7bccca4c6",
+      "jobId": "e0521a10f0984a56ba56a7946cc0a249",
       "status": "running",
-      "requestId": "96a128433a",
+      "requestId": "ad7d457ffc",
       "fastPreviewUrl": "",
       "detailModel": "birefnet-v1-lite",
       "preparedId": "",
-      "createdAt": "2026-08-05T16:01:46.898505Z",
-      "updatedAt": "2026-08-05T16:01:46.898817Z",
-      "startedAt": "2026-08-05T16:01:46.898806Z",
+      "createdAt": "2026-08-05T16:38:30.437708Z",
+      "updatedAt": "2026-08-05T16:38:30.439943Z",
+      "startedAt": "2026-08-05T16:38:30.439931Z",
       "queue": {
         "activeTaskType": "birefnet",
         "waiting": 0,
@@ -307,25 +307,25 @@
     },
     "fast": {
       "statusCode": 400,
-      "durationMs": 14333,
-      "requestId": "3b81fb8d67",
-      "sourceId": "88012d794b9d4284bb2468df29647873",
+      "durationMs": 7866,
+      "requestId": "59f32e4d78",
+      "sourceId": "8bb0273fcebe4058ae2769b6e4b3226b",
       "preparedId": null,
       "fastQualityStatus": "FAST_BLOCK",
       "selectedModel": "hivision_modnet",
       "detailFallbackUsed": false,
       "performance": {
-        "fastInferenceMs": 0,
-        "modelLoadMs": 0,
+        "fastInferenceMs": 174,
+        "modelLoadMs": 131,
         "queueWaitMs": 0,
-        "fastDurationMs": 14098,
-        "qualityGateMs": 0,
-        "imageDecodeMs": 28,
-        "resizeMs": 28,
+        "fastDurationMs": 6770,
+        "qualityGateMs": 173,
+        "imageDecodeMs": 39,
+        "resizeMs": 39,
         "cropMs": 0,
         "prepareCacheWriteMs": 0,
-        "totalMs": 14319,
-        "totalServerMs": 14319,
+        "totalMs": 7210,
+        "totalServerMs": 7214,
         "saveUploadMs": 0
       },
       "success": false,
@@ -333,16 +333,16 @@
     },
     "detailFinal": {
       "success": true,
-      "jobId": "6d24ed8e1321406ea1c976a7bccca4c6",
+      "jobId": "e0521a10f0984a56ba56a7946cc0a249",
       "status": "completed",
-      "requestId": "96a128433a",
+      "requestId": "ad7d457ffc",
       "fastPreviewUrl": "",
       "detailModel": "birefnet-v1-lite",
-      "preparedId": "ca16f2e9ca7a4aa490454988b1d63404",
-      "createdAt": "2026-08-05T16:01:46.898505Z",
-      "updatedAt": "2026-08-05T16:01:57.773756Z",
-      "startedAt": "2026-08-05T16:01:46.898806Z",
-      "completedAt": "2026-08-05T16:01:57.773738Z",
+      "preparedId": "18a93ee2ea1e4887bd99de8121b6f6cc",
+      "createdAt": "2026-08-05T16:38:30.437708Z",
+      "updatedAt": "2026-08-05T16:41:13.687027Z",
+      "startedAt": "2026-08-05T16:38:30.439931Z",
+      "completedAt": "2026-08-05T16:41:13.685372Z",
       "selectedModel": "birefnet-v1-lite",
       "quality": {
         "imageType": "real_person",
@@ -387,10 +387,10 @@
           "refinedMaskNonZeroRatio": 0.626088,
           "engineDebug": {
             "ready": true,
-            "readyReason": "standalone verification marker found: C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-multi-engine-reset\\hivision-standalone-ready.json",
-            "hivisionRoot": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos",
-            "venvPython": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\.venv\\Scripts\\python.exe",
-            "asciiRoot": "C:\\Users\\zyu33\\AppData\\Local\\Temp\\idphoto_hivision_ascii\\HivisionIDPhotos",
+            "readyReason": "standalone verification marker found: /root/photo-generator/reports/id-photo-multi-engine-reset/hivision-standalone-ready.json",
+            "hivisionRoot": "/root/photo-generator/third_party/HivisionIDPhotos",
+            "venvPython": "/root/photo-generator/server/.venv/bin/python3",
+            "asciiRoot": "/tmp/idphoto_hivision_ascii/HivisionIDPhotos",
             "requestedModel": "birefnet-v1-lite",
             "modelRouting": {
               "standard": "hivision_modnet",
@@ -404,7 +404,6 @@
               "installed": [
                 "hivision_modnet",
                 "birefnet-v1-lite",
-                "modnet_photographic_portrait_matting",
                 "rmbg-1.4"
               ]
             },
@@ -412,24 +411,75 @@
             "attempts": [
               {
                 "model": "birefnet-v1-lite",
-                "transport": "resident_worker_http",
-                "returncode": 0,
-                "seconds": 10.372,
+                "transport": "isolated_detail_bypass",
+                "returncode": -2,
+                "seconds": 0,
                 "queueWaitSeconds": 0.0,
-                "outputPath": "C:\\Users\\zyu33\\AppData\\Local\\Temp\\idphoto_hivision_ascii\\runtime\\96a128433a-1785945707053-birefnet-v1-lite.png",
+                "outputPath": "/tmp/idphoto_hivision_ascii/runtime/ad7d457ffc-1785947910835-birefnet-v1-lite.png",
+                "outputExists": false,
+                "outputTail": "DETAIL uses isolated on-demand transport on this host",
+                "fastWorkerRelease": {
+                  "success": true,
+                  "statusCode": 200,
+                  "durationMs": 6848,
+                  "data": {
+                    "success": true,
+                    "releasedModels": [
+                      "hivision_modnet"
+                    ],
+                    "freeMemoryMb": 3009.9,
+                    "swapUsedMb": 1507.0,
+                    "processRssMb": 190.6,
+                    "loadAverage1m": 0.685
+                  }
+                }
+              },
+              {
+                "model": "birefnet-v1-lite",
+                "transport": "controlled_subprocess_fallback",
+                "cmd": [
+                  "/root/photo-generator/server/.venv/bin/python3",
+                  "inference.py",
+                  "-t",
+                  "human_matting",
+                  "-i",
+                  "/tmp/idphoto_hivision_ascii/runtime/ad7d457ffc-1785947910835-input.png",
+                  "-o",
+                  "/tmp/idphoto_hivision_ascii/runtime/ad7d457ffc-1785947910835-birefnet-v1-lite.png",
+                  "--matting_model",
+                  "birefnet-v1-lite"
+                ],
+                "returncode": 0,
+                "seconds": 151.21,
+                "queueWaitSeconds": 0.0,
+                "outputPath": "/tmp/idphoto_hivision_ascii/runtime/ad7d457ffc-1785947910835-birefnet-v1-lite.png",
                 "outputExists": true,
-                "outputTail": "",
-                "modelLoadMs": 3631,
-                "inferenceMs": 2960,
+                "outputTail": "[1]  Start Human Matting...\nLoading ONNX model took 4.2025 seconds\nCPU ['CPUExecutionProvider']\nInference time: 78.8450 seconds\n[1]  Human Matting Time: 85.944s\n[2]  Start Beauty...\n[2]  Beauty Time: 0.217s\n",
                 "sessionReused": false,
-                "inputOriginalSize": "742x960",
-                "inputInferenceSize": "742x960",
-                "inputScale": 1.0,
-                "freeMemoryMb": 816.4,
-                "swapUsedMb": 5012.5,
-                "processRssMb": 6353.9,
-                "cpuPercent": 58.4,
-                "queueWaitMs": 0,
+                "modelLoadMs": 4202,
+                "inferenceMs": 78845,
+                "fastWorkerRestore": {
+                  "success": true,
+                  "statusCode": 200,
+                  "durationMs": 3149,
+                  "data": {
+                    "success": true,
+                    "ready": true,
+                    "warmupMs": 2119,
+                    "model": "hivision_modnet",
+                    "modelLoadMs": 0,
+                    "inferenceMs": 1885,
+                    "sessionReused": true,
+                    "inputOriginalSize": "480x640",
+                    "inputInferenceSize": "480x640",
+                    "inputScale": 1.0,
+                    "freeMemoryMb": 3102.8,
+                    "swapUsedMb": 1747.7,
+                    "processRssMb": 164.2,
+                    "loadAverage1m": 0.956
+                  }
+                },
+                "isolatedDetail": true,
                 "alphaExtrema": [
                   0,
                   255
@@ -440,13 +490,13 @@
               }
             ],
             "asciiRootState": {
-              "path": "C:\\Users\\zyu33\\AppData\\Local\\Temp\\idphoto_hivision_ascii\\HivisionIDPhotos",
+              "path": "/tmp/idphoto_hivision_ascii/HivisionIDPhotos",
               "created": false,
               "returncode": 0,
               "outputTail": "existing"
             },
             "selectedModel": "birefnet-v1-lite",
-            "selectedOutputPath": "C:\\Users\\zyu33\\AppData\\Local\\Temp\\idphoto_hivision_ascii\\runtime\\96a128433a-1785945707053-birefnet-v1-lite.png",
+            "selectedOutputPath": "/tmp/idphoto_hivision_ascii/runtime/ad7d457ffc-1785947910835-birefnet-v1-lite.png",
             "alphaExtrema": [
               0,
               255
@@ -457,7 +507,7 @@
             "trustedAlpha": true,
             "fallbackWithinHivision": false,
             "modelRoute": "detail",
-            "workerUsed": true,
+            "workerUsed": false,
             "preferDetail": true,
             "fastModel": "hivision_modnet",
             "fastDurationMs": 0,
@@ -470,20 +520,14 @@
             "detailFallbackUsed": false,
             "detailFallbackReasons": [],
             "detailModel": "birefnet-v1-lite",
-            "detailDurationMs": 10725,
+            "detailDurationMs": 162831,
             "finalSelectedModel": "birefnet-v1-lite",
             "detailWorkerMetrics": {
               "model": "birefnet-v1-lite",
-              "transport": "resident_worker_http",
-              "modelLoadMs": 3631,
-              "inferenceMs": 2960,
-              "queueWaitMs": 0,
-              "inputInferenceSize": "742x960",
-              "sessionReused": false,
-              "freeMemoryMb": 816.4,
-              "swapUsedMb": 5012.5,
-              "processRssMb": 6353.9,
-              "cpuPercent": 58.4
+              "transport": "controlled_subprocess_fallback",
+              "modelLoadMs": 4202,
+              "inferenceMs": 78845,
+              "sessionReused": false
             }
           },
           "foregroundRgbCleanedPixels": 0,
@@ -508,29 +552,23 @@
         "detailFallbackUsed": false,
         "detailFallbackReasons": [],
         "detailModel": "birefnet-v1-lite",
-        "detailDurationMs": 10725,
+        "detailDurationMs": 162831,
         "finalSelectedModel": "birefnet-v1-lite",
         "detailWorkerMetrics": {
           "model": "birefnet-v1-lite",
-          "transport": "resident_worker_http",
-          "modelLoadMs": 3631,
-          "inferenceMs": 2960,
-          "queueWaitMs": 0,
-          "inputInferenceSize": "742x960",
-          "sessionReused": false,
-          "freeMemoryMb": 816.4,
-          "swapUsedMb": 5012.5,
-          "processRssMb": 6353.9,
-          "cpuPercent": 58.4
+          "transport": "controlled_subprocess_fallback",
+          "modelLoadMs": 4202,
+          "inferenceMs": 78845,
+          "sessionReused": false
         },
         "landmarks": {
           "rightEye": {
             "x": 365.65607219934464,
-            "y": 284.489164352417
+            "y": 284.4891929626465
           },
           "leftEye": {
             "x": 431.6432237625122,
-            "y": 309.06715393066406
+            "y": 309.06718254089355
           },
           "nose": {
             "x": 389.9571328163147,
@@ -541,12 +579,12 @@
             "y": 364.83421325683594
           },
           "rightEar": {
-            "x": 317.24956542253494,
+            "x": 317.2495211958885,
             "y": 280.32405853271484
           },
           "leftEar": {
             "x": 459.3519253730774,
-            "y": 330.15435218811035
+            "y": 330.15438079833984
           }
         },
         "faceConfidence": 0.9549,
@@ -554,18 +592,18 @@
         "hairRetouchRequested": true
       },
       "performance": {
-        "resizeMs": 6,
-        "imageDecodeMs": 6,
-        "faceDetectMs": 130,
+        "resizeMs": 107,
+        "imageDecodeMs": 107,
+        "faceDetectMs": 273,
         "modelLoadMs": 0,
         "fastInferenceMs": 0,
-        "detailInferenceMs": 2960,
+        "detailInferenceMs": 78845,
         "qualityGateMs": 0,
         "cropMs": 0,
         "queueWaitMs": 0,
         "detailFallbackUsed": false,
-        "prepareCacheWriteMs": 0,
-        "totalServerMs": 10874
+        "prepareCacheWriteMs": 1,
+        "totalServerMs": 163236
       },
       "queue": {
         "activeTaskType": null,
@@ -574,7 +612,970 @@
       },
       "history": [
         {
-          "at": 1785945721.238675,
+          "at": 1785947920.5329773,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947922.1046348,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947923.5052571,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947924.8130703,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947926.6103215,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947928.0337272,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947929.468303,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947931.1641543,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947932.5084746,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947933.8530161,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947935.1587703,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947937.1469553,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947938.5993903,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947940.0307434,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947941.5524118,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947942.955733,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947944.2729652,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947945.576315,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947946.9778628,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947948.4120448,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947949.8547602,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947951.2790484,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947952.9334002,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947954.3640606,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947955.886929,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947957.3144174,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947958.9590707,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947960.8014219,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947962.237164,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947963.8733997,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947965.3068829,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947966.7411308,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947968.0307786,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947969.339591,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947970.6433175,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947972.168795,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947973.7041829,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947975.3561668,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947976.662408,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947978.2253673,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947979.6222692,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947981.281067,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947982.6129403,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947984.1636014,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947985.5824187,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947987.2354002,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947988.8590732,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947990.3027027,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947991.8283997,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947993.3657544,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947994.9030006,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947996.2318664,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947997.7773452,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785947999.1835954,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948000.5327692,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948001.9408581,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948003.5025282,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948004.9362578,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948006.4724748,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948007.8029263,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948009.2361143,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948010.7721357,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948012.158791,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948013.4573767,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948014.766009,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948016.2003245,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948017.6332746,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948019.1692414,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948020.7054892,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948022.111631,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948023.4247546,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948024.9047475,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948026.4409115,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948027.8492632,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948029.1646643,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948030.6054966,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948031.9887447,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948033.2965536,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948034.6276197,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948035.9365957,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948037.4021602,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948038.727932,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948040.2831316,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948041.8002672,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948043.1285908,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948044.462759,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948045.8763065,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948047.2209294,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948048.6453133,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948050.0967512,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948051.6302133,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948052.916911,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948054.2489402,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948055.828341,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948057.170826,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948058.5812645,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948060.3496742,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948061.9729483,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948063.405592,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948064.8416295,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948066.5961363,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948067.9586637,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948069.34522,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948070.7999196,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948072.181765,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948073.5063086,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948074.976828,
+          "status": "running",
+          "queue": {
+            "activeTaskType": "birefnet",
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        },
+        {
+          "at": 1785948076.6176772,
           "status": "completed",
           "queue": {
             "activeTaskType": null,
@@ -586,21 +1587,352 @@
     }
   },
   "lamaScenarios": {
-    "tested": false,
-    "reason": "--include-lama not supplied"
+    "tested": true,
+    "fastDuringLama": {
+      "statusCode": 400,
+      "durationMs": 4000,
+      "requestId": "f8df1c2afa",
+      "sourceId": "14bb0bf6edb9451b8093f5649cb614a2",
+      "preparedId": null,
+      "fastQualityStatus": "FAST_BLOCK",
+      "selectedModel": "hivision_modnet",
+      "detailFallbackUsed": false,
+      "performance": {
+        "fastInferenceMs": 972,
+        "modelLoadMs": 0,
+        "queueWaitMs": 0,
+        "fastDurationMs": 1939,
+        "qualityGateMs": 241,
+        "imageDecodeMs": 83,
+        "resizeMs": 83,
+        "cropMs": 0,
+        "prepareCacheWriteMs": 0,
+        "totalMs": 3001,
+        "totalServerMs": 3060,
+        "saveUploadMs": 0
+      },
+      "success": false,
+      "clearResult": true
+    },
+    "lamaWithFast": {
+      "statusCode": 200,
+      "durationMs": 24367,
+      "success": true,
+      "engine": "lama",
+      "fallbackUsed": false,
+      "queueWaitMs": 0,
+      "code": null
+    },
+    "lamaDuringDetail": {
+      "statusCode": 200,
+      "durationMs": 187084,
+      "success": true,
+      "engine": "lama",
+      "fallbackUsed": false,
+      "queueWaitMs": 162097,
+      "code": null
+    },
+    "detailWithLama": {
+      "success": true,
+      "jobId": "917957025e794e778146190b9e65ace5",
+      "status": "completed",
+      "requestId": "bda2c45b2a",
+      "fastPreviewUrl": "",
+      "detailModel": "birefnet-v1-lite",
+      "preparedId": "64e90eadc244462c9a253b3857640722",
+      "createdAt": "2026-08-05T16:41:42.823006Z",
+      "updatedAt": "2026-08-05T16:44:25.647852Z",
+      "startedAt": "2026-08-05T16:41:42.823311Z",
+      "completedAt": "2026-08-05T16:44:25.645340Z",
+      "selectedModel": "birefnet-v1-lite",
+      "quality": {
+        "imageType": "real_person",
+        "realPerson": true,
+        "faceDetected": true,
+        "singlePerson": true,
+        "faceCount": 1,
+        "imageSize": "742x960",
+        "blurScore": 512.89,
+        "inputType": "real_person",
+        "faceBox": {
+          "x": 312,
+          "y": 250,
+          "width": 155,
+          "height": 155
+        },
+        "maskNonZeroRatio": 0.626088,
+        "largestComponentRatio": 1.0,
+        "faceInsideMask": true,
+        "connectedComponents": 1,
+        "backgroundLeakRatio": 0.425024,
+        "foregroundTightnessScore": 0.463288,
+        "edgeLeakScore": 0.023181,
+        "haloScore": 0.425024,
+        "subjectCoverageScore": 0.980146,
+        "maskOverflowRatio": 0.425024,
+        "invalidBackgroundRetentionScore": 0.536712,
+        "mattingRefine": {
+          "hasFacePrior": true,
+          "allowedRatio": 0.385363,
+          "coreRatio": 0.044233,
+          "backgroundLeakRatio": 0.425024,
+          "foregroundTightnessScore": 0.463288,
+          "edgeLeakScore": 0.023181,
+          "haloScore": 0.425024,
+          "subjectCoverageScore": 0.980146,
+          "maskOverflowRatio": 0.425024,
+          "invalidBackgroundRetentionScore": 0.536712,
+          "trustedAlphaPath": true,
+          "trustedAlphaAddedPixels": 18,
+          "rawMaskNonZeroRatio": 0.626063,
+          "refinedMaskNonZeroRatio": 0.626088,
+          "engineDebug": {
+            "ready": true,
+            "readyReason": "standalone verification marker found: /root/photo-generator/reports/id-photo-multi-engine-reset/hivision-standalone-ready.json",
+            "hivisionRoot": "/root/photo-generator/third_party/HivisionIDPhotos",
+            "venvPython": "/root/photo-generator/server/.venv/bin/python3",
+            "asciiRoot": "/tmp/idphoto_hivision_ascii/HivisionIDPhotos",
+            "requestedModel": "birefnet-v1-lite",
+            "modelRouting": {
+              "standard": "hivision_modnet",
+              "balanced": "",
+              "balancedCandidate": "rmbg-1.4",
+              "balancedEnabled": false,
+              "balancedDecision": "disabled: S02 and S07 failed background-leak A/B",
+              "detail": "birefnet-v1-lite",
+              "standardRequested": "hivision_modnet",
+              "detailRequested": "birefnet-v1-lite",
+              "installed": [
+                "hivision_modnet",
+                "birefnet-v1-lite",
+                "rmbg-1.4"
+              ]
+            },
+            "workerUrl": "http://127.0.0.1:8091",
+            "attempts": [
+              {
+                "model": "birefnet-v1-lite",
+                "transport": "isolated_detail_bypass",
+                "returncode": -2,
+                "seconds": 0,
+                "queueWaitSeconds": 0.0,
+                "outputPath": "/tmp/idphoto_hivision_ascii/runtime/bda2c45b2a-1785948103155-birefnet-v1-lite.png",
+                "outputExists": false,
+                "outputTail": "DETAIL uses isolated on-demand transport on this host",
+                "fastWorkerRelease": {
+                  "success": true,
+                  "statusCode": 200,
+                  "durationMs": 5706,
+                  "data": {
+                    "success": true,
+                    "releasedModels": [
+                      "hivision_modnet"
+                    ],
+                    "freeMemoryMb": 2482.3,
+                    "swapUsedMb": 1481.7,
+                    "processRssMb": 179.7,
+                    "loadAverage1m": 1.163
+                  }
+                }
+              },
+              {
+                "model": "birefnet-v1-lite",
+                "transport": "controlled_subprocess_fallback",
+                "cmd": [
+                  "/root/photo-generator/server/.venv/bin/python3",
+                  "inference.py",
+                  "-t",
+                  "human_matting",
+                  "-i",
+                  "/tmp/idphoto_hivision_ascii/runtime/bda2c45b2a-1785948103155-input.png",
+                  "-o",
+                  "/tmp/idphoto_hivision_ascii/runtime/bda2c45b2a-1785948103155-birefnet-v1-lite.png",
+                  "--matting_model",
+                  "birefnet-v1-lite"
+                ],
+                "returncode": 0,
+                "seconds": 152.33,
+                "queueWaitSeconds": 0.0,
+                "outputPath": "/tmp/idphoto_hivision_ascii/runtime/bda2c45b2a-1785948103155-birefnet-v1-lite.png",
+                "outputExists": true,
+                "outputTail": "[1]  Start Human Matting...\nLoading ONNX model took 4.3288 seconds\nCPU ['CPUExecutionProvider']\nInference time: 76.5895 seconds\n[1]  Human Matting Time: 83.941s\n[2]  Start Beauty...\n[2]  Beauty Time: 0.173s\n",
+                "sessionReused": false,
+                "modelLoadMs": 4329,
+                "inferenceMs": 76590,
+                "fastWorkerRestore": {
+                  "success": true,
+                  "statusCode": 200,
+                  "durationMs": 3017,
+                  "data": {
+                    "success": true,
+                    "ready": true,
+                    "warmupMs": 1914,
+                    "model": "hivision_modnet",
+                    "modelLoadMs": 1342,
+                    "inferenceMs": 0,
+                    "sessionReused": false,
+                    "inputOriginalSize": "480x640",
+                    "inputInferenceSize": "480x640",
+                    "inputScale": 1.0,
+                    "freeMemoryMb": 3059.8,
+                    "swapUsedMb": 1653.9,
+                    "processRssMb": 204.0,
+                    "loadAverage1m": 0.963
+                  }
+                },
+                "isolatedDetail": true,
+                "alphaExtrema": [
+                  0,
+                  255
+                ],
+                "transparentRatio": 0.373026,
+                "transitionRatio": 0.015788,
+                "foregroundRatio": 0.626063
+              }
+            ],
+            "asciiRootState": {
+              "path": "/tmp/idphoto_hivision_ascii/HivisionIDPhotos",
+              "created": false,
+              "returncode": 0,
+              "outputTail": "existing"
+            },
+            "selectedModel": "birefnet-v1-lite",
+            "selectedOutputPath": "/tmp/idphoto_hivision_ascii/runtime/bda2c45b2a-1785948103155-birefnet-v1-lite.png",
+            "alphaExtrema": [
+              0,
+              255
+            ],
+            "transparentRatio": 0.373026,
+            "transitionRatio": 0.015788,
+            "foregroundRatio": 0.626063,
+            "trustedAlpha": true,
+            "fallbackWithinHivision": false,
+            "modelRoute": "detail",
+            "workerUsed": false,
+            "preferDetail": true,
+            "fastModel": "hivision_modnet",
+            "fastDurationMs": 0,
+            "fastFailReasons": [],
+            "mattingPass": true,
+            "mattingFailReasons": [],
+            "cropPass": true,
+            "cropFailReasons": [],
+            "cropRetryCount": 0,
+            "detailFallbackUsed": false,
+            "detailFallbackReasons": [],
+            "detailModel": "birefnet-v1-lite",
+            "detailDurationMs": 162462,
+            "finalSelectedModel": "birefnet-v1-lite",
+            "detailWorkerMetrics": {
+              "model": "birefnet-v1-lite",
+              "transport": "controlled_subprocess_fallback",
+              "modelLoadMs": 4329,
+              "inferenceMs": 76590,
+              "sessionReused": false
+            }
+          },
+          "foregroundRgbCleanedPixels": 0,
+          "foregroundRgbCleanupSkipped": "trusted model alpha preserves headwear and fine edges"
+        },
+        "foregroundRgbCleanedPixels": 0,
+        "foregroundRgbCleanupSkipped": "trusted model alpha preserves headwear and fine edges",
+        "alphaMattingMode": "hivision_human_matting",
+        "mattingEngine": "hivision",
+        "mattingModel": "birefnet-v1-lite",
+        "trustedAlpha": true,
+        "mattingPassed": true,
+        "mattingFailReasons": [],
+        "requestedModel": "birefnet-v1-lite",
+        "fastModel": "hivision_modnet",
+        "fastDurationMs": 0,
+        "fastFailReasons": [],
+        "mattingPass": true,
+        "cropPass": true,
+        "cropFailReasons": [],
+        "cropRetryCount": 0,
+        "detailFallbackUsed": false,
+        "detailFallbackReasons": [],
+        "detailModel": "birefnet-v1-lite",
+        "detailDurationMs": 162462,
+        "finalSelectedModel": "birefnet-v1-lite",
+        "detailWorkerMetrics": {
+          "model": "birefnet-v1-lite",
+          "transport": "controlled_subprocess_fallback",
+          "modelLoadMs": 4329,
+          "inferenceMs": 76590,
+          "sessionReused": false
+        },
+        "landmarks": {
+          "rightEye": {
+            "x": 365.65607219934464,
+            "y": 284.4891929626465
+          },
+          "leftEye": {
+            "x": 431.6432237625122,
+            "y": 309.06718254089355
+          },
+          "nose": {
+            "x": 389.9571328163147,
+            "y": 336.0556125640869
+          },
+          "mouth": {
+            "x": 377.9831221103668,
+            "y": 364.83421325683594
+          },
+          "rightEar": {
+            "x": 317.2495211958885,
+            "y": 280.32405853271484
+          },
+          "leftEar": {
+            "x": 459.3519253730774,
+            "y": 330.15438079833984
+          }
+        },
+        "faceConfidence": 0.9549,
+        "faceDetector": "mediapipe",
+        "hairRetouchRequested": true
+      },
+      "performance": {
+        "resizeMs": 13,
+        "imageDecodeMs": 13,
+        "faceDetectMs": 297,
+        "modelLoadMs": 0,
+        "fastInferenceMs": 0,
+        "detailInferenceMs": 76590,
+        "qualityGateMs": 0,
+        "cropMs": 0,
+        "queueWaitMs": 0,
+        "detailFallbackUsed": false,
+        "prepareCacheWriteMs": 2,
+        "totalServerMs": 162803
+      },
+      "queue": {
+        "activeTaskType": null,
+        "waiting": 0,
+        "maxWaiting": 2
+      },
+      "history": [
+        {
+          "at": 1785948292.2475033,
+          "status": "completed",
+          "queue": {
+            "activeTaskType": null,
+            "waiting": 0,
+            "maxWaiting": 2
+          }
+        }
+      ]
+    }
   },
   "resourceUsage": {
-    "available": true,
-    "samples": 43,
-    "processPids": [
-      8200,
-      42340
-    ],
-    "maxSystemCpuPercent": 96.0,
-    "maxProcessCpuPercent": 1396.2,
-    "maxProcessRssMb": 6748.4,
-    "maxSystemMemoryUsedMb": 15892.8,
-    "maxSwapUsedMb": 4993.9
+    "available": false,
+    "samples": 0,
+    "processPids": [],
+    "maxSystemCpuPercent": null,
+    "maxProcessCpuPercent": null,
+    "maxProcessRssMb": null,
+    "maxSystemMemoryUsedMb": null,
+    "maxSwapUsedMb": null
   },
   "checks": {
     "tenFastReturnedClearly": true,
@@ -609,6 +1941,10 @@
     "tenFastUnder30Seconds": true,
     "fastDuringDetailUnder30Seconds": true,
     "detailIsAsync": true,
-    "detailUsesBirefnet": true
+    "detailUsesBirefnet": true,
+    "fastDuringLamaUnder30Seconds": true,
+    "lamaWithFastSucceeded": true,
+    "lamaDuringDetailSucceeded": true,
+    "detailWithLamaCompleted": true
   }
 }

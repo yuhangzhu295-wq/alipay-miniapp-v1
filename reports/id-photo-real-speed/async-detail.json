@@ -1,39 +1,39 @@
 {
   "createHttpStatus": 200,
-  "createMs": 14,
-  "jobId": "5fc07fffde534be38bb21cf895d792af",
-  "requestId": "7309a1d71d",
+  "createMs": 305,
+  "jobId": "4515bab9207f4a2d93c4454bfe72859c",
+  "requestId": "f2845e6ea1",
   "detailModel": "birefnet-v1-lite",
   "history": [
     {
       "status": "queued",
-      "atMs": 14
+      "atMs": 305
     },
     {
       "status": "running",
-      "atMs": 2538
+      "atMs": 3150
     },
     {
       "status": "completed",
-      "atMs": 20125
+      "atMs": 155466
     }
   ],
   "status": "completed",
-  "preparedId": "372729ec0dc94ca1a62651137b2fd9f0",
+  "preparedId": "2fce1e72a7de4626a5c37dbcb25abb50",
   "selectedModel": "birefnet-v1-lite",
   "performance": {
-    "resizeMs": 3,
-    "imageDecodeMs": 3,
-    "faceDetectMs": 107,
+    "resizeMs": 6,
+    "imageDecodeMs": 6,
+    "faceDetectMs": 227,
     "modelLoadMs": 0,
     "fastInferenceMs": 0,
-    "detailInferenceMs": 11800,
+    "detailInferenceMs": 82548,
     "qualityGateMs": 0,
     "cropMs": 0,
     "queueWaitMs": 0,
     "detailFallbackUsed": false,
-    "prepareCacheWriteMs": 0,
-    "totalServerMs": 20023
+    "prepareCacheWriteMs": 2,
+    "totalServerMs": 152665
   },
   "message": null
 }
