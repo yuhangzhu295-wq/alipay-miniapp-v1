@@ -143,12 +143,13 @@ def post_lama(base_url: str, image_path: Path, mask_path: Path) -> dict[str, Any
 
 
 class ResourceSampler:
-    def __init__(self, process_pids: list[int] | None = None) -> None:
+    def __init__(self, process_pids: list[int] | None = None, enabled: bool = True) -> None:
+        self.enabled = enabled
         self.rows: list[dict[str, Any]] = []
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
         self.processes: list[Any] = []
-        if psutil is not None:
+        if enabled and psutil is not None:
             if process_pids:
                 self.processes = [psutil.Process(pid) for pid in process_pids]
             else:
@@ -161,7 +162,7 @@ class ResourceSampler:
                         continue
 
     def start(self) -> None:
-        if psutil is None:
+        if not self.enabled or psutil is None:
             return
         psutil.cpu_percent(interval=None)
         for process in self.processes:
@@ -201,7 +202,7 @@ class ResourceSampler:
         if self.thread:
             self.thread.join(timeout=2)
         return {
-            "available": psutil is not None,
+            "available": self.enabled and psutil is not None,
             "samples": len(self.rows),
             "processPids": sorted({pid for row in self.rows for pid in row.get("pids", [])}),
             "maxSystemCpuPercent": max((r["systemCpuPercent"] for r in self.rows), default=None),
@@ -232,12 +233,13 @@ def main() -> int:
     parser.add_argument("--watermark-mask", default="")
     parser.add_argument("--include-lama", action="store_true")
     parser.add_argument("--process-pid", action="append", type=int, default=[])
+    parser.add_argument("--disable-resource-sampling", action="store_true")
     args = parser.parse_args()
     base_url = args.base_url.rstrip("/")
     fast_image = Path(args.fast_image)
     detail_image = Path(args.detail_image or args.fast_image)
 
-    sampler = ResourceSampler(args.process_pid)
+    sampler = ResourceSampler(args.process_pid, enabled=not args.disable_resource_sampling)
     sampler.start()
     fast_rows = [post_fast(base_url, fast_image) for _ in range(10)]
 

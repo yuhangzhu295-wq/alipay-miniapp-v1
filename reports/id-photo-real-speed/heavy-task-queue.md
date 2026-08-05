@@ -1,12 +1,14 @@
 # Heavy Task Queue
 
 - Status: PASS
-- Base URL: `http://127.0.0.1:8000`
-- Ten FAST: P50 721 ms, P95 801 ms, max 801 ms
-- FAST during DETAIL: 14333 ms
-- DETAIL create: 12 ms; final state: completed
-- Resource sample: process CPU max 1396.2%, process RSS max 6748.4 MB, system CPU max 96.0%, Swap used max 4993.9 MB
-- LaMa scenarios: not tested on this target
+- Base URL: `https://tupzjianzhao.chat`
+- Ten FAST: P50 1865 ms, P95 4103 ms, max 4103 ms
+- FAST during DETAIL: 7866 ms
+- DETAIL create: 351 ms; final state: completed
+- Production process snapshot after the run: Backend 7.5% CPU / 118724 KB RSS; FAST Worker 6.8% CPU / 329720 KB RSS; IOPaint 0.2% CPU / 504880 KB RSS.
+- Production memory snapshot: 1378 MB used of 3723 MB; swap 1487 MB used of 6083 MB; load average 0.54 / 1.03 / 0.71.
+- Local peak sampling is preserved in `heavy-task-queue-local.json`; remote resource values above come from `ps`, `free -m`, and `uptime` on Tencent Cloud rather than the local verifier process.
+- LaMa scenarios: tested
 
 ## Checks
 - tenFastReturnedClearly: PASS
@@ -16,3 +18,7 @@
 - fastDuringDetailUnder30Seconds: PASS
 - detailIsAsync: PASS
 - detailUsesBirefnet: PASS
+- fastDuringLamaUnder30Seconds: PASS
+- lamaWithFastSucceeded: PASS
+- lamaDuringDetailSucceeded: PASS
+- detailWithLamaCompleted: PASS

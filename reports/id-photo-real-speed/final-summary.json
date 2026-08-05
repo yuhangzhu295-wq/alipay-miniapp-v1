@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "productionCodeSha": "9642a6c472b500f98742dfe31dfcefa0e3524050",
+  "ordinaryRouting": {
+    "model": "hivision_modnet",
+    "synchronousDetailCount": 0,
+    "detailFallbackUsed": false,
+    "timeoutSeconds": 30
+  },
+  "productionTiming": {
+    "runs": 15,
+    "p50Ms": 2361,
+    "p95Ms": 3098,
+    "maxMs": 3668,
+    "over30Seconds": 0
+  },
+  "localThirtyImageMatrix": {
+    "images": 30,
+    "p50Ms": 795,
+    "p95Ms": 910,
+    "maxMs": 911,
+    "asyncDetailJobsCompleted": 30
+  },
+  "productionAsyncDetail": {
+    "createMs": 305,
+    "status": "completed",
+    "model": "birefnet-v1-lite",
+    "totalMs": 155466
+  },
+  "productionHeavyQueue": {
+    "tenFastP50Ms": 1865,
+    "tenFastP95Ms": 4103,
+    "tenFastMaxMs": 4103,
+    "fastDuringDetailMs": 7866,
+    "fastDuringLamaMs": 4000,
+    "lamaQueueWaitDuringDetailMs": 162097,
+    "lamaEngine": "lama",
+    "lamaFallbackUsed": false
+  },
+  "uploadWorkCopy": {
+    "maxSidePx": 1600,
+    "jpegQuality": 86,
+    "minimumSsim": 0.989805,
+    "originalUntouched": true
+  },
+  "verification": {
+    "devtoolsPassed": 52,
+    "devtoolsTotal": 52,
+    "productionBusinessFlow": "PASS",
+    "cloudUserPhotoIsolation": "PASS",
+    "backendActive": true,
+    "hivisionWorkerActive": true,
+    "iopaintActive": true,
+    "physicalPhoneExecuted": false
+  },
+  "knownBaselineFindings": [
+    "Legacy driver_license purpose is absent from the outfit-template purpose allowlist; recorded without unrelated repair."
+  ]
+}
