@@ -10,8 +10,10 @@
  */
 
 var config = require('./apiConfig.js');
-var ID_PHOTO_PREPARE_TIMEOUT_MS = 210000;
+var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
+var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
+var ID_PHOTO_UPLOAD_QUALITY = 86;
 
 /**
  * 健康检查 — 判断后端是否启动
@@ -296,9 +298,123 @@ function generateIdPhotoV2(imagePath, options) {
   });
 }
 
+function _notifyIdPhotoStage(options, stage, detail) {
+  if (options && typeof options.onStage === 'function') {
+    options.onStage(stage, detail || {});
+  }
+}
+
+function _getLocalFileSize(filePath) {
+  return new Promise(function(resolve) {
+    if (!wx.getFileSystemManager) { resolve(0); return; }
+    wx.getFileSystemManager().getFileInfo({
+      filePath: filePath,
+      success: function(res) { resolve(Number(res.size || 0)); },
+      fail: function() { resolve(0); }
+    });
+  });
+}
+
+function _getImageInfo(filePath) {
+  return new Promise(function(resolve, reject) {
+    if (!wx.getImageInfo) { resolve({ path: filePath, width: 0, height: 0, type: '' }); return; }
+    wx.getImageInfo({ src: filePath, success: resolve, fail: reject });
+  });
+}
+
+function prepareIdPhotoUploadSource(photoSrc, options) {
+  options = options || {};
+  var startedAt = Date.now();
+  _notifyIdPhotoStage(options, 'optimizing', {});
+  return _getImageInfo(photoSrc).then(function(info) {
+    return _getLocalFileSize(photoSrc).then(function(originalBytes) {
+      var originalWidth = Number(info.width || 0);
+      var originalHeight = Number(info.height || 0);
+      var maxSide = Math.max(originalWidth, originalHeight);
+      var base = {
+        originalPath: photoSrc,
+        uploadPath: photoSrc,
+        originalWidth: originalWidth,
+        originalHeight: originalHeight,
+        uploadWidth: originalWidth,
+        uploadHeight: originalHeight,
+        originalBytes: originalBytes,
+        uploadBytes: originalBytes,
+        originalFormat: info.type || '',
+        orientation: info.orientation || 'up',
+        quality: null,
+        maxSide: ID_PHOTO_UPLOAD_MAX_SIDE,
+        compressed: false,
+        compressMs: Date.now() - startedAt
+      };
+      if (!maxSide || maxSide <= ID_PHOTO_UPLOAD_MAX_SIDE || !wx.compressImage) {
+        return base;
+      }
+      var scale = ID_PHOTO_UPLOAD_MAX_SIDE / maxSide;
+      var targetWidth = Math.max(1, Math.round(originalWidth * scale));
+      var targetHeight = Math.max(1, Math.round(originalHeight * scale));
+      return new Promise(function(resolve) {
+        wx.compressImage({
+          src: photoSrc,
+          quality: ID_PHOTO_UPLOAD_QUALITY,
+          compressedWidth: targetWidth,
+          compressedHeight: targetHeight,
+          success: function(res) {
+            var uploadPath = res.tempFilePath || photoSrc;
+            Promise.all([_getImageInfo(uploadPath), _getLocalFileSize(uploadPath)]).then(function(values) {
+              var uploadInfo = values[0] || {};
+              resolve(Object.assign({}, base, {
+                uploadPath: uploadPath,
+                uploadWidth: Number(uploadInfo.width || targetWidth),
+                uploadHeight: Number(uploadInfo.height || targetHeight),
+                uploadBytes: Number(values[1] || 0),
+                quality: ID_PHOTO_UPLOAD_QUALITY,
+                compressed: uploadPath !== photoSrc,
+                compressMs: Date.now() - startedAt
+              }));
+            });
+          },
+          fail: function(err) {
+            console.warn('[id-photo-speed] work copy fallback:', err);
+            resolve(Object.assign({}, base, { compressMs: Date.now() - startedAt, compressFallback: true }));
+          }
+        });
+      });
+    });
+  }).catch(function(err) {
+    console.warn('[id-photo-speed] image info fallback:', err);
+    return _getLocalFileSize(photoSrc).then(function(bytes) {
+      return {
+        originalPath: photoSrc,
+        uploadPath: photoSrc,
+        originalWidth: 0,
+        originalHeight: 0,
+        uploadWidth: 0,
+        uploadHeight: 0,
+        originalBytes: bytes,
+        uploadBytes: bytes,
+        originalFormat: '',
+        compressed: false,
+        compressFallback: true,
+        compressMs: Date.now() - startedAt
+      };
+    });
+  }).then(function(meta) {
+    console.log('[id-photo-speed] originalWidth=' + meta.originalWidth);
+    console.log('[id-photo-speed] originalHeight=' + meta.originalHeight);
+    console.log('[id-photo-speed] originalBytes=' + meta.originalBytes);
+    console.log('[id-photo-speed] uploadWidth=' + meta.uploadWidth);
+    console.log('[id-photo-speed] uploadHeight=' + meta.uploadHeight);
+    console.log('[id-photo-speed] uploadBytes=' + meta.uploadBytes);
+    console.log('[id-photo-speed] compressMs=' + meta.compressMs);
+    return meta;
+  });
+}
+
 function prepareIdPhotoV2(imagePath, options) {
   options = options || {};
-  return new Promise(function(resolve, reject) {
+  return prepareIdPhotoUploadSource(imagePath, options).then(function(uploadMeta) {
+    return new Promise(function(resolve, reject) {
     var endpoint = config.API_BASE_URL + '/api/id-photo/prepare';
     var formData = {
       purpose: options.purpose || 'official_id_photo',
@@ -320,9 +436,11 @@ function prepareIdPhotoV2(imagePath, options) {
       heightPx: formData.heightPx,
       composition: formData.composition
     });
-    wx.uploadFile({
+    _notifyIdPhotoStage(options, 'uploading', uploadMeta);
+    var uploadStartedAt = Date.now();
+    var task = wx.uploadFile({
       url: endpoint,
-      filePath: imagePath,
+      filePath: uploadMeta.uploadPath,
       name: 'image',
       formData: formData,
       timeout: ID_PHOTO_PREPARE_TIMEOUT_MS,
@@ -341,10 +459,19 @@ function prepareIdPhotoV2(imagePath, options) {
           console.log('[id-photo-fe] prepare engineVersion=' + ((data && (data.engineVersion || (data.debug && data.debug.engineVersion))) || ''));
           console.log('[id-photo-fe] prepare engineModel=' + ((data && (data.engineModel || (data.debug && data.debug.engineModel))) || ''));
           console.log('[id-photo-fe] prepare debug:', data && data.debug ? data.debug : null);
+          var uploadMs = Date.now() - uploadStartedAt;
+          var serverMs = data && data.performance ? Number(data.performance.totalServerMs || 0) : 0;
+          console.log('[id-photo-speed] uploadMs=' + uploadMs);
+          console.log('[id-photo-speed] serverMs=' + serverMs);
           if (data && data.success && data.preparedId) {
+            data.uploadMeta = uploadMeta;
+            data.clientPerformance = { uploadMs: uploadMs, serverMs: serverMs };
             resolve(data);
           } else {
-            reject(_makeApiError(data, '人像预处理失败，请重新上传清晰正面照片。'));
+            var apiError = _makeApiError(data, '人像预处理失败，请重新上传清晰正面照片。');
+            apiError.uploadMeta = uploadMeta;
+            apiError.uploadMs = uploadMs;
+            reject(apiError);
           }
         } catch (e) {
           var err = new Error('生成服务暂不可用，请稍后重试。');
@@ -357,8 +484,68 @@ function prepareIdPhotoV2(imagePath, options) {
         var isTimeout = err && err.errMsg && err.errMsg.indexOf('timeout') >= 0;
         var apiErr = new Error('生成服务暂不可用，请稍后重试。');
         apiErr.code = isTimeout ? 'ID_PHOTO_TIMEOUT' : 'SERVICE_UNAVAILABLE';
+        apiErr.uploadMeta = uploadMeta;
+        apiErr.uploadMs = Date.now() - uploadStartedAt;
         reject(apiErr);
       }
+    });
+    if (task && task.onProgressUpdate) {
+      task.onProgressUpdate(function(progress) {
+        if (progress && progress.progress >= 100) {
+          _notifyIdPhotoStage(options, 'fastMatting', { uploadMs: Date.now() - uploadStartedAt });
+        }
+      });
+    }
+    });
+  });
+}
+
+function createIdPhotoDetailJob(options) {
+  options = options || {};
+  return new Promise(function(resolve, reject) {
+    wx.request({
+      url: config.API_BASE_URL + '/api/id-photo/detail-jobs',
+      method: 'POST',
+      header: { 'content-type': 'application/x-www-form-urlencoded' },
+      data: {
+        preparedId: options.preparedId || '',
+        sourceId: options.sourceId || '',
+        fastPreviewUrl: options.fastPreviewUrl || ''
+      },
+      timeout: 10000,
+      success: function(res) {
+        var data = res.data || {};
+        if (res.statusCode === 200 && data.jobId) resolve(data);
+        else reject(_makeApiError(data, '发丝精修任务创建失败，请稍后重试。'));
+      },
+      fail: function() { reject(new Error('发丝精修任务创建失败，请稍后重试。')); }
+    });
+  });
+}
+
+function getIdPhotoDetailJob(jobId) {
+  return new Promise(function(resolve, reject) {
+    wx.request({
+      url: config.API_BASE_URL + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
+      method: 'GET',
+      timeout: 10000,
+      success: function(res) {
+        var data = res.data || {};
+        if (res.statusCode === 200 && data.jobId) resolve(data);
+        else reject(_makeApiError(data, '获取发丝精修状态失败。'));
+      },
+      fail: function() { reject(new Error('获取发丝精修状态失败。')); }
+    });
+  });
+}
+
+function cancelIdPhotoDetailJob(jobId) {
+  return new Promise(function(resolve) {
+    wx.request({
+      url: config.API_BASE_URL + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
+      method: 'DELETE',
+      timeout: 10000,
+      complete: function(res) { resolve((res && res.data) || { status: 'cancelled' }); }
     });
   });
 }
@@ -367,6 +554,7 @@ function composeIdPhotoV2(options) {
   options = options || {};
   return new Promise(function(resolve, reject) {
     var endpoint = config.API_BASE_URL + '/api/id-photo/compose';
+    var composeStartedAt = Date.now();
     console.log('[id-photo-api] compose endpoint:', endpoint);
     console.log('[id-photo-fe] compose endpoint=' + endpoint);
     console.log('[id-photo-api] compose request:', {
@@ -416,7 +604,13 @@ function composeIdPhotoV2(options) {
           console.log('[id-photo-fe] downloadUrl=' + downloadUrl);
           console.log('[id-photo-fe] previewFilePath=' + previewFilePath);
           console.log('[id-photo-fe] downloadFilePath=' + downloadFilePath);
+          var composeMs = Number((data.performance && data.performance.composeMs) || (Date.now() - composeStartedAt));
+          var downloadStartedAt = Date.now();
+          _notifyIdPhotoStage(options, 'previewing', { composeMs: composeMs });
           _downloadResult(imageUrl).then(function(localPath) {
+            var downloadMs = Date.now() - downloadStartedAt;
+            console.log('[id-photo-speed] composeMs=' + composeMs);
+            console.log('[id-photo-speed] downloadMs=' + downloadMs);
             resolve({
             tempFilePath: localPath,
             resultPath: localPath,
@@ -438,6 +632,7 @@ function composeIdPhotoV2(options) {
             engineModel: engineModel,
             debug: data.debug || null,
             requestId: requestId,
+            performance: Object.assign({}, data.performance || {}, { composeMs: composeMs, downloadMs: downloadMs }),
             message: data.message || '生成成功'
             });
           }).catch(function(downloadErr) {
@@ -584,6 +779,10 @@ function _makeApiError(data, fallbackMessage) {
   err.requestId = data.requestId || '';
   err.quality = data.quality || null;
   err.debug = data.debug || null;
+  err.sourceId = data.sourceId || (data.quality && data.quality.sourceId) || '';
+  err.detailRecommended = !!data.detailRecommended;
+  err.detailReasons = data.detailReasons || [];
+  err.performance = data.performance || null;
   return err;
 }
 
@@ -675,8 +874,12 @@ module.exports = {
   validatePortraitInput: validatePortraitInput,
   inspectPortrait: inspectPortrait,
   getIdPhotoCapabilities: getIdPhotoCapabilities,
+  prepareIdPhotoUploadSource: prepareIdPhotoUploadSource,
   prepareIdPhotoV2: prepareIdPhotoV2,
   composeIdPhotoV2: composeIdPhotoV2,
+  createIdPhotoDetailJob: createIdPhotoDetailJob,
+  getIdPhotoDetailJob: getIdPhotoDetailJob,
+  cancelIdPhotoDetailJob: cancelIdPhotoDetailJob,
   generateIdPhotoV2: generateIdPhotoV2,
   inpaint: inpaint,
   compressByServer: compressByServer,

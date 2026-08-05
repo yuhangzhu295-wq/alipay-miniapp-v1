@@ -31,6 +31,11 @@ Page({
     statusText: '上传照片后自动生成',
     preparedId: '',
     preparedKey: '',
+    sourceId: '',
+    detailJobId: '',
+    detailJobStatus: '',
+    detailProcessing: false,
+    elapsedSeconds: 0,
     resultImage: '',
     resultPreviewSrc: '',
     resultRemoteUrl: '',
@@ -105,6 +110,8 @@ Page({
 
   onUnload: function() {
     this.clearProcessTimer();
+    this.clearElapsedTimer();
+    this.stopDetailPolling();
   },
 
   applySpec: function(spec) {
@@ -139,6 +146,11 @@ Page({
       statusText: '上传照片后自动生成',
       preparedId: '',
       preparedKey: '',
+      sourceId: '',
+      detailJobId: '',
+      detailJobStatus: '',
+      detailProcessing: false,
+      elapsedSeconds: 0,
       resultImage: '',
       resultPreviewSrc: '',
       resultRemoteUrl: '',
@@ -154,6 +166,29 @@ Page({
       clearTimeout(this.processTimer);
       this.processTimer = null;
     }
+  },
+
+  clearElapsedTimer: function() {
+    if (this.elapsedTimer) {
+      clearInterval(this.elapsedTimer);
+      this.elapsedTimer = null;
+    }
+  },
+
+  updateProcessStage: function(processState, label) {
+    var that = this;
+    if (!this.processStartedAt) this.processStartedAt = Date.now();
+    this.currentStageLabel = label;
+    var refresh = function() {
+      var elapsed = Math.max(0, Math.floor((Date.now() - that.processStartedAt) / 1000));
+      that.setData({
+        processState: processState,
+        elapsedSeconds: elapsed,
+        statusText: label + ' · 已等待' + elapsed + '秒'
+      });
+    };
+    refresh();
+    if (!this.elapsedTimer) this.elapsedTimer = setInterval(refresh, 1000);
   },
 
   startProcessTimer: function(durationMs) {
@@ -193,6 +228,11 @@ Page({
           photoSrc: res.tempFiles[0].tempFilePath,
           preparedId: '',
           preparedKey: '',
+          sourceId: '',
+          detailJobId: '',
+          detailJobStatus: '',
+          detailProcessing: false,
+          elapsedSeconds: 0,
           resultImage: '',
           resultPreviewSrc: '',
           resultRemoteUrl: '',
@@ -364,7 +404,7 @@ Page({
       composition: requestSpec.backendComposition || requestSpec.composition || 'head_shoulder',
       enhanceLevel: 'standard',
       outputType: 'jpg',
-      hairRetouch: that.data.hairRetouch || false
+      hairRetouch: false
     };
     var requestToken = Date.now() + '_' + requestBgColorId;
     var prepareKey = [
@@ -372,17 +412,18 @@ Page({
       requestPayload.specId,
       requestPayload.widthPx,
       requestPayload.heightPx,
-      requestPayload.composition,
-      requestPayload.hairRetouch
+      requestPayload.composition
     ].join('|');
     var hasPrepared = that.data.preparedId && that.data.preparedKey === prepareKey;
     var currentRoute = that.getCurrentRouteForLog();
     that.currentGenerateToken = requestToken;
+    that.processStartedAt = Date.now();
+    that.clearElapsedTimer();
 
     that.setData({
       generating: true,
-      processState: hasPrepared ? 'composing' : 'preparing',
-      statusText: hasPrepared ? ((typeof statusText === 'string' ? statusText : null) || '换底中...') : '制作中...',
+      processState: hasPrepared ? 'composing' : 'optimizing',
+      statusText: hasPrepared ? ((typeof statusText === 'string' ? statusText : null) || '正在生成底色') : '正在优化上传图片',
       resultImage: '',
       resultPreviewSrc: '',
       resultRemoteUrl: '',
@@ -391,8 +432,8 @@ Page({
       layoutColorId: '',
       canDownload: false
     });
-    // Covers one prepare plus the compose retry budget without racing wx timeouts.
-    that.startProcessTimer(hasPrepared ? 135000 : 330000);
+    that.startProcessTimer(30000);
+    that.updateProcessStage(hasPrepared ? 'composing' : 'optimizing', hasPrepared ? '正在生成底色' : '正在优化上传图片');
     console.log('[id-photo-generate] API_BASE_URL:', apiConfig.API_BASE_URL);
     console.log('[id-photo-generate] prepare endpoint:', prepareEndpoint);
     console.log('[id-photo-generate] compose endpoint:', composeEndpoint);
@@ -410,14 +451,25 @@ Page({
     console.log('[id-photo-fe] hasPrepared=' + !!hasPrepared);
 
     var preparePromise = hasPrepared
-      ? Promise.resolve({ preparedId: that.data.preparedId })
-      : aiImageApi.prepareIdPhotoV2(requestPhotoSrc, requestPayload);
+      ? Promise.resolve({ preparedId: that.data.preparedId, sourceId: that.data.sourceId })
+      : aiImageApi.prepareIdPhotoV2(requestPhotoSrc, Object.assign({}, requestPayload, {
+          onStage: function(stage) {
+            var labels = {
+              optimizing: ['optimizing', '正在优化上传图片'],
+              uploading: ['uploading', '正在上传照片'],
+              fastMatting: ['fastMatting', '正在快速抠图']
+            };
+            var next = labels[stage];
+            if (next) that.updateProcessStage(next[0], next[1]);
+          }
+        }));
     var composePayload = {
       bgColor: requestBgColorHex,
       bgColorName: requestBgColorId,
       outputType: 'jpg'
     };
     var composeWithRetry = function(preparedId, attempt) {
+      that.updateProcessStage('composing', '正在生成底色');
       return aiImageApi.composeIdPhotoV2(Object.assign({}, composePayload, {
         preparedId: preparedId
       })).catch(function(err) {
@@ -461,10 +513,10 @@ Page({
           that.setData({
             preparedId: prepared.preparedId,
             preparedKey: prepareKey,
-            processState: 'composing',
-            statusText: '换底中...'
+            sourceId: prepared.sourceId || that.data.sourceId
           });
         }
+        that.updateProcessStage('cropping', '正在调整证件照比例');
         return composeWithRetry(prepared.preparedId, 0);
       })
       .then(function(result) {
@@ -493,7 +545,13 @@ Page({
         console.log('[id-photo-fe] compose engineVersion=' + (result.engineVersion || ''));
         console.log('[id-photo-fe] compose engineModel=' + (result.engineModel || ''));
         console.log('[id-photo-fe] compose debug:', result.debug || null);
+        that.updateProcessStage('previewing', '正在加载预览');
         that.clearProcessTimer();
+        that.clearElapsedTimer();
+        var totalClientMs = Date.now() - that.processStartedAt;
+        console.log('[id-photo-speed] composeMs=' + Number((result.performance && result.performance.composeMs) || 0));
+        console.log('[id-photo-speed] previewLoadMs=' + Number((result.performance && result.performance.downloadMs) || 0));
+        console.log('[id-photo-speed] totalClientMs=' + totalClientMs);
         that.setData({
           generating: false,
           processState: 'ready',
@@ -508,11 +566,13 @@ Page({
           if (that.data.outputTab === 'layout') {
             that.generateLayoutPhoto();
           }
+          if (that.data.hairRetouch) that.startDetailRetouch();
         });
       })
       .catch(function(err) {
         if (err && err.silent) return;
         that.clearProcessTimer();
+        that.clearElapsedTimer();
         console.error('[id-photo-generate] failed:', err);
         console.error('[id-photo-generate] prepare endpoint:', prepareEndpoint);
         console.error('[id-photo-generate] compose endpoint:', composeEndpoint);
@@ -529,6 +589,8 @@ Page({
           message = '人像预处理失败，请重新上传清晰正面照片。';
         } else if (err && err.code === 'MASK_QUALITY_FAILED') {
           message = '人像抠图不完整，请重新上传清晰正面照片。';
+        } else if (err && err.code === 'ID_PHOTO_FAST_BLOCKED') {
+          message = '快速抠图未通过，请重新上传或开启发丝精修。';
         } else if (err && (err.code === 'ID_PHOTO_QUALITY_FAILED' || err.code === 'ID_PHOTO_BACKGROUND_NOT_PURE')) {
           message = '证件照生成质量未达标，请重新上传清晰正面照片。';
         } else if (err && (err.code === 'SERVICE_TIMEOUT' || err.code === 'ID_PHOTO_TIMEOUT')) {
@@ -542,6 +604,7 @@ Page({
           generating: false,
           processState: (err && (err.code === 'SERVICE_TIMEOUT' || err.code === 'ID_PHOTO_TIMEOUT')) ? 'timeout' : 'failed',
           statusText: message,
+          sourceId: (err && err.sourceId) || that.data.sourceId,
           preparedId: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedId,
           preparedKey: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedKey,
           resultImage: '',
@@ -553,6 +616,9 @@ Page({
           canDownload: false
         });
         wx.showToast({ title: message, icon: 'none' });
+        if (err && err.code === 'ID_PHOTO_FAST_BLOCKED' && that.data.hairRetouch && err.sourceId) {
+          that.startDetailRetouch();
+        }
       });
   },
 
@@ -576,10 +642,115 @@ Page({
       });
   },
 
+  stopDetailPolling: function() {
+    if (this.detailPollTimer) {
+      clearTimeout(this.detailPollTimer);
+      this.detailPollTimer = null;
+    }
+  },
+
+  startDetailRetouch: function(sourceIdOverride) {
+    var that = this;
+    if (that.data.detailProcessing) return;
+    var sourceId = sourceIdOverride || that.data.sourceId;
+    if (!sourceId && !that.data.preparedId) {
+      wx.showToast({ title: '请先上传照片完成快速处理', icon: 'none' });
+      return;
+    }
+    that.stopDetailPolling();
+    that.detailStartedAt = Date.now();
+    that.setData({
+      detailProcessing: true,
+      detailJobStatus: 'queued',
+      statusText: '发丝精修排队中 · 已等待0秒'
+    });
+    aiImageApi.createIdPhotoDetailJob({
+      preparedId: that.data.preparedId,
+      sourceId: sourceId,
+      fastPreviewUrl: that.data.resultRemoteUrl || ''
+    }).then(function(job) {
+      that.setData({ detailJobId: job.jobId, detailJobStatus: job.status || 'queued' });
+      that.pollDetailRetouch(job.jobId);
+    }).catch(function(err) {
+      console.error('[id-photo-detail] create failed:', err);
+      that.setData({
+        detailProcessing: false,
+        detailJobStatus: 'failed',
+        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : (err.message || '发丝精修任务创建失败')
+      });
+      wx.showToast({ title: err.message || '发丝精修任务创建失败', icon: 'none' });
+    });
+  },
+
+  pollDetailRetouch: function(jobId) {
+    var that = this;
+    if (!jobId || !that.data.detailProcessing || that.data.detailJobId !== jobId) return;
+    aiImageApi.getIdPhotoDetailJob(jobId).then(function(job) {
+      if (!that.data.detailProcessing || that.data.detailJobId !== jobId) return;
+      var elapsed = Math.max(0, Math.floor((Date.now() - that.detailStartedAt) / 1000));
+      if (job.status === 'queued' || job.status === 'running') {
+        that.setData({
+          detailJobStatus: job.status,
+          statusText: (job.status === 'queued' ? '发丝精修排队中' : '发丝精修中') + ' · 已等待' + elapsed + '秒'
+        });
+        that.detailPollTimer = setTimeout(function() { that.pollDetailRetouch(jobId); }, 2500);
+        return;
+      }
+      if (job.status === 'completed' && job.preparedId) {
+        that.setData({ detailJobStatus: 'completed', statusText: '正在生成精修底色' });
+        return aiImageApi.composeIdPhotoV2({
+          preparedId: job.preparedId,
+          bgColor: that.data.bgColorHex,
+          bgColorName: that.data.bgColorId,
+          outputType: 'jpg'
+        }).then(function(result) {
+          if (!that.data.detailProcessing || that.data.detailJobId !== jobId) return;
+          that.setData({
+            detailProcessing: false,
+            detailJobStatus: 'completed',
+            preparedId: job.preparedId,
+            resultImage: result.tempFilePath,
+            resultPreviewSrc: result.previewUrl || result.finalImageUrl || result.tempFilePath,
+            resultRemoteUrl: result.finalImageUrl || result.remoteUrl || '',
+            resultColorId: that.data.bgColorId,
+            layoutImage: '',
+            layoutColorId: '',
+            canDownload: true,
+            statusText: that.data.bgColorName + ' · 发丝精修完成'
+          });
+        }).catch(function(err) {
+          console.error('[id-photo-detail] compose failed:', err);
+          that.setData({
+            detailProcessing: false,
+            detailJobStatus: 'failed',
+            statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : '精修结果未通过质量检查，请重新上传'
+          });
+          wx.showToast({ title: that.data.resultImage ? '精修失败，已保留快速结果' : '精修结果未通过质量检查', icon: 'none' });
+        });
+      }
+      that.setData({
+        detailProcessing: false,
+        detailJobStatus: job.status || 'failed',
+        statusText: that.data.resultImage ? (that.data.bgColorName + ' · 快速结果可下载') : (job.message || '发丝精修失败，请重新上传')
+      });
+      if (job.status === 'failed') wx.showToast({ title: job.message || '发丝精修失败，已保留快速结果', icon: 'none' });
+    }).catch(function(err) {
+      console.error('[id-photo-detail] poll failed:', err);
+      if (!that.data.detailProcessing || that.data.detailJobId !== jobId) return;
+      that.detailPollTimer = setTimeout(function() { that.pollDetailRetouch(jobId); }, 2500);
+    });
+  },
+
   onToggleHairRetouch: function() {
-    this.setData({ hairRetouch: !this.data.hairRetouch });
-    if (this.data.photoSrc && !this.data.generating) {
-      this.primaryAction('换底中...');
+    var enabled = !this.data.hairRetouch;
+    var jobId = this.data.detailJobId;
+    this.setData({ hairRetouch: enabled });
+    if (enabled && this.data.photoSrc && !this.data.generating) {
+      this.startDetailRetouch();
+    } else if (!enabled && this.data.detailProcessing) {
+      this.stopDetailPolling();
+      this.setData({ detailProcessing: false, detailJobStatus: 'cancelled', statusText: this.data.resultImage ? (this.data.bgColorName + ' · 快速结果可下载') : '已取消发丝精修' });
+      if (jobId) aiImageApi.cancelIdPhotoDetailJob(jobId);
     }
   },
 

@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-08-05T23:20:00+08:00",
+  "productionBaseUrl": "https://tupzjianzhao.chat",
+  "productionBaselineSha": "c3f78a46ea198536a7a49ad18db4eddfb8f1466d",
+  "hairRetouchRequested": false,
+  "specId": "one-inch",
+  "summary": {
+    "runs": 15,
+    "within15Seconds": 0,
+    "within30Seconds": 0,
+    "automaticDetailConfirmed": true,
+    "primaryCause": "F_AUTOMATIC_DETAIL",
+    "amplifiers": [
+      "G_QUEUE_AND_NON_CANCELLABLE_THREAD",
+      "C_PROXY_BACKEND_TIMEOUT_MISMATCH"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "width": 960,
+      "height": 1886,
+      "originalBytes": 121027,
+      "uploadBytes": 121027,
+      "runs": [
+        {"run": 1, "requestId": "54721311b8", "httpStatus": 200, "totalClientMs": 160738, "selectedModel": "birefnet-v1-lite", "detailFallbackUsed": true, "detailFallbackReasons": ["backgroundSheetRetained"], "queueWaitMs": 0, "modelLoadMs": 4163, "fastInferenceMs": 989, "detailInferenceMs": 82745, "fastDurationMs": 1870, "detailDurationMs": 156041},
+        {"run": 2, "requestId": "4812876aff", "httpStatus": 504, "totalClientMs": 181263, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 3, "requestId": "0c774fb715", "httpStatus": 504, "totalClientMs": 181262, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 4, "requestId": "116e490f11", "httpStatus": 504, "totalClientMs": 181169, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 5, "requestId": "637ae197ee", "httpStatus": 504, "totalClientMs": 181262, "code": "ID_PHOTO_TIMEOUT"}
+      ]
+    },
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "width": 1179,
+      "height": 1526,
+      "originalBytes": 209933,
+      "uploadBytes": 209933,
+      "runs": [
+        {"run": 1, "requestId": "2122ede28d", "httpStatus": 504, "totalClientMs": 91000, "response": "nginx_non_json_504"},
+        {"run": 2, "requestId": "0716c7e5d8", "httpStatus": 504, "totalClientMs": 91000, "response": "nginx_non_json_504"},
+        {"run": 3, "requestId": "ce8c684670", "httpStatus": 504, "totalClientMs": 91000, "response": "nginx_non_json_504"},
+        {"run": 4, "requestId": "47d358e266", "httpStatus": 504, "totalClientMs": 91000, "response": "nginx_non_json_504"},
+        {"run": 5, "requestId": "5d38f4fb57", "httpStatus": 504, "totalClientMs": 91000, "response": "nginx_non_json_504"}
+      ]
+    },
+    {
+      "path": "C:\\Users\\zyu33\\Desktop\\217139c99959fa2888673f2100612b8f.jpg",
+      "width": 1280,
+      "height": 1707,
+      "originalBytes": 325536,
+      "uploadBytes": 325536,
+      "runs": [
+        {"run": 1, "requestId": "cecbc4f392", "httpStatus": 504, "totalClientMs": 183970, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 2, "requestId": "11a4250dc9", "httpStatus": 504, "totalClientMs": 183972, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 3, "requestId": "706a662ebe", "httpStatus": 504, "totalClientMs": 183970, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 4, "requestId": "4ba0f156e2", "httpStatus": 504, "totalClientMs": 183971, "code": "ID_PHOTO_TIMEOUT"},
+        {"run": 5, "requestId": "4a6d1d609e", "httpStatus": 200, "totalClientMs": 183972, "selectedModel": "birefnet-v1-lite", "detailFallbackUsed": true, "detailFallbackReasons": ["backgroundSheetRetained"], "queueWaitMs": 1, "fastDurationMs": 6494, "detailDurationMs": 161820, "fastFailReasons": ["ID_PHOTO_MATTING_BACKGROUND_LEAK"]}
+      ]
+    }
+  ],
+  "unavailableBeforeFix": [
+    "compressMs",
+    "uploadMs",
+    "imageDecodeMs",
+    "qualityGateMs",
+    "cropMs",
+    "prepareCacheWriteMs",
+    "composeMs",
+    "downloadMs"
+  ]
+}

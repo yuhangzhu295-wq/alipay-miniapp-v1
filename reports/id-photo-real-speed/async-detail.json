@@ -1,0 +1,39 @@
+{
+  "createHttpStatus": 200,
+  "createMs": 14,
+  "jobId": "5fc07fffde534be38bb21cf895d792af",
+  "requestId": "7309a1d71d",
+  "detailModel": "birefnet-v1-lite",
+  "history": [
+    {
+      "status": "queued",
+      "atMs": 14
+    },
+    {
+      "status": "running",
+      "atMs": 2538
+    },
+    {
+      "status": "completed",
+      "atMs": 20125
+    }
+  ],
+  "status": "completed",
+  "preparedId": "372729ec0dc94ca1a62651137b2fd9f0",
+  "selectedModel": "birefnet-v1-lite",
+  "performance": {
+    "resizeMs": 3,
+    "imageDecodeMs": 3,
+    "faceDetectMs": 107,
+    "modelLoadMs": 0,
+    "fastInferenceMs": 0,
+    "detailInferenceMs": 11800,
+    "qualityGateMs": 0,
+    "cropMs": 0,
+    "queueWaitMs": 0,
+    "detailFallbackUsed": false,
+    "prepareCacheWriteMs": 0,
+    "totalServerMs": 20023
+  },
+  "message": null
+}

@@ -22,7 +22,7 @@
       <text class="measure-left">{{heightPxLabel}}</text>
       <view class="photo-bg {{(!resultImage && (generating || processState === 'failed' || processState === 'timeout')) ? 'photo-bg-failed' : ''}}" style="background-color: {{(!resultImage && (generating || processState === 'failed' || processState === 'timeout')) ? '#f8fafc' : (bgColorHex || '#1a73e8')}}; width: {{previewWidthRpx}}rpx; height: {{previewHeightRpx}}rpx;" bindtap="choosePhoto">
         <view wx:if="{{generating}}" class="photo-loading">
-          <text class="photo-loading-text">{{processState === 'composing' ? '换底中...' : '制作中...'}}</text>
+          <text class="photo-loading-text">{{statusText}}</text>
         </view>
         <image wx:elif="{{outputTab === 'photo' && resultImage}}" class="photo-img" src="{{resultImage || resultPreviewSrc}}" mode="aspectFit" />
         <image wx:elif="{{outputTab === 'layout' && layoutImage}}" class="layout-img" src="{{layoutImage}}" mode="aspectFit" />
@@ -39,6 +39,9 @@
 
     <view class="status-line">
       <text>{{statusText}}</text>
+    </view>
+    <view wx:if="{{detailProcessing}}" class="detail-status">
+      <text>{{detailJobStatus === 'queued' ? '排队中' : '发丝精修中'}}</text>
     </view>
   </view>
 
