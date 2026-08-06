@@ -1,53 +1,45 @@
 {
-  "generatedAt": "2026-08-06T21:42:05+08:00",
-  "localSha": "495c7c90495d3e589c3869ef517de89dbf1bd711",
-  "githubMasterSha": "495c7c90495d3e589c3869ef517de89dbf1bd711",
-  "cloudSha": "495c7c90495d3e589c3869ef517de89dbf1bd711",
-  "currentBranch": "optimize/id-photo-under-10s-20260806",
-  "remoteOptimizationBranchExists": false,
-  "optimizationPullRequest": null,
+  "generatedAt": "2026-08-07T03:05:00+08:00",
+  "baselineSha": "495c7c90495d3e589c3869ef517de89dbf1bd711",
+  "optimizationMergeSha": "4bc2b3210c1e91ec2db62a81a414efe75011d1c9",
+  "localSha": "4bc2b3210c1e91ec2db62a81a414efe75011d1c9",
+  "githubMasterSha": "4bc2b3210c1e91ec2db62a81a414efe75011d1c9",
+  "cloudSha": "4bc2b3210c1e91ec2db62a81a414efe75011d1c9",
+  "currentBranch": "agent/id-photo-under10-final-evidence",
   "dirtyFiles": [
     "reports/id-photo-all-formats/final/spec-format-validation-report.json",
     "reports/id-photo-all-formats/final/spec-format-validation-report.md",
     "reports/id-photo-camera-flow/devtools-report.json",
     "reports/id-photo-real-speed/fast-no-detail.json",
     "reports/id-photo-real-speed/fast-no-detail.md",
+    "reports/id-photo-real-speed/thirty-image-matrix.json",
+    "reports/id-photo-real-speed/thirty-image-matrix.md",
     "server/scripts/verify_id_photo_all_formats.py",
     "server/scripts/verify_id_photo_camera_flow.js",
     "server/scripts/verify_id_photo_capture_devtools.js",
     "server/scripts/verify_id_photo_spec_catalog.py"
   ],
   "untrackedFiles": [
-    "logs/local-backend-8000.err.log",
-    "logs/local-backend-8000.out.log",
-    "logs/local-hivision-8091.err.log",
-    "logs/local-hivision-8091.out.log"
+    "logs/*.log (local verification runtime artifacts)"
   ],
-  "fastBImplemented": false,
+  "fastBImplemented": true,
   "photographicModnetPresentUpstream": true,
-  "photographicModnetWorkerRoutingImplemented": false,
-  "dualSessionImplemented": false,
-  "onnxThreadConfigImplemented": false,
+  "photographicModnetWorkerRoutingImplemented": true,
+  "dualSessionImplemented": true,
+  "onnxThreadConfigImplemented": true,
   "uploadWorkingCopyImplemented": true,
   "uploadWorkingCopyCurrentConfig": {
     "maxSide": 1600,
-    "jpegQuality": 86
+    "jpegQuality": 88
   },
   "deployedToCloud": true,
-  "optimizationDeployedToCloud": false,
+  "optimizationDeployedToCloud": true,
   "cloudWorkingDirectory": "/root/photo-generator/server",
   "cloudServices": {
     "photo-generator": "active",
     "hivision-worker": "active",
     "iopaint": "active"
   },
-  "businessCodeChangedSinceHead": false,
-  "diffSummary": {
-    "filesChanged": 9,
-    "insertions": 7764,
-    "deletions": 1271,
-    "scope": "validation reports and verification scripts only"
-  },
-  "lastCompletedStage": "resume_state_verification",
-  "resumeFromStage": "rerun_fast_a_vs_photographic_modnet_ab_on_three_specified_images"
+  "lastCompletedStage": "wechat_devtools_and_production_full_flow",
+  "resumeFromStage": "physical_device_confirmation_then_final_sha_sync"
 }
