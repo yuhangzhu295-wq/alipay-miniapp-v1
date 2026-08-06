@@ -1250,6 +1250,7 @@ def matte_person(
     image_input,
     face_box=None,
     prefer_detail=False,
+    preferred_model="",
     request_id="",
     allow_fallback=True,
     timeout=180,
@@ -1261,7 +1262,7 @@ def matte_person(
         from id_photo_engines.hivision.runner import get_model_routing, run_human_matting
 
         routing = get_model_routing()
-        requested_model = routing.get("detail" if prefer_detail else "standard") or None
+        requested_model = preferred_model or routing.get("detail" if prefer_detail else "standard") or None
         hivision = run_human_matting(
             image,
             model=requested_model,
@@ -1280,6 +1281,7 @@ def matte_person(
                 extra_debug={
                     **(hivision.get("debug") or {}),
                     "preferDetail": bool(prefer_detail),
+                    "preferredModel": preferred_model or "",
                     "requestedModel": requested_model,
                 },
             )

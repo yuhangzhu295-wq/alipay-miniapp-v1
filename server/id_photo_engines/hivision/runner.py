@@ -95,6 +95,10 @@ def _ensure_ascii_root() -> dict[str, Any]:
 def get_model_routing() -> dict[str, Any]:
     installed = available_models()
     standard_requested = os.environ.get("ID_PHOTO_HIVISION_STANDARD_MODEL", "hivision_modnet").strip()
+    fast_b_requested = os.environ.get(
+        "ID_PHOTO_HIVISION_FAST_B_MODEL",
+        "modnet_photographic_portrait_matting",
+    ).strip()
     detail_requested = os.environ.get("ID_PHOTO_HIVISION_DETAIL_MODEL", "birefnet-v1-lite").strip()
     balanced_requested = os.environ.get("ID_PHOTO_HIVISION_BALANCED_MODEL", "rmbg-1.4").strip()
     balanced_enabled = os.environ.get("ID_PHOTO_HIVISION_ENABLE_BALANCED", "").strip().lower() in {"1", "true", "yes"}
@@ -106,12 +110,15 @@ def get_model_routing() -> dict[str, Any]:
 
     return {
         "standard": resolve(standard_requested),
+        "fastA": resolve(standard_requested),
+        "fastB": resolve(fast_b_requested),
         "balanced": resolve(balanced_requested) if balanced_enabled else "",
         "balancedCandidate": resolve(balanced_requested),
         "balancedEnabled": balanced_enabled,
         "balancedDecision": "disabled: S02 and S07 failed background-leak A/B" if not balanced_enabled else "enabled by environment",
         "detail": resolve(detail_requested),
         "standardRequested": standard_requested,
+        "fastBRequested": fast_b_requested,
         "detailRequested": detail_requested,
         "installed": installed,
     }

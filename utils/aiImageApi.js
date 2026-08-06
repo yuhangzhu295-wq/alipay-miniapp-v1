@@ -13,7 +13,7 @@ var config = require('./apiConfig.js');
 var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
-var ID_PHOTO_UPLOAD_QUALITY = 86;
+var ID_PHOTO_UPLOAD_QUALITY = 88;
 
 /**
  * 健康检查 — 判断后端是否启动

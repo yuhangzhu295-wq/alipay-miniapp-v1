@@ -45,6 +45,7 @@ def prepare(base_url, image_path, timeout):
     data = response.json()
     quality = data.get("quality") or {}
     performance = data.get("performance") or {}
+    worker_metrics = quality.get("fastWorkerMetrics") or {}
     return {
         "path": str(image_path),
         "width": Image.open(image_path).width,
@@ -57,6 +58,13 @@ def prepare(base_url, image_path, timeout):
         "sourceId": data.get("sourceId") or "",
         "selectedModel": data.get("selectedModel") or quality.get("finalSelectedModel"),
         "fastQualityStatus": data.get("fastQualityStatus"),
+        "fastAStatus": quality.get("fastAStatus"),
+        "fastAScore": quality.get("fastAScore"),
+        "fastBTriggered": bool(quality.get("fastBTriggered")),
+        "fastBStatus": quality.get("fastBStatus"),
+        "fastBScore": quality.get("fastBScore"),
+        "fastBDurationMs": quality.get("fastBDurationMs"),
+        "sessionReused": bool(worker_metrics.get("sessionReused")),
         "fastResultUsable": bool(data.get("fastResultUsable")),
         "mattingPass": bool(data.get("mattingPass")),
         "cropPass": bool(data.get("cropPass")),
@@ -188,6 +196,13 @@ def main():
     durations = [row["totalClientMs"] for row in rows]
     summary = {
         "runs": len(rows),
+        "successCount": sum(bool(row["success"]) for row in rows),
+        "successRatePercent": round(100.0 * sum(bool(row["success"]) for row in rows) / max(1, len(rows)), 2),
+        "fastASelectedCount": sum(row["selectedModel"] == "hivision_modnet" for row in rows),
+        "fastBSelectedCount": sum(row["selectedModel"] == "modnet_photographic_portrait_matting" for row in rows),
+        "fastBTriggeredCount": sum(bool(row["fastBTriggered"]) for row in rows),
+        "fastBlockCount": sum(row["fastQualityStatus"] == "FAST_BLOCK" for row in rows),
+        "sessionReusedCount": sum(bool(row["sessionReused"]) for row in rows),
         "p50Ms": int(statistics.median(durations)),
         "p95Ms": percentile(durations, 0.95),
         "maxMs": max(durations),
@@ -197,8 +212,9 @@ def main():
     passed = (
         summary["synchronousDetailCount"] == 0
         and summary["over30Seconds"] == 0
-        and all(row["selectedModel"] == "hivision_modnet" for row in rows)
-        and all(row["fastQualityStatus"] in {"FAST_PASS", "FAST_WARNING", "FAST_BLOCK"} for row in rows)
+        and all(row["httpStatus"] == 200 and row["success"] for row in rows)
+        and all(row["selectedModel"] in {"hivision_modnet", "modnet_photographic_portrait_matting"} for row in rows)
+        and all(row["fastQualityStatus"] in {"FAST_PASS", "FAST_REPAIRABLE", "FAST_WARNING"} for row in rows)
     )
     payload = {"status": "PASS" if passed else "FAIL", "baseUrl": args.base_url, "summary": summary, "rows": rows}
     if args.verify_async_detail:

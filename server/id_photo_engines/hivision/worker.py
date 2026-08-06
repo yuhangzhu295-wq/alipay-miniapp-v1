@@ -45,9 +45,20 @@ from hivision.creator import human_matting as hm  # noqa: E402
 
 
 FAST_MODEL = os.environ.get("ID_PHOTO_HIVISION_STANDARD_MODEL", "hivision_modnet").strip()
-SUPPORTED_MODELS = {"hivision_modnet", "rmbg-1.4", "birefnet-v1-lite"}
+FAST_B_MODEL = os.environ.get(
+    "ID_PHOTO_HIVISION_FAST_B_MODEL",
+    "modnet_photographic_portrait_matting",
+).strip()
+FAST_RESIDENT_MODELS = (FAST_MODEL, FAST_B_MODEL)
+SUPPORTED_MODELS = {
+    "hivision_modnet",
+    "modnet_photographic_portrait_matting",
+    "rmbg-1.4",
+    "birefnet-v1-lite",
+}
 MODEL_SESSIONS = {
     "hivision_modnet": "HIVISION_MODNET_SESS",
+    "modnet_photographic_portrait_matting": "MODNET_PHOTOGRAPHIC_PORTRAIT_MATTING_SESS",
     "rmbg-1.4": "RMBG_SESS",
     "birefnet-v1-lite": "BIREFNET_V1_LITE_SESS",
 }
@@ -96,10 +107,11 @@ def _resource_metrics() -> dict[str, object]:
 
 def _release_other_sessions(model: str) -> None:
     global _CURRENT_MODEL
+    keep = set(FAST_RESIDENT_MODELS) if model in FAST_RESIDENT_MODELS else {model}
     for candidate, session_name in MODEL_SESSIONS.items():
-        if candidate != model and getattr(hm, session_name, None) is not None:
+        if candidate not in keep and getattr(hm, session_name, None) is not None:
             setattr(hm, session_name, None)
-    if _CURRENT_MODEL and _CURRENT_MODEL != model:
+    if _CURRENT_MODEL and _CURRENT_MODEL != model and model not in FAST_RESIDENT_MODELS:
         gc.collect()
     _CURRENT_MODEL = model
 
@@ -132,7 +144,7 @@ def _ensure_session(model: str) -> int:
 def _resize_for_model(image: np.ndarray, model: str) -> tuple[np.ndarray, tuple[int, int], dict[str, object]]:
     height, width = image.shape[:2]
     original_size = (width, height)
-    max_side = 768 if model == "hivision_modnet" else 960
+    max_side = 768 if model in FAST_RESIDENT_MODELS else 960
     if max(width, height) <= max_side:
         return image, original_size, {
             "inputOriginalSize": f"{width}x{height}",
@@ -161,6 +173,11 @@ def _infer(image: np.ndarray, model: str) -> tuple[np.ndarray, dict[str, object]
     started = time.perf_counter()
     if model == "hivision_modnet":
         rgba = hm.get_modnet_matting(image_for_model, hm.WEIGHTS[model])
+    elif model == "modnet_photographic_portrait_matting":
+        rgba = hm.get_modnet_matting_photographic_portrait_matting(
+            image_for_model,
+            hm.WEIGHTS[model],
+        )
     elif model == "rmbg-1.4":
         rgba = hm.get_rmbg_matting(image_for_model, hm.WEIGHTS[model])
     else:
@@ -178,6 +195,7 @@ def _infer(image: np.ndarray, model: str) -> tuple[np.ndarray, dict[str, object]
         "modelLoadMs": model_load_ms,
         "inferenceMs": max(0, total_ms - model_load_ms),
         "sessionReused": loaded_before,
+        "onnxRuntime": hm.onnx_runtime_config(),
         **resize_debug,
         **_resource_metrics(),
     }
@@ -189,8 +207,18 @@ def _warmup() -> dict[str, object]:
     cv2.ellipse(sample, (240, 255), (92, 132), 0, 0, 360, (92, 116, 150), -1)
     cv2.rectangle(sample, (100, 350), (380, 639), (65, 82, 112), -1)
     try:
-        _, debug = _infer(sample, FAST_MODEL)
-        return {"ready": True, "warmupMs": int((time.perf_counter() - started) * 1000), **debug}
+        models = {}
+        for model in FAST_RESIDENT_MODELS:
+            _, debug = _infer(sample, model)
+            models[model] = debug
+        return {
+            "ready": True,
+            "warmupMs": int((time.perf_counter() - started) * 1000),
+            "models": models,
+            "loadedSessions": [model for model in FAST_RESIDENT_MODELS if _session_loaded(model)],
+            "onnxRuntime": hm.onnx_runtime_config(),
+            **_resource_metrics(),
+        }
     except Exception as exc:
         return {"ready": False, "warmupMs": int((time.perf_counter() - started) * 1000), "error": repr(exc)}
 
@@ -215,6 +243,7 @@ def health() -> dict[str, object]:
     return {
         "ready": bool(_STARTUP_DEBUG.get("ready")),
         "currentModel": _CURRENT_MODEL,
+        "loadedSessions": [model for model in MODEL_SESSIONS if _session_loaded(model)],
         "startup": _STARTUP_DEBUG,
         "resources": _resource_metrics(),
     }
@@ -233,8 +262,8 @@ def release() -> dict[str, object]:
 
 @app.post("/warmup")
 def warmup(model: str = Query(default=FAST_MODEL)) -> dict[str, object]:
-    if model != FAST_MODEL:
-        raise HTTPException(status_code=400, detail="only the FAST model may be restored")
+    if model not in FAST_RESIDENT_MODELS:
+        raise HTTPException(status_code=400, detail="only FAST resident models may be restored")
     acquired = _INFERENCE_LOCK.acquire(timeout=30)
     if not acquired:
         raise HTTPException(status_code=503, detail="worker queue timeout")

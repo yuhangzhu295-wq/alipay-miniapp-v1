@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REPORT_DIR = ROOT / "reports" / "id-photo-real-speed"
+REPORT_DIR = ROOT / "reports" / "id-photo-under-10s"
 ARTIFACT_DIR = REPORT_DIR / "upload-ab-artifacts"
 
 
@@ -56,7 +56,7 @@ def contact_sheet(source, variants, target):
     for row, longest in enumerate((2048, 1600, 1280)):
         canvas.paste(original_thumb, (10, row * tile_h + 28))
         draw.text((10, row * tile_h + 8), f"original / compare {longest}", fill="black")
-        for column, quality in enumerate((82, 86, 90), start=1):
+        for column, quality in enumerate((85, 88, 90), start=1):
             item = variants[(longest, quality)]
             preview = thumbnail(item["image"])
             canvas.paste(preview, (column * tile_w + 10, row * tile_h + 28))
@@ -71,6 +71,7 @@ def contact_sheet(source, variants, target):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", action="append", required=True)
+    parser.add_argument("--visual-review-passed", action="store_true")
     args = parser.parse_args()
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
@@ -82,7 +83,7 @@ def main():
         variants = {}
         for longest in (2048, 1600, 1280):
             reference = resize_longest(source, longest)
-            for quality in (82, 86, 90):
+            for quality in (85, 88, 90):
                 target = ARTIFACT_DIR / f"{source_path.stem}-{longest}-q{quality}.jpg"
                 reference.save(target, "JPEG", quality=quality, optimize=True)
                 decoded = Image.open(target).convert("RGB")
@@ -104,19 +105,32 @@ def main():
                 variants[(longest, quality)] = {"image": decoded, **row}
         contact_sheet(source, variants, ARTIFACT_DIR / f"{source_path.stem}-contact.jpg")
 
-    selected = [row for row in rows if row["longestSide"] == 1600 and row["quality"] == 86]
-    passed = all(row["ssim"] >= 0.98 for row in selected)
+    selected = [row for row in rows if row["longestSide"] == 1600 and row["quality"] == 88]
+    metric_passed = all(row["ssim"] >= 0.99 for row in selected)
+    passed = metric_passed and args.visual_review_passed
     payload = {
         "status": "PASS" if passed else "FAIL",
-        "decision": {"longestSide": 1600, "jpegQuality": 86, "minimumSsim": min(row["ssim"] for row in selected)},
+        "decision": {
+            "longestSide": 1600,
+            "jpegQuality": 88,
+            "minimumSsim": min(row["ssim"] for row in selected),
+            "visualReviewPassed": args.visual_review_passed,
+            "visualReviewNotes": (
+                "No visible regression in hair, hat, ear-side edges, raised arms, shoulders, or light clothing."
+                if args.visual_review_passed
+                else "Pending"
+            ),
+            "originalFileOverwritten": False,
+        },
         "rows": rows,
     }
-    (REPORT_DIR / "client-upload-ab.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    (REPORT_DIR / "upload-ab.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     lines = [
         "# Client Upload A/B",
         "",
-        "- Compared longest sides 2048, 1600, and 1280 with JPEG qualities 82, 86, and 90.",
-        f"- Selected: 1600px / quality 86; minimum SSIM `{payload['decision']['minimumSsim']}`.",
+        "- Compared longest sides 2048, 1600, and 1280 with JPEG qualities 85, 88, and 90.",
+        f"- Selected: 1600px / quality 88; minimum SSIM `{payload['decision']['minimumSsim']}`.",
+        f"- Visual review: `{'PASS' if args.visual_review_passed else 'PENDING'}`.",
         f"- Status: **{payload['status']}**",
         "- EXIF orientation is normalized by the platform image APIs; the original album file is never overwritten.",
         "",
@@ -125,7 +139,7 @@ def main():
     ]
     for row in rows:
         lines.append(f"| `{Path(row['source']).name}` | {row['longestSide']} | {row['quality']} | {row['uploadBytes']} | {row['ssim']} | {row['psnrDb']} |")
-    (REPORT_DIR / "client-upload-ab.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (REPORT_DIR / "upload-ab.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps(payload["decision"], ensure_ascii=False, indent=2))
     return 0 if passed else 1
 
