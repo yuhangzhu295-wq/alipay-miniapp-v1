@@ -575,6 +575,221 @@ def _fast_quality_fail_reasons(report, quality):
     return list(dict.fromkeys(reasons))
 
 
+def _safe_ratio(numerator, denominator):
+    return round(float(numerator) / float(max(1, denominator)), 6)
+
+
+def _fast_alpha_structure_metrics(foreground_path, face_box):
+    try:
+        alpha = np.asarray(Image.open(foreground_path).convert("RGBA").getchannel("A"))
+    except Exception:
+        return {
+            "subjectHoleRatio": 1.0,
+            "shoulderCutoffRatio": 1.0,
+            "hairCutoffRatio": 1.0,
+            "edgeHaloRatio": 1.0,
+            "foregroundOldBgRatio": 1.0,
+            "boundaryComplexity": 99.0,
+            "fragmentedRowRatio": 1.0,
+        }
+
+    binary = alpha > 12
+    height, width = binary.shape
+    yy, xx = np.indices((height, width))
+    fx = float((face_box or {}).get("x") or width * 0.38)
+    fy = float((face_box or {}).get("y") or height * 0.20)
+    fw = max(1.0, float((face_box or {}).get("width") or width * 0.24))
+    fh = max(1.0, float((face_box or {}).get("height") or height * 0.24))
+    cx = fx + fw / 2.0
+
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(binary.astype("uint8"), 8)
+    subject_hole_ratio = 0.0
+    if count > 1:
+        largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        main = np.where(labels == largest, 255, 0).astype("uint8")
+        padded = cv2.copyMakeBorder(main, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+        flooded = padded.copy()
+        flood_mask = np.zeros((padded.shape[0] + 2, padded.shape[1] + 2), np.uint8)
+        cv2.floodFill(flooded, flood_mask, (0, 0), 255)
+        holes = cv2.bitwise_not(flooded)[1:-1, 1:-1] > 0
+        subject_hole_ratio = _safe_ratio(
+            np.count_nonzero(holes),
+            stats[largest, cv2.CC_STAT_AREA],
+        )
+
+    hair_core = (
+        (yy >= max(0.0, fy - fh * 0.56))
+        & (yy <= fy + fh * 0.16)
+        & (xx >= fx + fw * 0.12)
+        & (xx <= fx + fw * 0.88)
+    )
+    left_shoulder = (
+        (yy >= fy + fh * 1.15)
+        & (yy <= min(height - 1, fy + fh * 2.45))
+        & (xx >= cx - fw * 1.55)
+        & (xx <= cx - fw * 0.52)
+    )
+    right_shoulder = (
+        (yy >= fy + fh * 1.15)
+        & (yy <= min(height - 1, fy + fh * 2.45))
+        & (xx >= cx + fw * 0.52)
+        & (xx <= cx + fw * 1.55)
+    )
+
+    def missing_ratio(zone):
+        return _safe_ratio(np.count_nonzero(zone & ~binary), np.count_nonzero(zone))
+
+    contours, _ = cv2.findContours(binary.astype("uint8"), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if contours:
+        main_contour = max(contours, key=cv2.contourArea)
+        area = max(1.0, cv2.contourArea(main_contour))
+        perimeter = cv2.arcLength(main_contour, True)
+        boundary_complexity = float(perimeter * perimeter / (4.0 * np.pi * area))
+    else:
+        boundary_complexity = 99.0
+    row_runs = []
+    for row in binary.astype("uint8"):
+        transitions = np.diff(np.pad(row, (1, 1)))
+        row_runs.append(int(np.count_nonzero(transitions == 1)))
+    fragmented_row_ratio = _safe_ratio(sum(runs > 2 for runs in row_runs), len(row_runs))
+    structural_old_bg_risk = max(
+        0.0,
+        (boundary_complexity - 1.65) / 8.0,
+        fragmented_row_ratio,
+    )
+    transition = (alpha > 8) & (alpha < 248)
+    return {
+        "subjectHoleRatio": round(subject_hole_ratio, 6),
+        "shoulderCutoffRatio": round(max(missing_ratio(left_shoulder), missing_ratio(right_shoulder)), 6),
+        "hairCutoffRatio": round(missing_ratio(hair_core), 6),
+        "edgeHaloRatio": _safe_ratio(np.count_nonzero(transition), np.count_nonzero(alpha > 8)),
+        "foregroundOldBgRatio": round(structural_old_bg_risk, 6),
+        "boundaryComplexity": round(boundary_complexity, 6),
+        "fragmentedRowRatio": fragmented_row_ratio,
+    }
+
+
+def _fast_selection_score(metrics):
+    risk = (
+        float(metrics.get("backgroundLeakRatio") or 0) * 1.8
+        + float(metrics.get("subjectHoleRatio") or 0) * 5.0
+        + float(metrics.get("shoulderCutoffRatio") or 0) * 0.6
+        + float(metrics.get("hairCutoffRatio") or 0) * 1.2
+        + float(metrics.get("edgeHaloRatio") or 0) * 0.2
+        + float(metrics.get("foregroundOldBgRatio") or 0) * 3.0
+    )
+    return round(100.0 / (1.0 + risk * 4.0), 3)
+
+
+def _repair_small_fast_alpha_holes(matting):
+    if not matting.get("success") or not matting.get("foregroundPath"):
+        return {"applied": False, "pixels": 0, "durationMs": 0}
+    started = time.perf_counter()
+    try:
+        foreground = Image.open(matting["foregroundPath"]).convert("RGBA")
+        rgba = np.asarray(foreground).copy()
+        alpha = rgba[:, :, 3]
+        binary = np.where(alpha > 12, 255, 0).astype("uint8")
+        count, labels, stats, _ = cv2.connectedComponentsWithStats((binary > 0).astype("uint8"), 8)
+        if count <= 1:
+            return {"applied": False, "pixels": 0, "durationMs": int((time.perf_counter() - started) * 1000)}
+        largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        main = np.where(labels == largest, 255, 0).astype("uint8")
+        padded = cv2.copyMakeBorder(main, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+        flooded = padded.copy()
+        flood_mask = np.zeros((padded.shape[0] + 2, padded.shape[1] + 2), np.uint8)
+        cv2.floodFill(flooded, flood_mask, (0, 0), 255)
+        holes = (cv2.bitwise_not(flooded)[1:-1, 1:-1] > 0).astype("uint8")
+        hole_count, hole_labels, hole_stats, _ = cv2.connectedComponentsWithStats(holes, 8)
+        image_area = alpha.shape[0] * alpha.shape[1]
+        max_component = max(12, int(image_area * 0.00025))
+        max_total = max(24, int(image_area * 0.0015))
+        repair = np.zeros_like(binary)
+        repair_pixels = 0
+        for label in range(1, hole_count):
+            area = int(hole_stats[label, cv2.CC_STAT_AREA])
+            if area < 4 or area > max_component or repair_pixels + area > max_total:
+                continue
+            repair[hole_labels == label] = 255
+            repair_pixels += area
+        if repair_pixels <= 0:
+            return {"applied": False, "pixels": 0, "durationMs": int((time.perf_counter() - started) * 1000)}
+        repaired_alpha = alpha.copy()
+        repaired_alpha[repair > 0] = 255
+        repaired_alpha = np.maximum(
+            repaired_alpha,
+            cv2.GaussianBlur(repair, (3, 3), 0),
+        )
+        rgba[:, :, 3] = repaired_alpha
+        Image.fromarray(rgba, "RGBA").save(matting["foregroundPath"], format="PNG")
+        if matting.get("maskPath"):
+            Image.fromarray(repaired_alpha, "L").save(matting["maskPath"], format="PNG")
+        quality = matting.setdefault("quality", {})
+        quality["fastLightweightRepairApplied"] = True
+        quality["fastLightweightRepairPixels"] = repair_pixels
+        quality["fastLightweightRepairMaxComponent"] = max_component
+        return {
+            "applied": True,
+            "pixels": repair_pixels,
+            "maxComponent": max_component,
+            "durationMs": int((time.perf_counter() - started) * 1000),
+        }
+    except Exception as exc:
+        return {
+            "applied": False,
+            "pixels": 0,
+            "durationMs": int((time.perf_counter() - started) * 1000),
+            "error": repr(exc),
+        }
+
+
+def _classify_fast_probe(matting_success, fast_passed, fail_reasons, probe):
+    if not matting_success:
+        return "FAST_RISK"
+    metrics = probe.get("selectionMetrics") or {}
+    severe_reasons = {"faceInsideMaskFalse", "shoulderAlphaMissing", "foregroundIncomplete", "abnormalAlpha"}
+    if set(fail_reasons or []) & severe_reasons:
+        return "FAST_RISK"
+    if (
+        float(metrics.get("foregroundOldBgRatio") or 0) >= 0.04
+        or float(metrics.get("boundaryComplexity") or 0) >= 2.20
+        or float(metrics.get("fragmentedRowRatio") or 0) >= 0.02
+        or float(metrics.get("subjectHoleRatio") or 0) >= 0.02
+    ):
+        return "FAST_RISK"
+    if fast_passed and bool(probe.get("cropPass")):
+        return "FAST_PASS"
+    if bool(probe.get("lightweightRepairApplied")):
+        return "FAST_REPAIRABLE"
+    return "FAST_WARNING"
+
+
+def _failed_fast_probe(matting):
+    return {
+        "mattingPass": False,
+        "mattingFailReasons": ["FAST_MODEL_FAILED"],
+        "cropPass": False,
+        "cropFailReasons": [],
+        "cropRetryCount": 0,
+        "fastResultUsable": False,
+        "detailRecommended": True,
+        "detailReasons": ["FAST_MODEL_FAILED"],
+        "rawFailReasons": [matting.get("code") or "FAST_MODEL_FAILED"],
+        "selectionMetrics": {
+            "backgroundLeakRatio": 1.0,
+            "subjectHoleRatio": 1.0,
+            "shoulderCutoffRatio": 1.0,
+            "hairCutoffRatio": 1.0,
+            "edgeHaloRatio": 1.0,
+            "foregroundOldBgRatio": 1.0,
+            "boundaryComplexity": 99.0,
+            "fragmentedRowRatio": 1.0,
+        },
+        "selectionScore": 0.0,
+        "error": matting.get("message"),
+    }
+
+
 def _probe_fast_matting(matting, face_box, spec, composition):
     quality = dict(matting.get("quality") or {})
     target_size = (int(spec.get("width", 295)), int(spec.get("height", 413)))
@@ -620,6 +835,22 @@ def _probe_fast_matting(matting, face_box, spec, composition):
         )
         reasons = _fast_quality_fail_reasons(report, quality)
         matting_pass = not reasons and bool(report.get("mattingPass", True))
+        selection_metrics = {
+            "backgroundLeakRatio": round(float(quality.get("backgroundLeakRatio") or 0), 6),
+            **_fast_alpha_structure_metrics(matting["foregroundPath"], face_box),
+        }
+        selection_metrics["foregroundOldBgRatio"] = round(max(
+            float(selection_metrics.get("foregroundOldBgRatio") or 0),
+            float(quality.get("remainingBackgroundSheetRatio") or 0),
+            float(quality.get("remainingHeadSideBackgroundRatio") or 0),
+        ), 6)
+        repair_pixels = int(quality.get("fastLightweightRepairPixels") or 0) + sum(int(compose_quality.get(key) or 0) for key in (
+            "composedBodyHoleRepairedPixels",
+            "composedHairHoleRepairedPixels",
+            "lowerShoulderGapRepairedPixels",
+            "composedHairSideBlockRemovedPixels",
+        ))
+        core_usable = bool(quality.get("faceInsideMask")) and 0.025 <= float(quality.get("maskNonZeroRatio") or 0) <= 0.96
         crop_fail_reasons = list(dict.fromkeys([
             *(report.get("cropFailReasons") or []),
             *(composition_check.get("cropFailReasons") or []),
@@ -630,10 +861,29 @@ def _probe_fast_matting(matting, face_box, spec, composition):
             "cropPass": not crop_fail_reasons,
             "cropFailReasons": crop_fail_reasons,
             "cropRetryCount": int(compose_quality.get("cropRetryCount") or 0),
-            "fastResultUsable": bool(report.get("fastResultUsable", matting_pass)),
+            "fastResultUsable": bool(core_usable),
             "detailRecommended": bool(report.get("detailRecommended")),
             "detailReasons": report.get("detailReasons") or [],
             "qualityScore": report.get("score", 0),
+            "selectionMetrics": selection_metrics,
+            "selectionScore": _fast_selection_score(selection_metrics),
+            "compositionCheck": composition_check,
+            "compositionMetrics": {
+                key: quality.get(key)
+                for key in (
+                    "topPaddingRatio",
+                    "bottomPaddingRatio",
+                    "headHeightRatio",
+                    "profileHeadWidthRatio",
+                    "shoulderWidthRatio",
+                    "chinBottomRatio",
+                    "faceCenterOffset",
+                    "cropRetryCount",
+                )
+                if quality.get(key) is not None
+            },
+            "lightweightRepairApplied": repair_pixels > 0,
+            "lightweightRepairPixels": repair_pixels,
             "rawFailReasons": report.get("failReasons") or [],
             "qualityReport": {
                 "score": report.get("score", 0),
@@ -663,6 +913,73 @@ def _probe_fast_matting(matting, face_box, spec, composition):
                 Path(probe_path).unlink(missing_ok=True)
             except Exception:
                 pass
+
+
+def _evaluate_fast_candidate(matting, face_box, spec, composition):
+    started = time.perf_counter()
+    if matting.get("success"):
+        passed, fail_reasons, probe = _probe_fast_matting(
+            matting,
+            face_box,
+            spec,
+            composition,
+        )
+    else:
+        passed = False
+        fail_reasons = ["abnormalAlpha"]
+        probe = _failed_fast_probe(matting)
+    status = _classify_fast_probe(
+        bool(matting.get("success")),
+        passed,
+        fail_reasons,
+        probe,
+    )
+    return {
+        "matting": matting,
+        "model": matting.get("model") or "",
+        "passed": bool(passed),
+        "failReasons": fail_reasons,
+        "probe": probe,
+        "status": status,
+        "qualityGateMs": int((time.perf_counter() - started) * 1000),
+        "workerMetrics": _matting_attempt_metrics(matting),
+    }
+
+
+def _maybe_repair_fast_candidate(evaluation, face_box, spec, composition):
+    if evaluation.get("status") != "FAST_WARNING":
+        return evaluation
+    metrics = (evaluation.get("probe") or {}).get("selectionMetrics") or {}
+    hole_ratio = float(metrics.get("subjectHoleRatio") or 0)
+    if not (0 < hole_ratio <= 0.003) or float(metrics.get("foregroundOldBgRatio") or 0) >= 0.02:
+        return evaluation
+    repair = _repair_small_fast_alpha_holes(evaluation.get("matting") or {})
+    if not repair.get("applied"):
+        evaluation["repair"] = repair
+        return evaluation
+    repaired = _evaluate_fast_candidate(
+        evaluation["matting"],
+        face_box,
+        spec,
+        composition,
+    )
+    repaired["repair"] = repair
+    repaired["qualityGateMs"] += int(evaluation.get("qualityGateMs") or 0)
+    if repaired.get("status") != "FAST_RISK":
+        repaired["status"] = "FAST_REPAIRABLE"
+    return repaired
+
+
+def _aggregate_fast_worker_metrics(*evaluations):
+    metrics = [item.get("workerMetrics") or {} for item in evaluations if item]
+    return {
+        "models": [item.get("model") for item in evaluations if item],
+        "modelLoadMs": sum(int(item.get("modelLoadMs") or 0) for item in metrics),
+        "inferenceMs": sum(int(item.get("inferenceMs") or 0) for item in metrics),
+        "queueWaitMs": sum(int(item.get("queueWaitMs") or 0) for item in metrics),
+        "sessionReused": bool(metrics) and all(bool(item.get("sessionReused")) for item in metrics),
+        "attempts": metrics,
+    }
 
 
 def _attach_routing_telemetry(matting, telemetry):
@@ -1034,8 +1351,9 @@ def _prepare_cutout(
         timeout=180 if hair_retouch else 10,
     )
     first_duration_ms = int((time.perf_counter() - first_started) * 1000)
-    stage_timestamps["fastInferenceFinishedAtEpoch"] = time.time()
+    stage_timestamps["fastAInferenceFinishedAtEpoch"] = time.time()
     if hair_retouch:
+        stage_timestamps["fastInferenceFinishedAtEpoch"] = stage_timestamps["fastAInferenceFinishedAtEpoch"]
         detail_worker_metrics = _matting_attempt_metrics(matting)
         telemetry = {
             "requestedModel": "birefnet-v1-lite",
@@ -1057,50 +1375,139 @@ def _prepare_cutout(
         if matting.get("success"):
             _attach_routing_telemetry(matting, telemetry)
     else:
-        fast_model = matting.get("model") or "hivision_modnet"
-        fast_worker_metrics = _matting_attempt_metrics(matting)
-        if matting.get("success"):
-            quality_gate_started = time.perf_counter()
-            fast_passed, fast_fail_reasons, fast_probe = _probe_fast_matting(
-                matting,
+        fast_a = _evaluate_fast_candidate(
+            matting,
+            face.get("faceBox"),
+            spec,
+            composition,
+        )
+        fast_a = _maybe_repair_fast_candidate(
+            fast_a,
+            face.get("faceBox"),
+            spec,
+            composition,
+        )
+        fast_b = None
+        fast_b_duration_ms = 0
+        if fast_a.get("status") == "FAST_RISK":
+            try:
+                from id_photo_engines.hivision.runner import get_model_routing
+
+                fast_b_model = get_model_routing().get("fastB") or "modnet_photographic_portrait_matting"
+            except Exception:
+                fast_b_model = "modnet_photographic_portrait_matting"
+            fast_b_started = time.perf_counter()
+            fast_b_matting = matte_person(
+                img_bytes,
+                face.get("faceBox"),
+                preferred_model=fast_b_model,
+                request_id=f"{request_id}-fast-b",
+                allow_fallback=False,
+                timeout=4,
+            )
+            fast_b_duration_ms = int((time.perf_counter() - fast_b_started) * 1000)
+            stage_timestamps["fastBInferenceFinishedAtEpoch"] = time.time()
+            fast_b = _evaluate_fast_candidate(
+                fast_b_matting,
                 face.get("faceBox"),
                 spec,
                 composition,
             )
-            times["quality_gate_ms"] = int((time.perf_counter() - quality_gate_started) * 1000)
-        else:
-            fast_passed = False
-            fast_fail_reasons = ["abnormalAlpha"]
-            fast_probe = {
-                "mattingPass": False,
-                "mattingFailReasons": ["FAST_MODEL_FAILED"],
-                "cropPass": False,
-                "cropFailReasons": [],
-                "cropRetryCount": 0,
-                "fastResultUsable": False,
-                "detailRecommended": True,
-                "detailReasons": ["FAST_MODEL_FAILED"],
-                "rawFailReasons": [matting.get("code") or "FAST_MODEL_FAILED"],
-                "error": matting.get("message"),
+            fast_b = _maybe_repair_fast_candidate(
+                fast_b,
+                face.get("faceBox"),
+                spec,
+                composition,
+            )
+
+        evaluations = [item for item in (fast_a, fast_b) if item]
+        acceptable_statuses = {"FAST_PASS", "FAST_REPAIRABLE", "FAST_WARNING"}
+        acceptable = [item for item in evaluations if item.get("status") in acceptable_statuses]
+        if not acceptable:
+            # FAST_RISK is a routing signal. Once both lightweight candidates have
+            # been evaluated, a candidate that passed the real matting/crop gates
+            # must still be returned as a warning instead of becoming a false block.
+            acceptable = [
+                item
+                for item in evaluations
+                if bool((item.get("matting") or {}).get("success"))
+                and bool((item.get("probe") or {}).get("fastResultUsable"))
+                and bool((item.get("probe") or {}).get("mattingPass"))
+                and bool((item.get("probe") or {}).get("cropPass"))
+            ]
+        if not acceptable:
+            severe_fast_reasons = {
+                "faceInsideMaskFalse",
+                "shoulderAlphaMissing",
+                "foregroundIncomplete",
+                "abnormalAlpha",
             }
-            times["quality_gate_ms"] = 0
+            severe_report_reasons = {
+                "ID_PHOTO_BLACK_BACK_PANEL",
+                "ID_PHOTO_FACE_BACKGROUND_HOLE",
+                "ID_PHOTO_USED_FOREGROUND_MISSING",
+            }
+            acceptable = [
+                item
+                for item in evaluations
+                if bool((item.get("matting") or {}).get("success"))
+                and bool((item.get("probe") or {}).get("fastResultUsable"))
+                and not (set(item.get("failReasons") or []) & severe_fast_reasons)
+                and not (
+                    set((item.get("probe") or {}).get("rawFailReasons") or [])
+                    & severe_report_reasons
+                )
+                and float(
+                    ((item.get("probe") or {}).get("selectionMetrics") or {}).get("subjectHoleRatio")
+                    or 0
+                ) < 0.02
+            ]
+        if acceptable:
+            selected = max(
+                acceptable,
+                key=lambda item: (
+                    float((item.get("probe") or {}).get("selectionScore") or 0),
+                    item is fast_a,
+                ),
+            )
+            fast_quality_status = selected.get("status") or "FAST_WARNING"
+            if fast_quality_status == "FAST_RISK":
+                fast_quality_status = "FAST_WARNING"
+        else:
+            selected = max(
+                evaluations,
+                key=lambda item: float((item.get("probe") or {}).get("selectionScore") or 0),
+            )
+            fast_quality_status = "FAST_BLOCK"
+
+        for candidate in evaluations:
+            if candidate is not selected:
+                _delete_matting_files(candidate.get("matting") or {})
+        matting = selected.get("matting") or matting
+        fast_probe = selected.get("probe") or {}
+        fast_fail_reasons = selected.get("failReasons") or []
+        fast_model = fast_a.get("model") or "hivision_modnet"
+        fast_worker_metrics = _aggregate_fast_worker_metrics(fast_a, fast_b)
+        times["quality_gate_ms"] = sum(int(item.get("qualityGateMs") or 0) for item in evaluations)
         stage_timestamps["qualityGateFinishedAtEpoch"] = time.time()
         stage_timestamps["cropFinishedAtEpoch"] = stage_timestamps["qualityGateFinishedAtEpoch"]
-        fast_result_usable = bool(fast_probe.get("fastResultUsable"))
-        crop_passed = bool(fast_probe.get("cropPass"))
-        fast_quality_status = (
-            "FAST_PASS"
-            if fast_passed and crop_passed
-            else ("FAST_WARNING" if fast_result_usable or fast_passed else "FAST_BLOCK")
-        )
+        stage_timestamps["fastInferenceFinishedAtEpoch"] = stage_timestamps["qualityGateFinishedAtEpoch"]
+        fast_result_usable = bool(matting.get("success")) and fast_quality_status != "FAST_BLOCK"
         detail_reasons = list(dict.fromkeys([
             *(fast_probe.get("detailReasons") or []),
-            *(fast_fail_reasons if fast_quality_status == "FAST_BLOCK" else []),
+            *(fast_fail_reasons if fast_quality_status != "FAST_PASS" else []),
         ]))
         telemetry = {
             "requestedModel": "hivision_modnet",
             "fastModel": fast_model,
             "fastDurationMs": first_duration_ms,
+            "fastAStatus": fast_a.get("status"),
+            "fastAScore": (fast_a.get("probe") or {}).get("selectionScore", 0),
+            "fastBTriggered": fast_b is not None,
+            "fastBModel": fast_b.get("model") if fast_b else "modnet_photographic_portrait_matting",
+            "fastBStatus": fast_b.get("status") if fast_b else "NOT_RUN",
+            "fastBScore": (fast_b.get("probe") or {}).get("selectionScore", 0) if fast_b else 0,
+            "fastBDurationMs": fast_b_duration_ms,
             "fastFailReasons": fast_fail_reasons,
             "fastQualityReport": fast_probe.get("qualityReport") or {},
             "fastQualityProbe": fast_probe,
@@ -1114,6 +1521,9 @@ def _prepare_cutout(
             "cropRetryCount": int(fast_probe.get("cropRetryCount") or 0),
             "fastResultUsable": fast_result_usable,
             "fastQualityStatus": fast_quality_status,
+            "fastRiskTriggered": fast_a.get("status") == "FAST_RISK",
+            "lightweightRepairApplied": bool(fast_probe.get("lightweightRepairApplied")),
+            "lightweightRepairPixels": int(fast_probe.get("lightweightRepairPixels") or 0),
             "detailRecommended": fast_quality_status != "FAST_PASS" or bool(fast_probe.get("detailRecommended")),
             "detailReasons": detail_reasons,
             "detailFallbackUsed": False,
@@ -1122,6 +1532,8 @@ def _prepare_cutout(
             "detailDurationMs": 0,
             "finalSelectedModel": matting.get("model") or "",
             "fastWorkerMetrics": fast_worker_metrics,
+            "fastAWorkerMetrics": fast_a.get("workerMetrics") or {},
+            "fastBWorkerMetrics": fast_b.get("workerMetrics") if fast_b else {},
             "detailWorkerMetrics": {},
         }
         if matting.get("success"):
@@ -1151,6 +1563,14 @@ def _prepare_cutout(
                 "sourceId": source_id,
                 "fastResultUsable": False,
                 "fastQualityStatus": "FAST_BLOCK",
+                "fastAStatus": telemetry.get("fastAStatus"),
+                "fastAScore": telemetry.get("fastAScore"),
+                "fastBTriggered": bool(telemetry.get("fastBTriggered")),
+                "fastBModel": telemetry.get("fastBModel"),
+                "fastBStatus": telemetry.get("fastBStatus"),
+                "fastBScore": telemetry.get("fastBScore"),
+                "fastBDurationMs": telemetry.get("fastBDurationMs", 0),
+                "fastQualityProbe": telemetry.get("fastQualityProbe") or {},
                 "mattingPass": bool(telemetry.get("mattingPass")),
                 "cropPass": bool(telemetry.get("cropPass")),
                 "detailRecommended": True,
@@ -1275,6 +1695,10 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         bg_color = "#1a73e8"
     target_size = (int(spec.get("width", 413)), int(spec.get("height", 579)))
     item_quality = item.get("quality") or {}
+    allow_fast_warning = (
+        item_quality.get("fastQualityStatus") in {"FAST_REPAIRABLE", "FAST_WARNING"}
+        and bool(item_quality.get("fastResultUsable"))
+    )
     source_background_rgb = (
         (item_quality.get("mattingRefine") or {}).get("sourceBackgroundRgb")
         or item_quality.get("sourceBackgroundRgb")
@@ -1303,7 +1727,14 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     quality["cropFailReasons"] = metrics_check.get("cropFailReasons") or []
     quality["cropRetryCount"] = int(quality.get("cropRetryCount") or 0)
     if not metrics_check.get("success"):
-        raise PortraitQualityError(metrics_check["code"], metrics_check)
+        crop_reasons = set(metrics_check.get("cropFailReasons") or [])
+        if not (
+            allow_fast_warning
+            and crop_reasons
+            and crop_reasons <= {"ID_PHOTO_BOTTOM_PADDING_BAD"}
+        ):
+            raise PortraitQualityError(metrics_check["code"], metrics_check)
+        quality["fastWarningCompositionAccepted"] = True
     result, outfit_payload = _apply_outfit_template(
         result,
         quality,
@@ -1355,6 +1786,18 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         *(quality_report.get("cropFailReasons") or []),
         *(quality_report.get("outputFailReasons") or []),
     ]
+    if allow_fast_warning and final_blocking_reasons:
+        warning_reasons = {
+            "ID_PHOTO_HAIR_BACKGROUND_HOLE",
+            "ID_PHOTO_MATTING_BACKGROUND_LEAK",
+            "ID_PHOTO_SIDE_BACKGROUND_RESIDUAL",
+            "ID_PHOTO_BOTTOM_PADDING_BAD",
+        }
+        final_blocking_reasons = [
+            reason for reason in final_blocking_reasons if reason not in warning_reasons
+        ]
+        if not final_blocking_reasons:
+            quality["fastWarningAccepted"] = True
     if final_blocking_reasons:
         raise PortraitQualityError(
             final_blocking_reasons[0],

@@ -48,6 +48,33 @@ RMBG_SESS = None
 BIREFNET_V1_LITE_SESS = None
 
 
+def _positive_int_env(name, default):
+    try:
+        return max(1, int(os.environ.get(name, default)))
+    except (TypeError, ValueError):
+        return int(default)
+
+
+def onnx_runtime_config():
+    return {
+        "executionMode": "ORT_SEQUENTIAL",
+        "graphOptimizationLevel": "ORT_ENABLE_ALL",
+        "intraOpNumThreads": _positive_int_env("ID_PHOTO_ONNX_INTRA_OP_THREADS", 2),
+        "interOpNumThreads": _positive_int_env("ID_PHOTO_ONNX_INTER_OP_THREADS", 1),
+        "provider": ONNX_PROVIDER,
+    }
+
+
+def _onnx_session_options():
+    config = onnx_runtime_config()
+    options = onnxruntime.SessionOptions()
+    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
+    options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+    options.intra_op_num_threads = config["intraOpNumThreads"]
+    options.inter_op_num_threads = config["interOpNumThreads"]
+    return options
+
+
 def load_onnx_model(checkpoint_path, set_cpu=False):
     providers = (
         ["CUDAExecutionProvider", "CPUExecutionProvider"]
@@ -55,20 +82,29 @@ def load_onnx_model(checkpoint_path, set_cpu=False):
         else ["CPUExecutionProvider"]
     )
 
+    session_options = _onnx_session_options()
     if set_cpu:
         sess = onnxruntime.InferenceSession(
-            checkpoint_path, providers=["CPUExecutionProvider"]
+            checkpoint_path,
+            sess_options=session_options,
+            providers=["CPUExecutionProvider"],
         )
     else:
         try:
-            sess = onnxruntime.InferenceSession(checkpoint_path, providers=providers)
+            sess = onnxruntime.InferenceSession(
+                checkpoint_path,
+                sess_options=session_options,
+                providers=providers,
+            )
         except Exception as e:
-            if ONNX_DEVICE == "CUDAExecutionProvider":
+            if ONNX_PROVIDER == "CUDAExecutionProvider":
                 print(f"Failed to load model with CUDAExecutionProvider: {e}")
                 print("Falling back to CPUExecutionProvider")
                 # 尝试使用CPU加载模型
                 sess = onnxruntime.InferenceSession(
-                    checkpoint_path, providers=["CPUExecutionProvider"]
+                    checkpoint_path,
+                    sess_options=session_options,
+                    providers=["CPUExecutionProvider"],
                 )
             else:
                 raise e  # 如果是CPU执行失败，重新抛出异常

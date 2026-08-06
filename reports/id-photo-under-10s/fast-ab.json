@@ -1,0 +1,363 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-08-07T00:20:04+08:00",
+  "maxSide": 768,
+  "provider": "CPUExecutionProvider",
+  "executionNotes": [
+    "The first Windows run with the vendored virtual environment could not load the OpenCV face cascade through the Unicode project path.",
+    "The completed run uses the system Python runtime, which has the same ONNX Runtime and OpenCV versions plus the production MediaPipe detector."
+  ],
+  "rows": [
+    {
+      "sample": "6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 249,
+        "y": 635,
+        "width": 386,
+        "height": 386
+      },
+      "modelKey": "FAST-A",
+      "modelName": "hivision_modnet",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\hivision_modnet.onnx",
+      "modelLoaded": true,
+      "sessionReused": false,
+      "inputSize": {
+        "original": "960x1886",
+        "working": "391x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 7.942,
+      "resizeMs": 28.699,
+      "inferenceMs": 223.712,
+      "postprocessMs": 15.604,
+      "qualityGateMs": 475.402,
+      "modelLoadMs": 69.106,
+      "totalMs": 821.789,
+      "backgroundLeakRatio": 0.044649,
+      "subjectHoleRatio": 0.0,
+      "shoulderCutoffRatio": 0.421802,
+      "hairCutoffRatio": 0.112297,
+      "edgeHaloRatio": 0.046716,
+      "foregroundOldBgRatio": 0.032699,
+      "boundaryComplexity": 1.91159,
+      "fragmentedRowRatio": 0.001591,
+      "qualityScore": 30.279,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\hivision_modnet\\clothing-zoom.png"
+      }
+    },
+    {
+      "sample": "6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 249,
+        "y": 635,
+        "width": 386,
+        "height": 386
+      },
+      "modelKey": "FAST-B",
+      "modelName": "modnet_photographic_portrait_matting",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\modnet_photographic_portrait_matting.onnx",
+      "modelLoaded": true,
+      "sessionReused": false,
+      "inputSize": {
+        "original": "960x1886",
+        "working": "391x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 7.942,
+      "resizeMs": 23.174,
+      "inferenceMs": 217.097,
+      "postprocessMs": 15.314,
+      "qualityGateMs": 488.541,
+      "modelLoadMs": 64.312,
+      "totalMs": 817.105,
+      "backgroundLeakRatio": 0.043494,
+      "subjectHoleRatio": 0.000493,
+      "shoulderCutoffRatio": 0.415235,
+      "hairCutoffRatio": 0.058573,
+      "edgeHaloRatio": 0.067096,
+      "foregroundOldBgRatio": 0.090422,
+      "boundaryComplexity": 2.373373,
+      "fragmentedRowRatio": 0.036585,
+      "qualityScore": 26.742,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\6a83d1e010f6e9ed8c35af94f0c33936\\modnet_photographic_portrait_matting\\clothing-zoom.png"
+      }
+    },
+    {
+      "sample": "610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 498,
+        "y": 397,
+        "width": 248,
+        "height": 248
+      },
+      "modelKey": "FAST-A",
+      "modelName": "hivision_modnet",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\hivision_modnet.onnx",
+      "modelLoaded": true,
+      "sessionReused": true,
+      "inputSize": {
+        "original": "1179x1526",
+        "working": "593x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 8.749,
+      "resizeMs": 26.322,
+      "inferenceMs": 219.044,
+      "postprocessMs": 17.665,
+      "qualityGateMs": 548.125,
+      "modelLoadMs": 0.0,
+      "totalMs": 820.709,
+      "backgroundLeakRatio": 0.471869,
+      "subjectHoleRatio": 0.024481,
+      "shoulderCutoffRatio": 0.0,
+      "hairCutoffRatio": 0.0,
+      "edgeHaloRatio": 0.078048,
+      "foregroundOldBgRatio": 0.135649,
+      "boundaryComplexity": 2.608825,
+      "fragmentedRowRatio": 0.135649,
+      "qualityScore": 15.204,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\hivision_modnet\\clothing-zoom.png"
+      }
+    },
+    {
+      "sample": "610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\610a7b3fadac6b4452736f72b8f3a492.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 498,
+        "y": 397,
+        "width": 248,
+        "height": 248
+      },
+      "modelKey": "FAST-B",
+      "modelName": "modnet_photographic_portrait_matting",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\modnet_photographic_portrait_matting.onnx",
+      "modelLoaded": true,
+      "sessionReused": true,
+      "inputSize": {
+        "original": "1179x1526",
+        "working": "593x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 8.749,
+      "resizeMs": 28.53,
+      "inferenceMs": 219.094,
+      "postprocessMs": 16.879,
+      "qualityGateMs": 555.297,
+      "modelLoadMs": 0.0,
+      "totalMs": 829.364,
+      "backgroundLeakRatio": 0.427276,
+      "subjectHoleRatio": 0.008311,
+      "shoulderCutoffRatio": 0.0,
+      "hairCutoffRatio": 0.0,
+      "edgeHaloRatio": 0.041744,
+      "foregroundOldBgRatio": 0.010485,
+      "boundaryComplexity": 1.46474,
+      "fragmentedRowRatio": 0.010485,
+      "qualityScore": 22.718,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\610a7b3fadac6b4452736f72b8f3a492\\modnet_photographic_portrait_matting\\clothing-zoom.png"
+      }
+    },
+    {
+      "sample": "217139c99959fa2888673f2100612b8f.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\217139c99959fa2888673f2100612b8f.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 511,
+        "y": 549,
+        "width": 257,
+        "height": 257
+      },
+      "modelKey": "FAST-A",
+      "modelName": "hivision_modnet",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\hivision_modnet.onnx",
+      "modelLoaded": true,
+      "sessionReused": true,
+      "inputSize": {
+        "original": "1280x1707",
+        "working": "576x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 17.27,
+      "resizeMs": 28.923,
+      "inferenceMs": 208.587,
+      "postprocessMs": 19.07,
+      "qualityGateMs": 625.835,
+      "modelLoadMs": 0.0,
+      "totalMs": 900.757,
+      "backgroundLeakRatio": 0.360023,
+      "subjectHoleRatio": 0.000883,
+      "shoulderCutoffRatio": 0.187443,
+      "hairCutoffRatio": 0.001765,
+      "edgeHaloRatio": 0.055601,
+      "foregroundOldBgRatio": 0.044085,
+      "boundaryComplexity": 2.002683,
+      "fragmentedRowRatio": 0.005272,
+      "qualityScore": 21.544,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\hivision_modnet\\clothing-zoom.png"
+      }
+    },
+    {
+      "sample": "217139c99959fa2888673f2100612b8f.jpg",
+      "sourcePath": "C:\\Users\\zyu33\\Desktop\\217139c99959fa2888673f2100612b8f.jpg",
+      "status": "PASS",
+      "faceBox": {
+        "x": 511,
+        "y": 549,
+        "width": 257,
+        "height": 257
+      },
+      "modelKey": "FAST-B",
+      "modelName": "modnet_photographic_portrait_matting",
+      "modelPath": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\third_party\\HivisionIDPhotos\\hivision\\creator\\weights\\modnet_photographic_portrait_matting.onnx",
+      "modelLoaded": true,
+      "sessionReused": true,
+      "inputSize": {
+        "original": "1280x1707",
+        "working": "576x768",
+        "onnx": "512x512"
+      },
+      "decodeMs": 17.27,
+      "resizeMs": 29.105,
+      "inferenceMs": 213.901,
+      "postprocessMs": 18.572,
+      "qualityGateMs": 619.422,
+      "modelLoadMs": 0.0,
+      "totalMs": 899.543,
+      "backgroundLeakRatio": 0.354692,
+      "subjectHoleRatio": 0.003501,
+      "shoulderCutoffRatio": 0.182272,
+      "hairCutoffRatio": 0.0,
+      "edgeHaloRatio": 0.051375,
+      "foregroundOldBgRatio": 0.022246,
+      "boundaryComplexity": 1.827971,
+      "fragmentedRowRatio": 0.001757,
+      "qualityScore": 22.887,
+      "mattingPassed": true,
+      "mattingFailReasons": [],
+      "artifacts": {
+        "source": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\source.jpg",
+        "alpha": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\alpha.png",
+        "foreground": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\foreground.png",
+        "checkerboard": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\checkerboard.png",
+        "blue": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\blue.jpg",
+        "white": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\white.jpg",
+        "hairZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\hair-zoom.png",
+        "earZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\ear-zoom.png",
+        "shoulderZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\shoulder-zoom.png",
+        "clothingZoom": "C:\\Users\\zyu33\\.openclaw-workspaces\\assistant\\projects\\证件照生成器\\reports\\id-photo-under-10s\\fast-ab-artifacts\\217139c99959fa2888673f2100612b8f\\modnet_photographic_portrait_matting\\clothing-zoom.png"
+      }
+    }
+  ],
+  "summary": {
+    "comparisons": [
+      {
+        "sample": "6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+        "winner": "FAST-A",
+        "fastBMinusFastA": -3.537
+      },
+      {
+        "sample": "610a7b3fadac6b4452736f72b8f3a492.jpg",
+        "winner": "FAST-B",
+        "fastBMinusFastA": 7.514
+      },
+      {
+        "sample": "217139c99959fa2888673f2100612b8f.jpg",
+        "winner": "FAST-B",
+        "fastBMinusFastA": 1.343
+      }
+    ],
+    "fastABetterCount": 1,
+    "fastBBetterCount": 2,
+    "tieCount": 0,
+    "fastAMeanQualityScore": 22.342,
+    "fastBMeanQualityScore": 24.116,
+    "candidateEligibleByAutomatedMetrics": true,
+    "visualReviewRequired": false,
+    "visualReviewStatus": "PASS",
+    "productionDecision": "Use photographic MODNet only as sequential FAST-B when FAST-A is classified FAST_RISK.",
+    "visualReview": [
+      {
+        "sample": "6a83d1e010f6e9ed8c35af94f0c33936.jpg",
+        "winner": "FAST-A",
+        "finding": "FAST-A retains the night-scene long-hair boundary more naturally; both keep ears, shoulders, and clothing."
+      },
+      {
+        "sample": "610a7b3fadac6b4452736f72b8f3a492.jpg",
+        "winner": "FAST-B",
+        "finding": "FAST-B preserves the hat and raised arms with fewer internal holes and less retained background."
+      },
+      {
+        "sample": "217139c99959fa2888673f2100612b8f.jpg",
+        "winner": "FAST-B",
+        "finding": "FAST-B has the cleaner tree and light-clothing boundary while keeping hair, ears, and both shoulders."
+      }
+    ]
+  }
+}

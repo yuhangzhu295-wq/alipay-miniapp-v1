@@ -221,7 +221,10 @@ def main() -> int:
         "ordinaryNoSyncDetail": all(row["ordinary"].get("detailFallbackUsed") is False for row in matrix),
         "ordinaryUnder30Seconds": max(ordinary_times, default=30001) < 30000,
         "allFourSpecsReturnedClearly": len(all_spec_rows) == 120 and all(row["clearResult"] for row in all_spec_rows),
-        "allMattingSpecRunsModnetOnly": all(row["selectedModel"] == "hivision_modnet" for row in matting_spec_rows),
+        "allMattingSpecRunsFastOnly": all(
+            row["selectedModel"] in {"hivision_modnet", "modnet_photographic_portrait_matting"}
+            for row in matting_spec_rows
+        ),
         "allMattingSpecRunsNoSyncDetail": all(row["detailFallbackUsed"] is False for row in matting_spec_rows),
         "allDetailCreatesImmediate": all(row.get("createMs", 10001) < 10000 for row in detail_rows),
         "allDetailJobsUseBirefnet": all(row.get("detailModel") == "birefnet-v1-lite" for row in detail_rows),
