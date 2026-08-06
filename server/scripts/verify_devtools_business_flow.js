@@ -11,12 +11,14 @@ const path = require('path')
 const automator = require('miniprogram-automator')
 
 const ROOT = path.resolve(__dirname, '..', '..')
-const FINAL = path.join(ROOT, 'reports', 'final')
+const FINAL = process.env.DEVTOOLS_BUSINESS_REPORT_DIR || path.join(ROOT, 'reports', 'final')
 const REPORT_JSON = path.join(FINAL, 'devtools-business-flow-report.json')
 const REPORT_MD = path.join(FINAL, 'devtools-business-flow-report.md')
-const SCREENSHOT_DIR = path.join(ROOT, 'reports', '20260803-cloud-repair', 'devtools-screenshots')
-const ID_REPORT = path.join(FINAL, 'id-photo-validation-report.json')
-const CURRENT_FIX_ID_REPORT = path.join(ROOT, 'reports', 'current-fixes', 'final', 'id-photo-sample-validation-report.json')
+const SCREENSHOT_DIR = process.env.DEVTOOLS_BUSINESS_SCREENSHOT_DIR ||
+  path.join(ROOT, 'reports', '20260803-cloud-repair', 'devtools-screenshots')
+const ID_REPORT = process.env.DEVTOOLS_ID_REPORT || path.join(FINAL, 'id-photo-validation-report.json')
+const CURRENT_FIX_ID_REPORT = process.env.DEVTOOLS_CURRENT_FIX_ID_REPORT ||
+  path.join(ROOT, 'reports', 'current-fixes', 'final', 'id-photo-sample-validation-report.json')
 const RUN_ID = process.env.RUN_ID || 'cloud-deploy-e2e-20260605-232848'
 const CLOUD_FLOW_REPORT = process.env.CLOUD_FLOW_REPORT ||
   path.join(ROOT, 'reports', 'cloud-deploy-e2e', RUN_ID, 'cloud-tests', 'cloud-real-business-flow-hd.json')

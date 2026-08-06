@@ -582,7 +582,8 @@ Page({
           throw emptyError;
         }
         var qualityReport = result.quality && result.quality.qualityReport;
-        if (qualityReport && qualityReport.passed === false) {
+        var fastWarningAccepted = result.quality && result.quality.fastWarningAccepted === true;
+        if (qualityReport && qualityReport.passed === false && !fastWarningAccepted) {
           var qualityError = new Error('证件照生成质量未达标，请重新上传清晰正面照片。');
           qualityError.code = 'ID_PHOTO_QUALITY_FAILED';
           qualityError.quality = qualityReport;

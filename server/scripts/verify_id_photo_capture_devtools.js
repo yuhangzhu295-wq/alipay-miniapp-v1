@@ -1,9 +1,10 @@
 const fs = require('fs')
 const path = require('path')
 const automator = require('miniprogram-automator')
+const specs = require('../../utils/specs.js')
 
 const ROOT = path.resolve(__dirname, '..', '..')
-const REPORT_DIR = path.join(ROOT, 'reports', 'id-photo-camera-flow')
+const REPORT_DIR = process.env.ID_PHOTO_CAMERA_REPORT_DIR || path.join(ROOT, 'reports', 'id-photo-camera-flow')
 const SCREENSHOT_DIR = path.join(REPORT_DIR, 'devtools-screenshots')
 const PORT = Number(process.env.WECHAT_AUTOMATOR_PORT || 9430)
 const checks = []
@@ -78,17 +79,17 @@ async function main() {
     check('home one-inch entry opens capture guide', page && page.path === 'pages/capture-guide/capture-guide', page && page.query)
     check('home entry preserves one-inch specId', page && page.query && page.query.specId === 'yicun', page && page.query)
 
-    const specifications = [
-      ['yicun', '一寸'],
-      ['ercun', '二寸'],
-      ['id_card_cn_358_441', '身份证'],
-      ['passport_cn_390_567', '护照'],
-      ['driver_common', '驾驶证'],
-      ['teacher_cert_295_413', '教师资格证'],
-      ['civil_service_common', '公务员考试']
-    ]
-    for (const [specId, label] of specifications) {
-      page = await route(miniProgram, '/pages/capture-guide/capture-guide?specId=' + specId)
+    const seen = new Set()
+    const specifications = specs.getSpecsByCategory('all').filter((spec) => {
+      if (!spec.id || spec.enabled === false || spec.active === false || seen.has(spec.id)) return false
+      seen.add(spec.id)
+      return true
+    })
+    check('all visible specifications are included in DevTools verification', specifications.length >= 90, { count: specifications.length })
+    for (const spec of specifications) {
+      const specId = spec.id
+      const label = spec.displayName || spec.name || specId
+      await timeout('load guide data for ' + specId, page.callMethod('onLoad', { specId }), 10000)
       const data = {
         specId: await page.data('specId'),
         specName: await page.data('specName'),
@@ -97,7 +98,12 @@ async function main() {
         dpi: await page.data('dpiText')
       }
       check(label + ' guide keeps specId', data.specId === specId, data)
-      check(label + ' guide renders dynamic specification data', Boolean(data.specName && /px$/.test(data.pixels) && data.colors.length), data)
+      check(
+        label + ' guide renders exact specification dimensions',
+        data.pixels === spec.widthPx + ' × ' + spec.heightPx + 'px',
+        Object.assign({ expected: spec.widthPx + ' × ' + spec.heightPx + 'px' }, data)
+      )
+      check(label + ' guide renders dynamic colors', Boolean(data.specName && data.colors.length), data)
       check(label + ' guide renders both real actions', (await count(page, '.action-button')) === 2)
     }
 

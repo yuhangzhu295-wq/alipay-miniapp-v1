@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-08-07T03:05:00+08:00",
+  "status": "PENDING_PHYSICAL_DEVICE_CONFIRMATION_AND_FINAL_EVIDENCE_SHA_SYNC",
+  "optimizationMergeSha": "4bc2b3210c1e91ec2db62a81a414efe75011d1c9",
+  "production": {
+    "qualifiedImages": 30,
+    "successCount": 30,
+    "p50Ms": 2811,
+    "p95Ms": 4549,
+    "maxMs": 5113,
+    "synchronousBirefnetCount": 0,
+    "fastASelectedCount": 20,
+    "fastBSelectedCount": 10,
+    "fastBTriggeredCount": 15,
+    "fastBlockCount": 0,
+    "specRequests": 120,
+    "colorAttempts": 150,
+    "colorOutputs": 150,
+    "detailJobsCompleted": 30,
+    "negativeSamples": 10,
+    "negativeFalsePass": 0
+  },
+  "onnxRuntime": {
+    "provider": "CPUExecutionProvider",
+    "executionMode": "ORT_SEQUENTIAL",
+    "graphOptimizationLevel": "ORT_ENABLE_ALL",
+    "intraOpNumThreads": 2,
+    "interOpNumThreads": 1,
+    "openVinoSkipped": true
+  },
+  "wechatDevtools": {
+    "visibleSpecifications": 98,
+    "checks": 411,
+    "failed": 0,
+    "runtimeExceptions": 0,
+    "screenshots": 4,
+    "fullBusinessChecks": 52,
+    "fullBusinessFailed": 0
+  },
+  "physicalDevice": {
+    "previewGenerated": true,
+    "appid": "wx8026aeed4929d381",
+    "packageBytes": 344260,
+    "qrSha256": "b69c5cb4d7742a7c5ba5c81e52bd6b2ee0f5003944afa314a55bf210e11017c3",
+    "confirmed": false
+  },
+  "fullBusinessFlow": {
+    "idPhoto": true,
+    "fiveBackgrounds": true,
+    "asyncHairDetail": true,
+    "watermarkManual": true,
+    "watermarkQuick": true,
+    "watermarkRealLama": true,
+    "compress": true,
+    "cleanup": true
+  },
+  "frontendFastWarningContract": {
+    "explicitAcceptanceRequired": true,
+    "acceptedWarningComposes": true,
+    "unacceptedFailureBlocked": true
+  },
+  "cloudServices": {
+    "photo-generator": "active",
+    "hivision-worker": "active",
+    "iopaint": "active"
+  },
+  "remaining": [
+    "physical device confirmation",
+    "final evidence-only PR merge and exact cloud SHA sync"
+  ]
+}
