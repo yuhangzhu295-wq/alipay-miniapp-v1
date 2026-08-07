@@ -33,6 +33,12 @@ CROP_FAIL_CODES = {
     "ID_PHOTO_BODY_TOO_MUCH",
     "ID_PHOTO_SUBJECT_OUTSIDE_CANVAS",
     "ID_PHOTO_SIDE_SAFETY_BAD",
+    "ID_PHOTO_SHOULDERS_NOT_OBSERVED",
+    "ID_PHOTO_FOREGROUND_DETACHED_FROM_PANEL_BOTTOM",
+    "ID_PHOTO_SHOULDERS_DETACHED_FROM_PANEL_SIDES",
+    "ID_PHOTO_PERSON_PANEL_ALIGNMENT_FAILED",
+    "ID_PHOTO_FINAL_COMPOSITION_FAILED",
+    "ID_PHOTO_DOCUMENT_STANDARD_FAILED",
 }
 
 MATTING_FAIL_CODES = {
@@ -124,7 +130,10 @@ def _composition_thresholds(width_px: int, height_px: int, composition_profile=N
         "headWidthMax": head_width_max,
         "shoulderMin": 0.75,
         "shoulderMax": 1.0,
-        "centerMax": 0.045 if small_canvas else 0.04,
+        "centerMax": max(0.015, 1.0 / w),
+        "visualCenterMax": max(0.010, 1.0 / w),
+        "shoulderMarginDifferenceMax": max(0.025, 2.0 / w),
+        "importantForegroundOverflowMaxPx": 0.0,
         "sideSafetyMin": 0.0,
         # The lower torso normally exits an ID-photo canvas.  Chin-to-bottom is
         # the composition safety metric; requiring a blue strip below the body
@@ -146,6 +155,11 @@ def _composition_thresholds(width_px: int, height_px: int, composition_profile=N
         value = profile.get(profile_key)
         if value is not None:
             thresholds[threshold_key] = float(value)
+    if (
+        profile.get("headHeightRatioMax") is None
+        and profile.get("operationalHeadHeightRatioMax") is not None
+    ):
+        thresholds["headHeightMax"] = float(profile["operationalHeadHeightRatioMax"])
     if profile.get("sideSafetyRatio") is not None:
         thresholds["sideSafetyMin"] = float(profile["sideSafetyRatio"])
     if profile.get("bottomSafetyRatio") is not None:
@@ -1039,13 +1053,11 @@ def build_quality_report(
         score -= 34
     background_sheet_signal = float(metrics.get("remainingBackgroundSheetRatio") or 0) > 0.006
     head_side_signal = float(metrics.get("remainingHeadSideBackgroundRatio") or 0) > 0.003
-    # Neutral gray is close to low-saturation clothing edges, so component size
-    # alone is not enough evidence of retained source background.
-    side_residual_max_limit = 900 if neutral_gray_bg else 520
+    # Clothing and shoulders can legitimately touch a crop edge. Visual shape
+    # heuristics alone are therefore not proof of retained source background;
+    # require the independent alpha/background-sheet signal before rejecting.
     side_residual_failed = (
-        side_residual["sideBoundaryLineMaxComponentPixels"] > 760
-        or side_residual["sideResidualArtifactMaxComponentPixels"] > side_residual_max_limit
-        or (side_residual["sideBoundaryLineMaxComponentPixels"] > 520 and head_side_signal)
+        (side_residual["sideBoundaryLineMaxComponentPixels"] > 520 and (head_side_signal or background_sheet_signal))
         or (side_residual["sideResidualArtifactMaxComponentPixels"] > 260 and background_sheet_signal)
         or (side_residual["sideResidualArtifactPixels"] > 900 and (background_sheet_signal or head_side_signal))
     )
@@ -1084,6 +1096,10 @@ def build_quality_report(
     )
     shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
     center = float(metrics.get("faceCenterOffset") or 0)
+    visual_center = float(metrics.get("visualCenterErrorRatio") or center)
+    shoulder_margin_difference = float(metrics.get("shoulderMarginDifferenceRatio") or 0)
+    shoulder_symmetry_applicable = metrics.get("shoulderSymmetryApplicable") is not False
+    important_overflow = float(metrics.get("importantForegroundOverflowPixels") or 0)
     fg_h = float(metrics.get("foregroundHeightRatio") or 0)
     side_safety = float(metrics.get("sideSafetyRatio") or 0)
     bottom_safety = float(metrics.get("bottomSafetyRatio") or bottom)
@@ -1100,6 +1116,10 @@ def build_quality_report(
         "headWidthRatio": round(head_w, 4),
         "shoulderWidthRatio": round(shoulder, 4),
         "faceCenterXRatio": round(0.5 + min(0.49, center), 4),
+        "visualCenterErrorRatio": round(visual_center, 6),
+        "shoulderMarginDifferenceRatio": round(shoulder_margin_difference, 6),
+        "shoulderSymmetryApplicable": shoulder_symmetry_applicable,
+        "importantForegroundOverflowPixels": round(important_overflow, 3),
         "faceCenterYRatio": round(float((metrics.get("outputFaceBox") or {}).get("y", 0)) / max(1, int(height_px)), 4),
         "bodyTooMuch": fg_h > 0.95 and head_h < 0.58,
         "shoulderTouchEdge": shoulder > float(profile.get("shoulderWidthRatioMax") or 1.0),
@@ -1168,18 +1188,36 @@ def build_quality_report(
     if top > thresholds["topMax"]:
         fail_reasons.append("ID_PHOTO_TOP_PADDING_TOO_LARGE")
     require(thresholds["bottomMin"] <= bottom <= thresholds["bottomMax"], "ID_PHOTO_BOTTOM_PADDING_BAD", 8)
-    require(thresholds["headHeightMin"] <= head_h <= thresholds["headHeightMax"], "ID_PHOTO_HEAD_SIZE_BAD", 12)
-    if head_h < thresholds["headHeightMin"]:
+    # Ratios in the quality payload are rounded to six decimals. Keep the
+    # pixel-domain tolerance identical to final-image validation and absorb
+    # only that serialization rounding error.
+    ratio_rounding_epsilon = 1e-6
+    height_pixel_tolerance = 2.0 / float(max(1, int(height_px))) + ratio_rounding_epsilon
+    width_pixel_tolerance = 1.0 / float(max(1, int(width_px))) + ratio_rounding_epsilon
+    require(
+        thresholds["headHeightMin"] - height_pixel_tolerance
+        <= head_h
+        <= thresholds["headHeightMax"] + height_pixel_tolerance,
+        "ID_PHOTO_HEAD_SIZE_BAD",
+        12,
+    )
+    if head_h < thresholds["headHeightMin"] - height_pixel_tolerance:
         fail_reasons.append("ID_PHOTO_HEAD_TOO_SMALL")
-    if head_h > thresholds["headHeightMax"]:
+    if head_h > thresholds["headHeightMax"] + height_pixel_tolerance:
         fail_reasons.append("ID_PHOTO_HEAD_TOO_LARGE")
-    require(thresholds["headWidthMin"] <= head_w <= thresholds["headWidthMax"], "ID_PHOTO_HEAD_WIDTH_BAD", 8)
+    require(
+        thresholds["headWidthMin"] - width_pixel_tolerance
+        <= head_w
+        <= thresholds["headWidthMax"] + width_pixel_tolerance,
+        "ID_PHOTO_HEAD_WIDTH_BAD",
+        8,
+    )
     require(thresholds["shoulderMin"] <= shoulder <= thresholds["shoulderMax"], "ID_PHOTO_SHOULDER_WIDTH_BAD", 10)
     if shoulder < thresholds["shoulderMin"]:
         fail_reasons.append("ID_PHOTO_SHOULDER_TOO_NARROW")
     if shoulder > thresholds["shoulderMax"]:
         fail_reasons.append("ID_PHOTO_SHOULDER_TOO_WIDE")
-    require(center <= thresholds["centerMax"], "ID_PHOTO_FACE_NOT_CENTERED", 8)
+    checks["faceCenterAuxiliaryPass"] = center <= thresholds["centerMax"]
     require(not checks["bodyTooMuch"], "ID_PHOTO_BODY_TOO_MUCH", 10)
     require(subject_within_canvas, "ID_PHOTO_SUBJECT_OUTSIDE_CANVAS", 20)
     require(side_safety >= thresholds["sideSafetyMin"], "ID_PHOTO_SIDE_SAFETY_BAD", 8)
@@ -1249,6 +1287,368 @@ def validate_final_output(image_path, width_px, height_px, bg_color):
     return {"success": True, "qualityReport": report}
 
 
+def validate_final_id_photo(
+    final_image,
+    spec_id,
+    standard_profile,
+    *,
+    metrics=None,
+    expected_bg="",
+):
+    """Re-measure the encoded ID photo against its real output panel.
+
+    The composer coordinates remain useful diagnostics, but pass/fail is based
+    on the reopened output file and the final composed alpha mask.
+    """
+    metrics = dict(metrics or {})
+    spec = dict(standard_profile or {})
+    profile = dict(spec.get("compositionProfile") or spec)
+    expected_size = (
+        int(spec.get("width") or 0),
+        int(spec.get("height") or 0),
+    )
+    image = Image.open(final_image).convert("RGB")
+    panel_w, panel_h = image.size
+    panel = {"left": 0, "top": 0, "right": panel_w, "bottom": panel_h}
+    expected_rgb = _hex_to_rgb(expected_bg or spec.get("bgColor") or "#1a73e8")
+
+    mask = None
+    mask_source = "encoded-image-background-difference"
+    mask_path = metrics.get("composedMaskPath")
+    if mask_path and os.path.exists(mask_path) and not metrics.get("outfitApplied"):
+        try:
+            mask_image = Image.open(mask_path).convert("L")
+            if mask_image.size == image.size:
+                mask = np.asarray(mask_image) > 18
+                mask_source = "final-composed-alpha"
+        except Exception:
+            mask = None
+    if mask is None:
+        rgb = np.asarray(image).astype(np.int16)
+        diff = np.linalg.norm(rgb - np.asarray(expected_rgb, dtype=np.int16), axis=2)
+        raw = (diff > 28).astype("uint8")
+        raw = cv2.morphologyEx(raw, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(raw, 8)
+        mask = np.zeros((panel_h, panel_w), dtype=bool)
+        if count > 1:
+            face_hint = metrics.get("outputFaceBox") or {}
+            hint_x = int(float(face_hint.get("x") or panel_w * 0.5) + float(face_hint.get("width") or 0) * 0.5)
+            hint_y = int(float(face_hint.get("y") or panel_h * 0.35) + float(face_hint.get("height") or 0) * 0.5)
+            candidates = []
+            for label in range(1, count):
+                area = int(stats[label, cv2.CC_STAT_AREA])
+                if area < max(12, panel_w * panel_h * 0.0004):
+                    continue
+                contains_hint = 0 <= hint_y < panel_h and 0 <= hint_x < panel_w and labels[hint_y, hint_x] == label
+                candidates.append((1 if contains_hint else 0, area, label))
+            if candidates:
+                mask = labels == max(candidates)[2]
+
+    ys, xs = np.where(mask)
+    foreground = {
+        "left": int(xs.min()) if xs.size else 0,
+        "top": int(ys.min()) if ys.size else 0,
+        "right": int(xs.max()) + 1 if xs.size else 0,
+        "bottom": int(ys.max()) + 1 if ys.size else 0,
+    }
+
+    face_hint = metrics.get("outputFaceBox") or {}
+    final_face = None
+    face_measurement_source = "composer-transform-fallback"
+    try:
+        from services.face_detector import detect_face
+
+        face_result = detect_face(
+            final_image,
+            classifier_quality={"faceBox": face_hint, "faceConfidence": 0.9},
+        )
+        if face_result.get("success"):
+            final_face = dict(face_result["faceBox"])
+            face_measurement_source = "final-image-" + str(face_result.get("engine") or "detector")
+    except Exception:
+        final_face = None
+    if not final_face:
+        final_face = {
+            "x": float(face_hint.get("x") or panel_w * 0.35),
+            "y": float(face_hint.get("y") or panel_h * 0.28),
+            "width": max(1.0, float(face_hint.get("width") or panel_w * 0.30)),
+            "height": max(1.0, float(face_hint.get("height") or panel_h * 0.30)),
+        }
+
+    fx = float(final_face["x"])
+    fy = float(final_face["y"])
+    fw = max(1.0, float(final_face["width"]))
+    fh = max(1.0, float(final_face["height"]))
+    face_cx = fx + fw * 0.5
+
+    def row_span(row):
+        if row < 0 or row >= panel_h:
+            return None
+        row_x = np.flatnonzero(mask[row])
+        if row_x.size == 0:
+            return None
+        splits = np.flatnonzero(np.diff(row_x) > 1) + 1
+        runs = np.split(row_x, splits)
+        selected = min(
+            runs,
+            key=lambda run: (
+                0 if run[0] <= face_cx <= run[-1] else min(abs(run[0] - face_cx), abs(run[-1] - face_cx)),
+                -run.size,
+            ),
+        )
+        return int(selected[0]), int(selected[-1]) + 1
+
+    head_roi_left = max(0, int(round(face_cx - fw * 1.15)))
+    head_roi_right = min(panel_w, int(round(face_cx + fw * 1.15)))
+    head_roi_bottom = min(panel_h, int(round(fy + fh * 1.02)))
+    head_pixels = mask[:head_roi_bottom, head_roi_left:head_roi_right]
+    head_ys, _ = np.where(head_pixels)
+    head_top = int(head_ys.min()) if head_ys.size else int(max(0, round(fy - fh * 0.55)))
+    head_rows = [row_span(row) for row in range(head_top, head_roi_bottom)]
+    head_rows = [span for span in head_rows if span]
+    head_left = int(np.percentile([span[0] for span in head_rows], 8)) if head_rows else head_roi_left
+    head_right = int(np.percentile([span[1] for span in head_rows], 92)) if head_rows else head_roi_right
+    silhouette_head_width = max(1, head_right - head_left)
+    head_width_cap_factor = (
+        1.18
+        if profile.get("headWidthRatioMin") is not None
+        and profile.get("headWidthRatioMax") is not None
+        else 1.28
+    )
+    geometry_head_width = min(
+        silhouette_head_width,
+        max(1, int(round(fw * head_width_cap_factor))),
+    )
+    if geometry_head_width < silhouette_head_width:
+        geometry_left = int(round(face_cx - geometry_head_width * 0.5))
+        head_left = max(0, geometry_left)
+        head_right = min(panel_w, head_left + geometry_head_width)
+        head_left = max(0, head_right - geometry_head_width)
+    chin_y = min(panel_h, int(round(fy + fh)))
+    head = {
+        "left": head_left,
+        "top": head_top,
+        "right": head_right,
+        "bottom": chin_y,
+    }
+
+    shoulder_start = min(panel_h - 1, max(chin_y, int(round(fy + fh * 1.02))))
+    shoulder_end = min(panel_h, int(round(chin_y + fh * 1.05)))
+    shoulder_rows = []
+    for row in range(shoulder_start, shoulder_end):
+        span = row_span(row)
+        if span:
+            shoulder_rows.append((row, span[0], span[1], span[1] - span[0]))
+    shoulder_threshold = max(fw * 1.45, (head_right - head_left) * 1.08)
+    expanding_rows = [item for item in shoulder_rows if item[3] >= shoulder_threshold]
+    selected_rows = expanding_rows or shoulder_rows
+    if selected_rows:
+        shoulder_top = int(min(item[0] for item in selected_rows))
+        shoulder_left = int(np.percentile([item[1] for item in selected_rows], 12))
+        shoulder_right = int(np.percentile([item[2] for item in selected_rows], 88))
+        shoulder_bottom = int(max(item[0] for item in selected_rows) + 1)
+    else:
+        shoulder_top = shoulder_start
+        shoulder_left = shoulder_right = int(round(face_cx))
+        shoulder_bottom = shoulder_start
+    shoulder = {
+        "left": shoulder_left,
+        "top": shoulder_top,
+        "right": shoulder_right,
+        "bottom": shoulder_bottom,
+    }
+
+    fg_width = max(0, foreground["right"] - foreground["left"])
+    fg_height = max(0, foreground["bottom"] - foreground["top"])
+    head_width = max(0, head["right"] - head["left"])
+    head_height = max(0, head["bottom"] - head["top"])
+    shoulder_width = max(0, shoulder["right"] - shoulder["left"])
+    foreground_bottom_gap = max(0, panel_h - foreground["bottom"])
+    required_bottom_contact = bool(profile.get("foregroundBottomContact", spec.get("composition") == "head_shoulder"))
+    required_side_contact = bool(profile.get("shoulderSideContact", spec.get("composition") == "head_shoulder"))
+    lower_band_top = max(shoulder["top"], int(round(panel_h * 0.72)))
+    lower_band_y, lower_band_x = np.where(mask[lower_band_top:, :])
+    left_shoulder_panel_gap = int(lower_band_x.min()) if lower_band_x.size else panel_w
+    right_shoulder_panel_gap = panel_w - (int(lower_band_x.max()) + 1) if lower_band_x.size else panel_w
+    shoulder_observed = bool(
+        metrics.get("shoulderObserved") is not False
+        and len(expanding_rows) >= max(3, int(panel_h * 0.012))
+        and shoulder_width >= fw * 1.25
+    )
+
+    person_center_x = (foreground["left"] + foreground["right"]) * 0.5
+    person_center_y = (foreground["top"] + foreground["bottom"]) * 0.5
+    head_center_x = (head["left"] + head["right"]) * 0.5
+    shoulder_center_x = (shoulder["left"] + shoulder["right"]) * 0.5
+    left_shoulder_margin = shoulder["left"]
+    right_shoulder_margin = panel_w - shoulder["right"]
+    person_alignment = {
+        "panel": panel,
+        "foreground": foreground,
+        "head": head,
+        "chinY": chin_y,
+        "shoulder": shoulder,
+        "personPanelCenterOffsetX": round(person_center_x - panel_w * 0.5, 3),
+        "personPanelCenterOffsetY": round(person_center_y - panel_h * 0.5, 3),
+        "leftForegroundMargin": foreground["left"],
+        "rightForegroundMargin": panel_w - foreground["right"],
+        "topHeadMargin": head["top"],
+        "chinBottomMargin": panel_h - chin_y,
+        "leftShoulderMargin": left_shoulder_margin,
+        "rightShoulderMargin": right_shoulder_margin,
+        "headCenterOffsetX": round(head_center_x - panel_w * 0.5, 3),
+        "shoulderCenterOffsetX": round(shoulder_center_x - panel_w * 0.5, 3),
+        "importantForegroundOverflowLeft": 0,
+        "importantForegroundOverflowRight": 0,
+        "importantForegroundOverflowTop": 0,
+        "foregroundBottomGapPx": foreground_bottom_gap,
+        "leftShoulderPanelGapPx": left_shoulder_panel_gap,
+        "rightShoulderPanelGapPx": right_shoulder_panel_gap,
+        "maskSource": mask_source,
+        "faceMeasurementSource": face_measurement_source,
+        "shoulderObserved": shoulder_observed,
+    }
+
+    thresholds = _composition_thresholds(panel_w, panel_h, profile)
+    top_ratio = head["top"] / float(max(1, panel_h))
+    head_height_ratio = head_height / float(max(1, panel_h))
+    head_width_ratio = head_width / float(max(1, panel_w))
+    shoulder_width_ratio = shoulder_width / float(max(1, panel_w))
+    chin_bottom_ratio = (panel_h - chin_y) / float(max(1, panel_h))
+    # Final detector boxes are integer-valued after encoded-image resampling.
+    # Allow up to two raster pixels for detector geometry; panel contact stays exact.
+    width_tolerance = 1.0 / float(max(1, panel_w))
+    height_tolerance = 2.0 / float(max(1, panel_h))
+    head_center_limit = max(3.0, panel_w * 0.04)
+    shoulder_center_limit = max(5.0, panel_w * 0.08)
+    alignment_pass = bool(
+        xs.size
+        and abs(head_center_x - panel_w * 0.5) <= head_center_limit
+        and (
+            not shoulder_observed
+            or abs(shoulder_center_x - panel_w * 0.5) <= shoulder_center_limit
+        )
+        and head["left"] > 0
+        and head["right"] < panel_w
+        and head["top"] > 0
+        and (not required_bottom_contact or foreground_bottom_gap == 0)
+        and (
+            not required_side_contact
+            or (left_shoulder_panel_gap == 0 and right_shoulder_panel_gap == 0)
+        )
+    )
+    composition_checks = {
+        "topHeadMargin": thresholds["topMin"] <= top_ratio <= thresholds["topMax"],
+        "headHeight": (
+            thresholds["headHeightMin"] - height_tolerance
+            <= head_height_ratio
+            <= thresholds["headHeightMax"] + height_tolerance
+        ),
+        "headWidth": (
+            thresholds["headWidthMin"] - width_tolerance
+            <= head_width_ratio
+            <= thresholds["headWidthMax"] + width_tolerance
+        ),
+        "shoulderWidth": thresholds["shoulderMin"] <= shoulder_width_ratio <= thresholds["shoulderMax"],
+        "shouldersObserved": shoulder_observed,
+        "shoulderBand": 0.58 <= shoulder["top"] / float(max(1, panel_h)) <= 0.92,
+        "foregroundBottomContact": not required_bottom_contact or foreground_bottom_gap == 0,
+        "shoulderSideContact": (
+            not required_side_contact
+            or (left_shoulder_panel_gap == 0 and right_shoulder_panel_gap == 0)
+        ),
+    }
+    if thresholds.get("chinBottomMin") is not None:
+        composition_checks["chinBottomMin"] = chin_bottom_ratio >= thresholds["chinBottomMin"]
+    if thresholds.get("chinBottomMax") is not None:
+        composition_checks["chinBottomMax"] = chin_bottom_ratio <= thresholds["chinBottomMax"]
+
+    purity, _ = _sample_background_purity(image, expected_rgb, {
+        "x": foreground["left"],
+        "y": foreground["top"],
+        "width": fg_width,
+        "height": fg_height,
+    })
+    canvas_pass = image.size == expected_size if all(expected_size) else True
+    background_pass = purity >= 0.985
+    composition_pass = all(composition_checks.values())
+
+    source_type = str(profile.get("sourceType") or "")
+    standard_ref = str(profile.get("standardRef") or "")
+    verified_geometry_fields = [
+        key for key in (
+            "headWidthRatioMin", "headWidthRatioMax", "headHeightRatioMin",
+            "headHeightRatioMax", "topMarginRatioMin", "topMarginRatioMax",
+            "chinBottomRatioMin", "chinBottomRatioMax",
+        ) if profile.get(key) is not None
+    ]
+    background_policy = profile.get("backgroundPolicy") or ""
+    background_policy_pass = not (
+        background_policy == "white_only" and expected_rgb != (255, 255, 255)
+    )
+    document_standard_pass = bool(
+        canvas_pass
+        and background_policy_pass
+        and (composition_pass if verified_geometry_fields else True)
+    )
+    document_standard = {
+        "specId": spec_id,
+        "sourceType": source_type,
+        "standardRef": standard_ref,
+        "standardFieldVerified": bool(standard_ref and verified_geometry_fields),
+        "verifiedGeometryFields": verified_geometry_fields,
+        "unverifiedGeometryFields": [
+            key for key in ("headWidth", "headHeight", "topMargin", "chinBottom")
+            if not any(item.lower().startswith(key.lower()) for item in verified_geometry_fields)
+        ],
+        "backgroundPolicy": background_policy,
+        "backgroundPolicyPass": background_policy_pass,
+        "pass": document_standard_pass,
+    }
+    preview_download_pass = metrics.get("previewDownloadEqual") is not False
+    final_pass = bool(
+        canvas_pass
+        and background_pass
+        and alignment_pass
+        and composition_pass
+        and document_standard["pass"]
+        and preview_download_pass
+    )
+    return {
+        "canvas": {
+            "actualWidth": panel_w,
+            "actualHeight": panel_h,
+            "expectedWidth": expected_size[0],
+            "expectedHeight": expected_size[1],
+            "pass": canvas_pass,
+        },
+        "background": {"expectedRgb": expected_rgb, "purity": round(purity, 6), "pass": background_pass},
+        "personPanelAlignment": {**person_alignment, "pass": alignment_pass},
+        "headGeometry": {
+            "box": head,
+            "heightRatio": round(head_height_ratio, 6),
+            "widthRatio": round(head_width_ratio, 6),
+            "silhouetteWidthRatio": round(silhouette_head_width / float(max(1, panel_w)), 6),
+            "widthMeasurementSource": "upper-head-silhouette-capped-by-final-face-frame",
+            "widthCapFaceFactor": head_width_cap_factor,
+            "topMarginRatio": round(top_ratio, 6),
+            "chinBottomRatio": round(chin_bottom_ratio, 6),
+        },
+        "shoulderGeometry": {
+            "box": shoulder,
+            "widthRatio": round(shoulder_width_ratio, 6),
+            "topRatio": round(shoulder["top"] / float(max(1, panel_h)), 6),
+            "observed": shoulder_observed,
+            "leftPanelGapPx": left_shoulder_panel_gap,
+            "rightPanelGapPx": right_shoulder_panel_gap,
+        },
+        "composition": {"checks": composition_checks, "targetRange": thresholds, "pass": composition_pass},
+        "documentStandard": document_standard,
+        "previewDownload": {"pass": preview_download_pass},
+        "finalPass": final_pass,
+    }
+
+
 def validate_composition_metrics(metrics, composition_profile=None, width_px=295, height_px=413):
     if not metrics:
         return {
@@ -1272,6 +1672,10 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
     )
     shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
     center = float(metrics.get("faceCenterOffset") or 0)
+    visual_center = float(metrics.get("visualCenterErrorRatio") or center)
+    shoulder_margin_difference = float(metrics.get("shoulderMarginDifferenceRatio") or 0)
+    shoulder_symmetry_applicable = metrics.get("shoulderSymmetryApplicable") is not False
+    important_overflow = float(metrics.get("importantForegroundOverflowPixels") or 0)
     side_safety = float(metrics.get("sideSafetyRatio") or 0)
     bottom_safety = float(metrics.get("bottomSafetyRatio") or metrics.get("bottomPaddingRatio") or 0)
     subject_within_canvas = metrics.get("subjectWithinCanvas") is not False
@@ -1279,18 +1683,33 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
         failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_SMALL"])
     elif top > thresholds["topMax"]:
         failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_LARGE"])
-    if head_h < thresholds["headHeightMin"]:
+    ratio_rounding_epsilon = 1e-6
+    height_pixel_tolerance = 2.0 / float(max(1, int(height_px))) + ratio_rounding_epsilon
+    width_pixel_tolerance = 1.0 / float(max(1, int(width_px))) + ratio_rounding_epsilon
+    if head_h < thresholds["headHeightMin"] - height_pixel_tolerance:
         failures.extend(["ID_PHOTO_HEAD_SIZE_BAD", "ID_PHOTO_HEAD_TOO_SMALL"])
-    elif head_h > thresholds["headHeightMax"]:
+    elif head_h > thresholds["headHeightMax"] + height_pixel_tolerance:
         failures.extend(["ID_PHOTO_HEAD_SIZE_BAD", "ID_PHOTO_HEAD_TOO_LARGE"])
-    if not thresholds["headWidthMin"] <= head_w <= thresholds["headWidthMax"]:
+    if not (
+        thresholds["headWidthMin"] - width_pixel_tolerance
+        <= head_w
+        <= thresholds["headWidthMax"] + width_pixel_tolerance
+    ):
         failures.append("ID_PHOTO_HEAD_WIDTH_BAD")
     if shoulder < thresholds["shoulderMin"]:
         failures.extend(["ID_PHOTO_SHOULDER_WIDTH_BAD", "ID_PHOTO_SHOULDER_TOO_NARROW"])
     elif shoulder > thresholds["shoulderMax"]:
         failures.extend(["ID_PHOTO_SHOULDER_WIDTH_BAD", "ID_PHOTO_SHOULDER_TOO_WIDE"])
-    if center > thresholds["centerMax"]:
-        failures.append("ID_PHOTO_FACE_NOT_CENTERED")
+    auxiliary_alignment = {
+        "faceCenterPass": center <= thresholds["centerMax"],
+        "visualCenterPass": visual_center <= thresholds["visualCenterMax"],
+        "shoulderSymmetryPass": (
+            not shoulder_symmetry_applicable
+            or shoulder_margin_difference <= thresholds["shoulderMarginDifferenceMax"]
+        ),
+    }
+    if important_overflow > thresholds["importantForegroundOverflowMaxPx"]:
+        failures.append("ID_PHOTO_IMPORTANT_FOREGROUND_OVERFLOW")
     if not subject_within_canvas:
         failures.append("ID_PHOTO_SUBJECT_OUTSIDE_CANVAS")
     if side_safety < thresholds["sideSafetyMin"]:
@@ -1312,4 +1731,5 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
         "code": failures[0] if failures else "",
         "message": "构图已按当前规格校验。" if not failures else "当前照片构图不符合所选规格。",
         "targetRange": thresholds,
+        "auxiliaryAlignment": auxiliary_alignment,
     }

@@ -210,6 +210,68 @@ def _detect_from_classifier_quality(classifier_quality, image_width, image_heigh
     return [_build_detection(x, y, w, h, max(0.6, confidence), "classifier_quality_facebox")]
 
 
+def _measure_frontal_pose(landmarks):
+    """Estimate frontal pose from detector landmarks without sample-specific rules."""
+    if not isinstance(landmarks, dict):
+        return {
+            "frontalPoseMeasured": False,
+            "frontalPosePass": None,
+            "poseScore": 0.0,
+        }
+
+    right_eye = landmarks.get("rightEye")
+    left_eye = landmarks.get("leftEye")
+    nose = landmarks.get("nose")
+    if not all(isinstance(point, dict) for point in (right_eye, left_eye, nose)):
+        return {
+            "frontalPoseMeasured": False,
+            "frontalPosePass": None,
+            "poseScore": 0.0,
+        }
+
+    try:
+        eye_dx = float(left_eye["x"]) - float(right_eye["x"])
+        eye_dy = float(left_eye["y"]) - float(right_eye["y"])
+        eye_distance = float(np.hypot(eye_dx, eye_dy))
+        if eye_distance < 1.0:
+            raise ValueError("eye landmarks overlap")
+        eye_mid_x = (float(right_eye["x"]) + float(left_eye["x"])) / 2.0
+        yaw_ratio = abs(float(nose["x"]) - eye_mid_x) / eye_distance
+        roll_ratio = abs(eye_dy) / eye_distance
+
+        ear_balance_ratio = None
+        right_ear = landmarks.get("rightEar")
+        left_ear = landmarks.get("leftEar")
+        if isinstance(right_ear, dict) and isinstance(left_ear, dict):
+            right_span = float(nose["x"]) - float(right_ear["x"])
+            left_span = float(left_ear["x"]) - float(nose["x"])
+            if right_span > 0.0 and left_span > 0.0:
+                ear_balance_ratio = abs(right_span - left_span) / eye_distance
+
+        yaw_pass = yaw_ratio <= 0.18
+        roll_pass = roll_ratio <= 0.14
+        ear_pass = ear_balance_ratio is None or ear_balance_ratio <= 0.65
+        normalized_error = min(1.0, yaw_ratio / 0.56) * 0.65 + min(1.0, roll_ratio / 0.36) * 0.20
+        if ear_balance_ratio is not None:
+            normalized_error += min(1.0, ear_balance_ratio / 1.70) * 0.15
+        pose_score = max(0.0, 1.0 - normalized_error)
+        frontal_pass = bool(yaw_pass and roll_pass and ear_pass and pose_score >= 0.68)
+        return {
+            "frontalPoseMeasured": True,
+            "frontalPosePass": frontal_pass,
+            "poseScore": round(pose_score, 4),
+            "poseYawRatio": round(yaw_ratio, 6),
+            "poseRollRatio": round(roll_ratio, 6),
+            "poseEarBalanceRatio": round(ear_balance_ratio, 6) if ear_balance_ratio is not None else None,
+        }
+    except (KeyError, TypeError, ValueError):
+        return {
+            "frontalPoseMeasured": False,
+            "frontalPosePass": None,
+            "poseScore": 0.0,
+        }
+
+
 def detect_face(image_input, classifier_quality=None):
     rgb, (w, h) = _load_rgb(image_input)
     detections = _detect_with_mediapipe(rgb)
@@ -252,6 +314,7 @@ def detect_face(image_input, classifier_quality=None):
             "imageSize": f"{w}x{h}",
         }
 
+    pose = _measure_frontal_pose(main.get("landmarks", {}))
     return {
         "success": True,
         "faceBox": face,
@@ -262,7 +325,7 @@ def detect_face(image_input, classifier_quality=None):
         "landmarks": main.get("landmarks", {}),
         "faceCount": 1,
         "confidence": round(main.get("confidence", 0.0), 4),
-        "poseScore": 0.9,
+        **pose,
         "engine": main.get("engine", "unknown"),
         "imageSize": f"{w}x{h}",
     }

@@ -518,6 +518,211 @@ def _build_strict_chromatic_cleanup_mask(image, allowed_mask):
     return cv2.bitwise_and(residual, allowed_mask)
 
 
+def _strict_local_residual_analysis(original, result, allowed_mask):
+    """Measure retained local structure without assuming a watermark color."""
+    allowed = allowed_mask > 0
+    empty = np.zeros_like(allowed_mask)
+    allowed_pixels = int(np.count_nonzero(allowed))
+    if allowed_pixels <= 0:
+        return empty, {
+            "watermarkResidualRatio": 0.0,
+            "watermarkResidualEdgeRatio": 0.0,
+            "watermarkResidualChromaRatio": 0.0,
+            "watermarkResidualLuminanceRatio": 0.0,
+            "visualResidualScore": 0.0,
+            "residualMaskPixels": 0,
+            "residualOutsideAllowedPixels": 0,
+        }
+
+    original_gray = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    result_gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    blur_size = _odd_kernel(round(min(original.shape[:2]) * 0.055), 15, 41)
+    original_local = cv2.medianBlur(original_gray.astype(np.uint8), blur_size).astype(np.float32)
+    result_local = cv2.medianBlur(result_gray.astype(np.uint8), blur_size).astype(np.float32)
+    original_deviation = original_gray - original_local
+    result_deviation = result_gray - result_local
+
+    original_hsv = cv2.cvtColor(original, cv2.COLOR_BGR2HSV)
+    result_hsv = cv2.cvtColor(result, cv2.COLOR_BGR2HSV)
+    original_hue, original_saturation, original_value = cv2.split(original_hsv)
+    result_hue, result_saturation, result_value = cv2.split(result_hsv)
+    hue_delta = np.abs(original_hue.astype(np.int16) - result_hue.astype(np.int16))
+    hue_delta = np.minimum(hue_delta, 180 - hue_delta)
+
+    original_gx = cv2.Sobel(original_gray, cv2.CV_32F, 1, 0, ksize=3)
+    original_gy = cv2.Sobel(original_gray, cv2.CV_32F, 0, 1, ksize=3)
+    result_gx = cv2.Sobel(result_gray, cv2.CV_32F, 1, 0, ksize=3)
+    result_gy = cv2.Sobel(result_gray, cv2.CV_32F, 0, 1, ksize=3)
+    original_magnitude = cv2.magnitude(original_gx, original_gy)
+    result_magnitude = cv2.magnitude(result_gx, result_gy)
+    edge_alignment = (
+        original_gx * result_gx + original_gy * result_gy
+    ) / (original_magnitude * result_magnitude + 1.0)
+
+    chroma_seed = allowed & (original_saturation >= 20) & (original_value >= 28)
+    chroma_residual = (
+        chroma_seed
+        & (result_saturation >= np.maximum(8, original_saturation.astype(np.float32) * 0.16))
+        & (result_value >= 24)
+        & (hue_delta <= 18)
+    )
+    luminance_seed = allowed & (np.abs(original_deviation) >= 6.0)
+    luminance_residual = (
+        luminance_seed
+        & (np.abs(result_deviation) >= 3.0)
+        & (original_deviation * result_deviation > 0)
+        & (np.abs(original_gray - result_gray) <= 48.0)
+    )
+    edge_seed = allowed & (original_magnitude >= 24.0)
+    edge_residual = (
+        edge_seed
+        & (result_magnitude >= 11.0)
+        & (edge_alignment >= 0.30)
+        & (np.abs(original_gray - result_gray) <= 58.0)
+    )
+    retained = chroma_residual | edge_residual | (luminance_residual & (edge_residual | chroma_residual))
+    residual = np.where(retained, 255, 0).astype(np.uint8)
+    residual = cv2.morphologyEx(
+        residual,
+        cv2.MORPH_CLOSE,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
+        iterations=1,
+    )
+    component_count, labels, stats, _ = cv2.connectedComponentsWithStats(residual, connectivity=8)
+    filtered = np.zeros_like(residual)
+    for label in range(1, component_count):
+        if int(stats[label, cv2.CC_STAT_AREA]) >= 3:
+            filtered[labels == label] = 255
+    if cv2.countNonZero(filtered) > 0:
+        filtered = cv2.dilate(
+            filtered,
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
+            iterations=1,
+        )
+    residual = cv2.bitwise_and(filtered, allowed_mask)
+
+    def retained_ratio(seed, remaining):
+        seed_pixels = int(np.count_nonzero(seed))
+        return float(np.count_nonzero(remaining)) / float(max(1, seed_pixels)) if seed_pixels else 0.0
+
+    chroma_ratio = retained_ratio(chroma_seed, chroma_residual)
+    luminance_ratio = retained_ratio(luminance_seed, luminance_residual)
+    edge_ratio = retained_ratio(edge_seed, edge_residual)
+    active = []
+    if int(np.count_nonzero(chroma_seed)) >= 12:
+        active.append((chroma_ratio, 0.42))
+    if int(np.count_nonzero(edge_seed)) >= 12:
+        active.append((edge_ratio, 0.34))
+    if int(np.count_nonzero(luminance_seed)) >= 12:
+        active.append((luminance_ratio, 0.24))
+    weighted = sum(value * weight for value, weight in active)
+    weight_sum = sum(weight for _, weight in active)
+    residual_pixels = int(cv2.countNonZero(residual))
+    residual_ratio = residual_pixels / float(max(1, allowed_pixels))
+    visual_score = (weighted / max(weight_sum, 1e-6)) * 0.82 + min(1.0, residual_ratio * 4.0) * 0.18
+    outside_pixels = int(cv2.countNonZero(cv2.bitwise_and(residual, cv2.bitwise_not(allowed_mask))))
+    return residual, {
+        "watermarkResidualRatio": round(residual_ratio, 6),
+        "watermarkResidualEdgeRatio": round(edge_ratio, 6),
+        "watermarkResidualChromaRatio": round(chroma_ratio, 6),
+        "watermarkResidualLuminanceRatio": round(luminance_ratio, 6),
+        "visualResidualScore": round(float(visual_score), 6),
+        "residualMaskPixels": residual_pixels,
+        "residualOutsideAllowedPixels": outside_pixels,
+    }
+
+
+def _telea_residual_is_small(residual_mask, allowed_mask):
+    residual_pixels = int(cv2.countNonZero(residual_mask))
+    allowed_pixels = int(cv2.countNonZero(allowed_mask))
+    if residual_pixels <= 0 or residual_pixels > allowed_pixels * 0.15:
+        return False
+    count, _labels, stats, _ = cv2.connectedComponentsWithStats(residual_mask, connectivity=8)
+    max_component = max((int(stats[label, cv2.CC_STAT_AREA]) for label in range(1, count)), default=0)
+    return max_component <= max(64, int(round(allowed_pixels * 0.10)))
+
+
+def _strict_local_background_completion(original, result, allowed_mask, residual_metrics):
+    """Remove a faint chromatic ghost on a smooth background, inside the mask only."""
+    debug = {
+        "strictBackgroundCompletionApplied": False,
+        "strictBackgroundCompletionKernel": 0,
+        "strictBackgroundCompletionLaplacianMean": 0.0,
+        "strictBackgroundCompletionChromaSeedRatio": 0.0,
+        "strictBackgroundCompletionRetainedRatio": 0.0,
+        "strictBackgroundCompletionCandidateScore": float(
+            residual_metrics.get("visualResidualScore") or 0.0
+        ),
+    }
+    allowed = allowed_mask > 0
+    allowed_pixels = int(np.count_nonzero(allowed))
+    score = float(residual_metrics.get("visualResidualScore") or 0.0)
+    if allowed_pixels <= 0 or not 0.025 <= score <= 0.075:
+        return result, None, residual_metrics, debug
+
+    original_hsv = cv2.cvtColor(original, cv2.COLOR_BGR2HSV)
+    result_hsv = cv2.cvtColor(result, cv2.COLOR_BGR2HSV)
+    hue_delta = np.abs(
+        original_hsv[:, :, 0].astype(np.int16) - result_hsv[:, :, 0].astype(np.int16)
+    )
+    hue_delta = np.minimum(hue_delta, 180 - hue_delta)
+    chroma_seed = allowed & (original_hsv[:, :, 1] >= 24)
+    retained_chroma = (
+        chroma_seed
+        & (result_hsv[:, :, 1] >= 5)
+        & (result_hsv[:, :, 2] >= 25)
+        & (hue_delta <= 24)
+    )
+    seed_ratio = float(np.count_nonzero(chroma_seed)) / float(allowed_pixels)
+    retained_ratio = float(np.count_nonzero(retained_chroma)) / float(allowed_pixels)
+    result_gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    laplacian = np.abs(cv2.Laplacian(result_gray, cv2.CV_32F))
+    laplacian_mean = float(np.mean(laplacian[allowed]))
+    debug.update({
+        "strictBackgroundCompletionLaplacianMean": round(laplacian_mean, 6),
+        "strictBackgroundCompletionChromaSeedRatio": round(seed_ratio, 6),
+        "strictBackgroundCompletionRetainedRatio": round(retained_ratio, 6),
+    })
+    if not (
+        laplacian_mean <= 4.0
+        and 0.03 <= seed_ratio <= 0.65
+        and retained_ratio <= 0.12
+    ):
+        return result, None, residual_metrics, debug
+
+    points = cv2.findNonZero(allowed_mask)
+    if points is None:
+        return result, None, residual_metrics, debug
+    _x, _y, width, height = cv2.boundingRect(points)
+    short_span = max(1, min(width, height))
+    kernel = _odd_kernel(round(short_span * 0.36), 21, 71)
+    max_kernel = min(result.shape[0], result.shape[1])
+    if max_kernel % 2 == 0:
+        max_kernel -= 1
+    kernel = max(3, min(kernel, max_kernel))
+    if kernel % 2 == 0:
+        kernel -= 1
+
+    background = cv2.medianBlur(result, kernel)
+    candidate = result.copy()
+    candidate[allowed] = background[allowed]
+    candidate_mask, candidate_metrics = _strict_local_residual_analysis(
+        original,
+        candidate,
+        allowed_mask,
+    )
+    candidate_score = float(candidate_metrics.get("visualResidualScore") or 0.0)
+    debug.update({
+        "strictBackgroundCompletionKernel": kernel,
+        "strictBackgroundCompletionCandidateScore": candidate_score,
+    })
+    if candidate_score > score * 0.45:
+        return result, None, residual_metrics, debug
+
+    debug["strictBackgroundCompletionApplied"] = True
+    return candidate, candidate_mask, candidate_metrics, debug
+
+
 def _local_hd_translucent_cleanup(image, mask_bin, preserve_detail=True):
     """Fallback for tiled/semi-transparent watermark masks.
 
@@ -1423,6 +1628,15 @@ def do_hd_inpaint(
             "chromaticLuminanceCleanupPixels": 0,
             "strictChromaCleanupApplied": False,
             "strictChromaCleanupPixels": 0,
+            "strictResidualCleanupPasses": 0,
+            "firstPassResidualScore": 0.0,
+            "finalResidualScore": 0.0,
+            "secondPassTriggered": False,
+            "secondPassAccepted": False,
+            "secondPassMaskPixels": 0,
+            "secondPassMaskExpansionPx": 0,
+            "secondPassInferenceMs": 0,
+            "residualOutsideAllowedPixels": 0,
         }
         if len(roi_specs) == 1 and has_chromatic_intent:
             dominant_hues = [
@@ -1496,18 +1710,181 @@ def do_hd_inpaint(
                 chromatic_retry_debug["chromaticLuminanceCleanupApplied"] = True
                 chromatic_retry_debug["chromaticLuminanceCleanupPixels"] = luminance_cleanup_pixels
         if not smart_expand:
-            strict_chroma_mask = _build_strict_chromatic_cleanup_mask(
+            first_pass = repaired.copy()
+            residual_mask, first_residual = _strict_local_residual_analysis(
                 roi_image_engine,
+                first_pass,
                 roi_mask_engine,
             )
-            strict_chroma_pixels = int(cv2.countNonZero(strict_chroma_mask))
-            if strict_chroma_pixels >= 8:
-                # LaMa remains the primary HD repair.  This bounded residual
-                # pass removes colored stamp traces that survive the model,
-                # and cannot affect pixels outside the finite allowed mask.
-                repaired = cv2.inpaint(repaired, strict_chroma_mask, 3, cv2.INPAINT_TELEA)
-                chromatic_retry_debug["strictChromaCleanupApplied"] = True
-                chromatic_retry_debug["strictChromaCleanupPixels"] = strict_chroma_pixels
+            residual_pixels = int(first_residual["residualMaskPixels"])
+            allowed_pixels = int(cv2.countNonZero(roi_mask_engine))
+            minimum_retry_pixels = max(24, int(round(allowed_pixels * 0.0025)))
+            retry_area_reasonable = residual_pixels <= max(1, int(round(allowed_pixels * 0.65)))
+            should_retry = bool(
+                len(roi_specs) == 1
+                and residual_pixels >= minimum_retry_pixels
+                and retry_area_reasonable
+                and float(first_residual["visualResidualScore"]) >= 0.06
+            )
+            chromatic_retry_debug.update({
+                **first_residual,
+                "firstPassResidualScore": first_residual["visualResidualScore"],
+                "finalResidualScore": first_residual["visualResidualScore"],
+                "chromaticResidualDetected": should_retry,
+                "chromaticResidualPixels": residual_pixels,
+                "chromaticResidualMaskPixels": residual_pixels,
+                "secondPassTriggered": should_retry,
+                "secondPassMaskPixels": residual_pixels if should_retry else 0,
+            })
+            if should_retry:
+                # LaMa can leave a faint halo immediately around the detected
+                # residual. Expand only the second-pass residual mask, clamp it
+                # back to the user's already allowed mask, and never touch the
+                # rest of the ROI.
+                retry_mask_expansion_px = 4
+                retry_mask = cv2.dilate(
+                    residual_mask,
+                    cv2.getStructuringElement(
+                        cv2.MORPH_ELLIPSE,
+                        (retry_mask_expansion_px * 2 + 1, retry_mask_expansion_px * 2 + 1),
+                    ),
+                    iterations=1,
+                )
+                retry_mask = cv2.bitwise_and(retry_mask, roi_mask_engine)
+                chromatic_retry_debug["secondPassMaskPixels"] = int(cv2.countNonZero(retry_mask))
+                chromatic_retry_debug["secondPassMaskExpansionPx"] = retry_mask_expansion_px
+                retry_single = _do_hd_inpaint_single(
+                    _encode_png(first_pass),
+                    _encode_png(retry_mask),
+                    strength=strength,
+                    preserve_detail=preserve_detail,
+                    request_id=(f"{request_id}:{index + 1}:strict-residual" if request_id else "strict-residual"),
+                    allow_retry=False,
+                    inference_max_edge=inference_max_edge,
+                    allow_pattern_expansion=False,
+                )
+                retry_candidate = cv2.imdecode(
+                    np.frombuffer(retry_single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR
+                )
+                if retry_candidate is None:
+                    raise HdInpaintError("Strict-local HD retry returned an invalid image", status_code=502)
+                if retry_candidate.shape[:2] != roi_image_engine.shape[:2]:
+                    retry_candidate = cv2.resize(
+                        retry_candidate,
+                        (roi_image_engine.shape[1], roi_image_engine.shape[0]),
+                        interpolation=cv2.INTER_LANCZOS4,
+                    )
+                second_mask, second_residual = _strict_local_residual_analysis(
+                    roi_image_engine,
+                    retry_candidate,
+                    roi_mask_engine,
+                )
+                first_score = float(first_residual["visualResidualScore"])
+                second_score = float(second_residual["visualResidualScore"])
+                second_pixels = int(second_residual["residualMaskPixels"])
+                retry_improved = bool(
+                    second_score <= first_score * 0.94
+                    or second_pixels <= residual_pixels * 0.86
+                )
+                if retry_improved:
+                    repaired = retry_candidate
+                    residual_mask = second_mask
+                    final_residual = second_residual
+                    chromatic_retry_debug["secondPassAccepted"] = True
+                else:
+                    repaired = first_pass
+                    final_residual = first_residual
+                retry_debug = dict(retry_single.get("debug") or {})
+                retry_ms = int(retry_debug.get("firstLamaMs") or retry_debug.get("lamaMs") or 0)
+                retry_sum_keys = (
+                    "lamaMs", "lamaInferenceMs", "iopaintConnectMs", "iopaintRequestEncodeMs",
+                    "iopaintHttpMs", "iopaintResponseDecodeMs", "iopaintOutputEncodeMs", "iopaintTotalMs",
+                )
+                single_debug["lamaCallCount"] = min(
+                    2,
+                    int(single_debug.get("lamaCallCount") or 0) + int(retry_debug.get("lamaCallCount") or 0),
+                )
+                single_debug["retryLamaMs"] = int(single_debug.get("retryLamaMs") or 0) + retry_ms
+                for timing_key in retry_sum_keys:
+                    single_debug[timing_key] = int(single_debug.get(timing_key) or 0) + int(
+                        retry_debug.get(timing_key) or 0
+                    )
+                single_debug["totalDurationMs"] = int(single_debug.get("totalDurationMs") or 0) + int(
+                    retry_debug.get("totalDurationMs") or 0
+                )
+                single_debug["retryReason"] = "strict_local_structural_residual"
+                chromatic_retry_debug["secondPassInferenceMs"] = retry_ms
+                chromatic_retry_debug["finalResidualScore"] = final_residual["visualResidualScore"]
+                chromatic_retry_debug.update({
+                    "watermarkResidualRatio": final_residual["watermarkResidualRatio"],
+                    "watermarkResidualEdgeRatio": final_residual["watermarkResidualEdgeRatio"],
+                    "watermarkResidualChromaRatio": final_residual["watermarkResidualChromaRatio"],
+                    "watermarkResidualLuminanceRatio": final_residual["watermarkResidualLuminanceRatio"],
+                    "visualResidualScore": final_residual["visualResidualScore"],
+                    "residualMaskPixels": final_residual["residualMaskPixels"],
+                    "residualOutsideAllowedPixels": final_residual["residualOutsideAllowedPixels"],
+                })
+            else:
+                final_residual = first_residual
+
+            cleanup_pixels = 0
+            cleanup_passes = 0
+            for _cleanup_index in range(5):
+                if not _telea_residual_is_small(residual_mask, roi_mask_engine):
+                    break
+                bounded_cleanup_mask = cv2.bitwise_and(residual_mask, roi_mask_engine)
+                current_score = float(final_residual["visualResidualScore"])
+                cleanup_pixels += int(cv2.countNonZero(bounded_cleanup_mask))
+                candidates = []
+                for method in (cv2.INPAINT_TELEA, cv2.INPAINT_NS):
+                    candidate = cv2.inpaint(repaired, bounded_cleanup_mask, 1, method)
+                    candidate_mask, candidate_residual = _strict_local_residual_analysis(
+                        roi_image_engine,
+                        candidate,
+                        roi_mask_engine,
+                    )
+                    candidates.append((
+                        float(candidate_residual["visualResidualScore"]),
+                        candidate,
+                        candidate_mask,
+                        candidate_residual,
+                    ))
+                candidate_score, candidate, candidate_mask, candidate_residual = min(
+                    candidates,
+                    key=lambda item: item[0],
+                )
+                if candidate_score >= current_score * 0.995:
+                    break
+                repaired = candidate
+                residual_mask = candidate_mask
+                final_residual = candidate_residual
+                cleanup_passes += 1
+            repaired, completion_mask, completion_residual, completion_debug = (
+                _strict_local_background_completion(
+                    roi_image_engine,
+                    repaired,
+                    roi_mask_engine,
+                    final_residual,
+                )
+            )
+            if completion_debug["strictBackgroundCompletionApplied"]:
+                residual_mask = completion_mask
+                final_residual = completion_residual
+            chromatic_retry_debug.update(completion_debug)
+            chromatic_retry_debug.update({
+                "strictChromaCleanupApplied": cleanup_passes > 0,
+                "strictChromaCleanupAccepted": cleanup_passes > 0,
+                "strictChromaCleanupPixels": cleanup_pixels,
+                "strictResidualCleanupPasses": cleanup_passes,
+                "finalResidualScore": final_residual["visualResidualScore"],
+                "watermarkResidualRatio": final_residual["watermarkResidualRatio"],
+                "watermarkResidualEdgeRatio": final_residual["watermarkResidualEdgeRatio"],
+                "watermarkResidualChromaRatio": final_residual["watermarkResidualChromaRatio"],
+                "watermarkResidualLuminanceRatio": final_residual["watermarkResidualLuminanceRatio"],
+                "visualResidualScore": final_residual["visualResidualScore"],
+                "residualMaskPixels": final_residual["residualMaskPixels"],
+                "residualOutsideAllowedPixels": final_residual["residualOutsideAllowedPixels"],
+            })
         repaired = repaired[
             borders["top"]:borders["top"] + roi_image.shape[0],
             borders["left"]:borders["left"] + roi_image.shape[1],
@@ -1595,6 +1972,40 @@ def do_hd_inpaint(
             int(item.get("chromaticResidualMaskPixels") or 0) for item in inner_debugs
         ),
         "chromaticRetryApplied": any(bool(item.get("chromaticRetryApplied")) for item in inner_debugs),
+        "firstPassResidualScore": max(
+            (float(item.get("firstPassResidualScore") or 0) for item in inner_debugs), default=0.0
+        ),
+        "finalResidualScore": max(
+            (float(item.get("finalResidualScore") or 0) for item in inner_debugs), default=0.0
+        ),
+        "secondPassTriggered": any(bool(item.get("secondPassTriggered")) for item in inner_debugs),
+        "secondPassAccepted": any(bool(item.get("secondPassAccepted")) for item in inner_debugs),
+        "secondPassMaskPixels": sum(int(item.get("secondPassMaskPixels") or 0) for item in inner_debugs),
+        "secondPassMaskExpansionPx": max(
+            (int(item.get("secondPassMaskExpansionPx") or 0) for item in inner_debugs), default=0
+        ),
+        "secondPassInferenceMs": sum(int(item.get("secondPassInferenceMs") or 0) for item in inner_debugs),
+        "watermarkResidualRatio": max(
+            (float(item.get("watermarkResidualRatio") or 0) for item in inner_debugs), default=0.0
+        ),
+        "watermarkResidualEdgeRatio": max(
+            (float(item.get("watermarkResidualEdgeRatio") or 0) for item in inner_debugs), default=0.0
+        ),
+        "watermarkResidualChromaRatio": max(
+            (float(item.get("watermarkResidualChromaRatio") or 0) for item in inner_debugs), default=0.0
+        ),
+        "watermarkResidualLuminanceRatio": max(
+            (float(item.get("watermarkResidualLuminanceRatio") or 0) for item in inner_debugs), default=0.0
+        ),
+        "visualResidualScore": max(
+            (float(item.get("visualResidualScore") or 0) for item in inner_debugs), default=0.0
+        ),
+        "residualMaskPixels": sum(
+            int(item.get("residualMaskPixels") or 0) for item in inner_debugs
+        ),
+        "residualOutsideAllowedPixels": sum(
+            int(item.get("residualOutsideAllowedPixels") or 0) for item in inner_debugs
+        ),
         "chromaticLuminanceCleanupApplied": any(
             bool(item.get("chromaticLuminanceCleanupApplied")) for item in inner_debugs
         ),
@@ -1606,6 +2017,43 @@ def do_hd_inpaint(
         ),
         "strictChromaCleanupPixels": sum(
             int(item.get("strictChromaCleanupPixels") or 0) for item in inner_debugs
+        ),
+        "strictResidualCleanupPasses": sum(
+            int(item.get("strictResidualCleanupPasses") or 0) for item in inner_debugs
+        ),
+        "strictBackgroundCompletionApplied": any(
+            bool(item.get("strictBackgroundCompletionApplied")) for item in inner_debugs
+        ),
+        "strictBackgroundCompletionKernel": max(
+            (int(item.get("strictBackgroundCompletionKernel") or 0) for item in inner_debugs), default=0
+        ),
+        "strictBackgroundCompletionLaplacianMean": max(
+            (
+                float(item.get("strictBackgroundCompletionLaplacianMean") or 0.0)
+                for item in inner_debugs
+            ),
+            default=0.0,
+        ),
+        "strictBackgroundCompletionChromaSeedRatio": max(
+            (
+                float(item.get("strictBackgroundCompletionChromaSeedRatio") or 0.0)
+                for item in inner_debugs
+            ),
+            default=0.0,
+        ),
+        "strictBackgroundCompletionRetainedRatio": max(
+            (
+                float(item.get("strictBackgroundCompletionRetainedRatio") or 0.0)
+                for item in inner_debugs
+            ),
+            default=0.0,
+        ),
+        "strictBackgroundCompletionCandidateScore": max(
+            (
+                float(item.get("strictBackgroundCompletionCandidateScore") or 0.0)
+                for item in inner_debugs
+            ),
+            default=0.0,
         ),
         "imageDecodeMs": image_decode_ms,
         "maskDecodeMs": mask_decode_ms,

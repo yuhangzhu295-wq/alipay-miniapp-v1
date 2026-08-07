@@ -314,7 +314,13 @@ def compose_id_photo(base_url: str, prepared_id: str, spec: dict[str, Any], colo
     return row
 
 
-def run_all_specs(base_url: str, spec_limit: int = 0) -> dict[str, Any]:
+def run_all_specs(
+    base_url: str,
+    spec_limit: int = 0,
+    default_color_only: bool = False,
+    max_prepare_ms: int = 0,
+    max_compose_ms: int = 0,
+) -> dict[str, Any]:
     specs = get_frontend_specs()
     if spec_limit:
         specs = specs[:spec_limit]
@@ -325,15 +331,23 @@ def run_all_specs(base_url: str, spec_limit: int = 0) -> dict[str, Any]:
 
     health = request_json("GET", base_url.rstrip("/") + "/api/health", timeout=10)
     rows: list[dict[str, Any]] = []
+    prepare_rows: list[dict[str, Any]] = []
     prepare_failures: list[dict[str, Any]] = []
     for index, spec in enumerate(specs, 1):
         prep = prepare_id_photo(base_url, real_sample, spec)
+        prepare_rows.append({
+            "specId": spec["id"],
+            "durationMs": prep.get("durationMs", 0),
+            "statusCode": prep.get("statusCode", 0),
+        })
         prepared_id = (prep.get("data") or {}).get("preparedId")
         if not prep.get("ok") or not prepared_id:
             prepare_failures.append({"index": index, "spec": spec, "prepare": prep})
             write_json(DEBUG / f"prepare_fail_{spec['id']}.json", {"spec": spec, "prepare": prep})
             continue
-        colors = list(dict.fromkeys([spec.get("defaultBg") or "blue", *(spec.get("bgColors") or [])]))
+        colors = [spec.get("defaultBg") or "blue"] if default_color_only else list(
+            dict.fromkeys([spec.get("defaultBg") or "blue", *(spec.get("bgColors") or [])])
+        )
         for color in colors:
             rows.append(compose_id_photo(base_url, prepared_id, spec, color, "primary"))
 
@@ -342,9 +356,15 @@ def run_all_specs(base_url: str, spec_limit: int = 0) -> dict[str, Any]:
     total = len(rows)
     passed = sum(1 for row in rows if row.get("passed"))
     failed_rows = [row for row in rows if not row.get("passed")]
+    slow_prepare_rows = [row for row in prepare_rows if max_prepare_ms and row["durationMs"] > max_prepare_ms]
+    slow_compose_rows = [
+        {"specId": row["specId"], "color": row["color"], "durationMs": row["request"].get("durationMs", 0)}
+        for row in rows
+        if max_compose_ms and row["request"].get("durationMs", 0) > max_compose_ms
+    ]
     spec_ids_with_output = sorted({row["specId"] for row in rows if row.get("passed")})
     payload = {
-        "status": "PASS" if health.get("ok") and not prepare_failures and not failed_rows and negative.get("passed") else "FAIL",
+        "status": "PASS" if health.get("ok") and not prepare_failures and not failed_rows and not slow_prepare_rows and not slow_compose_rows and negative.get("passed") else "FAIL",
         "baseUrl": base_url,
         "generatedAt": time.strftime("%Y-%m-%d %H:%M:%S"),
         "health": health,
@@ -354,6 +374,15 @@ def run_all_specs(base_url: str, spec_limit: int = 0) -> dict[str, Any]:
         "colorChecks": total,
         "passedColorChecks": passed,
         "failedColorChecks": len(failed_rows),
+        "defaultColorOnly": default_color_only,
+        "speedLimitsMs": {"prepare": max_prepare_ms, "compose": max_compose_ms},
+        "speed": {
+            "maxPrepareMs": max((row["durationMs"] for row in prepare_rows), default=0),
+            "maxComposeMs": max((row["request"].get("durationMs", 0) for row in rows), default=0),
+            "slowPrepareRows": slow_prepare_rows,
+            "slowComposeRows": slow_compose_rows,
+        },
+        "prepareRows": prepare_rows,
         "prepareFailures": prepare_failures,
         "failedRows": failed_rows[:40],
         "negative": negative,
@@ -420,6 +449,10 @@ def write_reports(payload: dict[str, Any]) -> None:
         f"- Color checks: {payload['passedColorChecks']}/{payload['colorChecks']}",
         f"- Prepare failures: {len(payload['prepareFailures'])}",
         f"- Failed color checks: {payload['failedColorChecks']}",
+        f"- Default color only: {payload.get('defaultColorOnly', False)}",
+        f"- Maximum prepare time: {payload.get('speed', {}).get('maxPrepareMs', 0)}ms",
+        f"- Maximum compose time: {payload.get('speed', {}).get('maxComposeMs', 0)}ms",
+        f"- Slow prepare/compose checks: {len(payload.get('speed', {}).get('slowPrepareRows', []))}/{len(payload.get('speed', {}).get('slowComposeRows', []))}",
         f"- Negative non-real rejected: {'PASS' if payload['negative'].get('passed') else 'FAIL'}",
         f"- Contact sheet: `{payload['contactSheet']}`",
         "",
@@ -463,10 +496,19 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--spec-limit", type=int, default=0)
+    parser.add_argument("--default-color-only", action="store_true")
+    parser.add_argument("--max-prepare-ms", type=int, default=0)
+    parser.add_argument("--max-compose-ms", type=int, default=0)
     args = parser.parse_args(argv)
     os.environ.setdefault("PYTHONUTF8", "1")
     ensure_dirs()
-    payload = run_all_specs(args.base_url.rstrip("/"), spec_limit=args.spec_limit)
+    payload = run_all_specs(
+        args.base_url.rstrip("/"),
+        spec_limit=args.spec_limit,
+        default_color_only=args.default_color_only,
+        max_prepare_ms=args.max_prepare_ms,
+        max_compose_ms=args.max_compose_ms,
+    )
     print(
         f"[verify-id-photo-all-formats] {payload['status']} "
         f"specs={payload.get('validatedSpecCount')}/{payload.get('specCount')} "

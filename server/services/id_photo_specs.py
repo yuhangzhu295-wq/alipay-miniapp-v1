@@ -24,6 +24,13 @@ def _composition_profile(**values):
         "chinBottomRatioMax": None,
         "shoulderWidthRatioMin": None,
         "shoulderWidthRatioMax": None,
+        "headHeightRatioTarget": None,
+        "operationalHeadHeightRatioMax": None,
+        "topMarginRatioTarget": None,
+        "chinBottomRatioTarget": None,
+        "shoulderWidthRatioTarget": None,
+        "foregroundBottomContact": True,
+        "shoulderSideContact": True,
         "backgroundPolicy": "",
         "headwearPolicy": "",
     }
@@ -37,12 +44,16 @@ PROJECT_COMMON_PROFILE = _composition_profile(
     headWidthRatioMax=0.84,
     headHeightRatioMin=0.58,
     headHeightRatioMax=0.70,
-    topMarginRatioMin=0.066,
-    topMarginRatioMax=0.123,
-    chinBottomRatioMin=0.0,
-    chinBottomRatioMax=0.33,
+    headHeightRatioTarget=0.66,
+    topMarginRatioMin=0.08,
+    topMarginRatioMax=0.18,
+    topMarginRatioTarget=0.14,
+    chinBottomRatioMin=0.13,
+    chinBottomRatioMax=0.27,
+    chinBottomRatioTarget=0.20,
     shoulderWidthRatioMin=0.75,
     shoulderWidthRatioMax=1.0,
+    shoulderWidthRatioTarget=0.92,
 )
 
 PHOTO_SPECS = {
@@ -134,6 +145,7 @@ PHOTO_SPECS = {
         "compositionProfile": _composition_profile(
             standardRef="GA/T 461-2019",
             sourceType="official",
+            operationalHeadHeightRatioMax=0.75,
             backgroundPolicy="white_only",
             headwearPolicy="no_headwear",
         ),
@@ -349,10 +361,12 @@ PHOTO_SPECS = {
 # a cited standard keep null ratios and continue using the historical project
 # composition envelope.
 for _spec in PHOTO_SPECS.values():
-    _spec.setdefault(
-        "compositionProfile",
-        _composition_profile(sourceType="project_profile"),
-    )
+    if "compositionProfile" not in _spec:
+        _spec["compositionProfile"] = (
+            dict(PROJECT_COMMON_PROFILE)
+            if _spec.get("category") == "common" and _spec.get("composition") == "head_shoulder"
+            else _composition_profile(sourceType="project_profile")
+        )
 
 DEFAULT_SPEC_BY_PURPOSE = {
     "official_id_photo": "one-inch",
