@@ -579,6 +579,30 @@ def _build_thin_watermark_mask(image, mask_bin):
     return filtered
 
 
+def _build_long_structure_mask(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    dark = cv2.inRange(gray, 0, 210)
+    image_h, image_w = gray.shape[:2]
+    horizontal_length = max(31, min(151, int(round(image_w * 0.10))))
+    vertical_length = max(31, min(151, int(round(image_h * 0.10))))
+    horizontal = cv2.morphologyEx(
+        dark,
+        cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_length, 1)),
+    )
+    vertical = cv2.morphologyEx(
+        dark,
+        cv2.MORPH_OPEN,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_length)),
+    )
+    structure = cv2.bitwise_or(horizontal, vertical)
+    return cv2.dilate(
+        structure,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7)),
+        iterations=1,
+    )
+
+
 def _local_hd_inpaint(image, mask_bin, feather=False, preserve_detail=True):
     """OpenCV HD fallback: stronger, multi-scale path distinct from manual.
 
@@ -636,6 +660,193 @@ def _composite_mask_area(original, repaired, mask_bin, feather, sigma=1.2):
     alpha = alpha[:, :, None]
     blended = repaired.astype(np.float32) * alpha + original.astype(np.float32) * (1.0 - alpha)
     return np.clip(blended, 0, 255).astype(np.uint8)
+
+
+def _circular_hue_distance(hue, center):
+    delta = np.abs(hue.astype(np.int16) - int(center))
+    return np.minimum(delta, 180 - delta)
+
+
+def _expand_chromatic_watermark_mask(image, mask_bin):
+    """Extend a partial HD brush over the associated colored watermark.
+
+    Stamps and colored watermarks are often made of disconnected rings and
+    glyphs. A user stroke through their center should select the nearby pieces
+    with the same dominant hue without turning the whole local rectangle into
+    an inpaint hole.
+    """
+    input_pixels = int(cv2.countNonZero(mask_bin))
+    empty = np.zeros_like(mask_bin)
+    debug = {
+        "chromaticMaskExpanded": False,
+        "chromaticExpansionPixels": 0,
+        "chromaticIntentPixels": 0,
+        "chromaticComponentCount": 0,
+        "chromaticComponents": [],
+    }
+    if input_pixels <= 0 or not _env_enabled("HD_CHROMATIC_MASK_EXPANSION", True):
+        return mask_bin, empty, debug
+
+    image_h, image_w = image.shape[:2]
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    hue, saturation, value = cv2.split(hsv)
+    count, labels, stats, _centroids = cv2.connectedComponentsWithStats(mask_bin, connectivity=8)
+    chromatic_intent = np.zeros_like(mask_bin)
+    details = []
+
+    for label in range(1, count):
+        x, y, width, height, area = [int(item) for item in stats[label]]
+        if area < 16 or width <= 0 or height <= 0:
+            continue
+        component = labels == label
+        chromatic_seed = component & (saturation >= 50) & (value >= 35)
+        seed_pool_size = int(np.count_nonzero(chromatic_seed))
+        min_seed_pixels = max(32, int(round(area * 0.008)))
+        if seed_pool_size < min_seed_pixels:
+            continue
+
+        histogram = np.bincount(hue[chromatic_seed], minlength=180).astype(np.float32)
+        smoothed = sum(np.roll(histogram, offset) for offset in range(-2, 3))
+        dominant_hue = int(np.argmax(smoothed))
+        hue_distance = _circular_hue_distance(hue, dominant_hue)
+        focused_seed = chromatic_seed & (hue_distance <= 10)
+        focused_pixels = int(np.count_nonzero(focused_seed))
+        if focused_pixels < min_seed_pixels or focused_pixels / float(seed_pool_size) < 0.35:
+            continue
+
+        brush_estimate = max(2.0, min(float(min(width, height)), area / float(max(width, height))))
+        search_padding = min(
+            256,
+            max(
+                32,
+                int(round(brush_estimate * 2.5)),
+                int(round(max(width, height) * 0.60)),
+                int(round(min(image_w, image_h) * 0.025)),
+            ),
+        )
+        x1 = max(0, x - search_padding)
+        y1 = max(0, y - search_padding)
+        x2 = min(image_w, x + width + search_padding)
+        y2 = min(image_h, y + height + search_padding)
+
+        seed_saturation = saturation[focused_seed]
+        saturation_floor = max(20, min(64, int(round(float(np.percentile(seed_saturation, 15)) * 0.25))))
+        candidate = np.zeros_like(mask_bin)
+        local_match = (
+            (hue_distance[y1:y2, x1:x2] <= 10)
+            & (saturation[y1:y2, x1:x2] >= saturation_floor)
+            & (value[y1:y2, x1:x2] >= 35)
+        )
+        candidate[y1:y2, x1:x2] = np.where(local_match, 255, 0).astype(np.uint8)
+
+        bridge_size = int(round(max(brush_estimate * 0.28, min(image_w, image_h) * 0.022)))
+        bridge_size = max(5, min(31, bridge_size))
+        if bridge_size % 2 == 0:
+            bridge_size += 1
+        bridged = cv2.dilate(
+            candidate,
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (bridge_size, bridge_size)),
+            iterations=1,
+        )
+        group_count, group_labels, _group_stats, _group_centroids = cv2.connectedComponentsWithStats(
+            bridged, connectivity=8
+        )
+        selected_labels = [
+            group_label
+            for group_label in range(1, group_count)
+            if np.any((group_labels == group_label) & component)
+        ]
+        if not selected_labels:
+            continue
+        selected = np.isin(group_labels, selected_labels) & (candidate > 0)
+        selected_pixels = int(np.count_nonzero(selected))
+        max_selected_pixels = max(area * 8, int(round(image_w * image_h * 0.04)))
+        if selected_pixels <= 0 or selected_pixels > max_selected_pixels:
+            continue
+
+        selected_mask = np.where(selected, 255, 0).astype(np.uint8)
+        halo_radius = max(2, min(5, int(round(brush_estimate * 0.055))))
+        selected_mask = cv2.dilate(
+            selected_mask,
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (halo_radius * 2 + 1, halo_radius * 2 + 1)),
+            iterations=1,
+        )
+        chromatic_intent = cv2.bitwise_or(chromatic_intent, selected_mask)
+        selected_box = cv2.boundingRect(cv2.findNonZero(selected_mask))
+        details.append({
+            "dominantHue": dominant_hue,
+            "seedPixels": focused_pixels,
+            "saturationFloor": saturation_floor,
+            "searchPadding": search_padding,
+            "bridgeSize": bridge_size,
+            "haloRadius": halo_radius,
+            "selectedPixels": int(cv2.countNonZero(selected_mask)),
+            "selectedBox": {
+                "x": int(selected_box[0]),
+                "y": int(selected_box[1]),
+                "width": int(selected_box[2]),
+                "height": int(selected_box[3]),
+            },
+        })
+
+    processing_mask = cv2.bitwise_or(mask_bin, chromatic_intent)
+    processing_pixels = int(cv2.countNonZero(processing_mask))
+    intent_pixels = int(cv2.countNonZero(chromatic_intent))
+    expansion_pixels = max(0, processing_pixels - input_pixels)
+    debug.update({
+        "chromaticMaskExpanded": expansion_pixels > 0,
+        "chromaticExpansionPixels": expansion_pixels,
+        "chromaticIntentPixels": intent_pixels,
+        "chromaticComponentCount": len(details),
+        "chromaticComponents": details,
+    })
+    return processing_mask, chromatic_intent, debug
+
+
+def _build_chromatic_residual_mask(result, chromatic_intent_mask, dominant_hues):
+    intent_pixels = int(cv2.countNonZero(chromatic_intent_mask))
+    debug = {
+        "chromaticResidualDetected": False,
+        "chromaticResidualPixels": 0,
+        "chromaticResidualMaskPixels": 0,
+    }
+    if intent_pixels <= 0 or not dominant_hues:
+        return np.zeros_like(chromatic_intent_mask), debug
+
+    hsv = cv2.cvtColor(result, cv2.COLOR_BGR2HSV)
+    hue, saturation, value = cv2.split(hsv)
+    hue_distance = np.full(hue.shape, 180, dtype=np.int16)
+    for dominant_hue in dominant_hues:
+        hue_distance = np.minimum(hue_distance, _circular_hue_distance(hue, dominant_hue))
+
+    zone = cv2.dilate(
+        chromatic_intent_mask,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)),
+        iterations=1,
+    )
+    residual = np.where(
+        (zone > 0) & (hue_distance <= 14) & (saturation >= 10) & (value >= 30),
+        255,
+        0,
+    ).astype(np.uint8)
+    residual_pixels = int(cv2.countNonZero(residual))
+    min_residual_pixels = max(32, int(round(result.shape[0] * result.shape[1] * 0.0002)))
+    if residual_pixels < min_residual_pixels:
+        return np.zeros_like(chromatic_intent_mask), debug
+
+    residual = cv2.dilate(
+        residual,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)),
+        iterations=1,
+    )
+    residual = cv2.bitwise_and(residual, zone)
+    residual_mask_pixels = int(cv2.countNonZero(residual))
+    debug.update({
+        "chromaticResidualDetected": residual_mask_pixels > 0,
+        "chromaticResidualPixels": residual_pixels,
+        "chromaticResidualMaskPixels": residual_mask_pixels,
+    })
+    return residual, debug
 
 
 def _do_hd_inpaint_single(
@@ -1061,11 +1272,13 @@ def do_hd_inpaint(
     if mask_bin.shape[:2] != image.shape[:2]:
         mask_bin = cv2.resize(mask_bin, (image_width, image_height), interpolation=cv2.INTER_NEAREST)
         mask_resized = True
-    mask_pixels = int(cv2.countNonZero(mask_bin))
-    if mask_pixels <= 0:
+    input_mask_pixels = int(cv2.countNonZero(mask_bin))
+    if input_mask_pixels <= 0:
         raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
 
     _safe_progress(progress_callback, "analyzing", requestId=request_id)
+    mask_bin, chromatic_intent_mask, chromatic_debug = _expand_chromatic_watermark_mask(image, mask_bin)
+    mask_pixels = int(cv2.countNonZero(mask_bin))
     regions, component_debug = _component_regions(mask_bin, image_width, image_height)
     roi_started = time.perf_counter()
     roi_specs = []
@@ -1108,6 +1321,9 @@ def do_hd_inpaint(
         )
         roi_image = image[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]].copy()
         roi_mask = mask_bin[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]].copy()
+        roi_chromatic_intent = chromatic_intent_mask[
+            spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]
+        ].copy()
         borders = spec["borders"]
         if any(borders.values()):
             roi_image_engine = cv2.copyMakeBorder(
@@ -1121,19 +1337,27 @@ def do_hd_inpaint(
                 cv2.BORDER_CONSTANT,
                 value=0,
             )
+            roi_chromatic_intent_engine = cv2.copyMakeBorder(
+                roi_chromatic_intent,
+                borders["top"], borders["bottom"], borders["left"], borders["right"],
+                cv2.BORDER_CONSTANT,
+                value=0,
+            )
         else:
             roi_image_engine = roi_image
             roi_mask_engine = roi_mask
+            roi_chromatic_intent_engine = roi_chromatic_intent
         inference_max_edge = _choose_inference_max_edge(
             roi_image_engine.shape[1], roi_image_engine.shape[0], spec["textureComplexity"]
         )
+        has_chromatic_intent = cv2.countNonZero(roi_chromatic_intent_engine) > 0
         single = _do_hd_inpaint_single(
             _encode_png(roi_image_engine),
             _encode_png(roi_mask_engine),
             strength=strength,
             preserve_detail=preserve_detail,
             request_id=f"{request_id}:{index + 1}" if request_id else str(index + 1),
-            allow_retry=len(roi_specs) == 1,
+            allow_retry=len(roi_specs) == 1 and not has_chromatic_intent,
             inference_max_edge=inference_max_edge,
         )
         repaired = cv2.imdecode(np.frombuffer(single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR)
@@ -1146,6 +1370,85 @@ def do_hd_inpaint(
                 (roi_image_engine.shape[1], roi_image_engine.shape[0]),
                 interpolation=cv2.INTER_LANCZOS4,
             )
+        single_debug = dict(single.get("debug") or {})
+        chromatic_retry_debug = {
+            "chromaticResidualDetected": False,
+            "chromaticResidualPixels": 0,
+            "chromaticResidualMaskPixels": 0,
+            "chromaticRetryApplied": False,
+            "chromaticLuminanceCleanupApplied": False,
+            "chromaticLuminanceCleanupPixels": 0,
+        }
+        if len(roi_specs) == 1 and has_chromatic_intent:
+            dominant_hues = [
+                int(item["dominantHue"])
+                for item in chromatic_debug.get("chromaticComponents", [])
+                if "dominantHue" in item
+            ]
+            residual_mask, chromatic_retry_debug = _build_chromatic_residual_mask(
+                repaired,
+                roi_chromatic_intent_engine,
+                dominant_hues,
+            )
+            if cv2.countNonZero(residual_mask) > 0:
+                retry_single = _do_hd_inpaint_single(
+                    _encode_png(repaired),
+                    _encode_png(residual_mask),
+                    strength=strength,
+                    preserve_detail=preserve_detail,
+                    request_id=(f"{request_id}:{index + 1}:chromatic-retry" if request_id else "chromatic-retry"),
+                    allow_retry=False,
+                    inference_max_edge=inference_max_edge,
+                )
+                retry_repaired = cv2.imdecode(
+                    np.frombuffer(retry_single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR
+                )
+                if retry_repaired is None:
+                    raise HdInpaintError("Chromatic HD retry returned an invalid image", status_code=502)
+                if retry_repaired.shape[:2] != roi_image_engine.shape[:2]:
+                    retry_repaired = cv2.resize(
+                        retry_repaired,
+                        (roi_image_engine.shape[1], roi_image_engine.shape[0]),
+                        interpolation=cv2.INTER_LANCZOS4,
+                    )
+                repaired = retry_repaired
+                retry_debug = dict(retry_single.get("debug") or {})
+                retry_sum_keys = (
+                    "lamaMs", "lamaInferenceMs", "iopaintConnectMs", "iopaintRequestEncodeMs",
+                    "iopaintHttpMs", "iopaintResponseDecodeMs", "iopaintOutputEncodeMs", "iopaintTotalMs",
+                )
+                single_debug["lamaCallCount"] = min(
+                    2,
+                    int(single_debug.get("lamaCallCount") or 0) + int(retry_debug.get("lamaCallCount") or 0),
+                )
+                single_debug["retryLamaMs"] = int(single_debug.get("retryLamaMs") or 0) + int(
+                    retry_debug.get("firstLamaMs") or retry_debug.get("lamaMs") or 0
+                )
+                for timing_key in retry_sum_keys:
+                    single_debug[timing_key] = int(single_debug.get(timing_key) or 0) + int(
+                        retry_debug.get(timing_key) or 0
+                    )
+                single_debug["totalDurationMs"] = int(single_debug.get("totalDurationMs") or 0) + int(
+                    retry_debug.get("totalDurationMs") or 0
+                )
+                single_debug["retryReason"] = "chromatic_watermark_residual"
+                chromatic_retry_debug["chromaticRetryApplied"] = True
+            luminance_cleanup_mask = _build_thin_watermark_mask(repaired, roi_chromatic_intent_engine)
+            luminance_cleanup_mask = cv2.dilate(
+                luminance_cleanup_mask,
+                cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)),
+                iterations=1,
+            )
+            protected_structure = _build_long_structure_mask(roi_image_engine)
+            luminance_cleanup_mask = cv2.bitwise_and(
+                luminance_cleanup_mask,
+                cv2.bitwise_not(protected_structure),
+            )
+            luminance_cleanup_pixels = int(cv2.countNonZero(luminance_cleanup_mask))
+            if luminance_cleanup_pixels > 0:
+                repaired = cv2.inpaint(repaired, luminance_cleanup_mask, 3, cv2.INPAINT_TELEA)
+                chromatic_retry_debug["chromaticLuminanceCleanupApplied"] = True
+                chromatic_retry_debug["chromaticLuminanceCleanupPixels"] = luminance_cleanup_pixels
         repaired = repaired[
             borders["top"]:borders["top"] + roi_image.shape[0],
             borders["left"]:borders["left"] + roi_image.shape[1],
@@ -1155,8 +1458,8 @@ def do_hd_inpaint(
         output[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = repaired
         roi_union[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = 255
         result_composite_ms += int((time.perf_counter() - composite_started) * 1000)
-        single_debug = dict(single.get("debug") or {})
         single_debug.update({
+            **chromatic_retry_debug,
             "roiIndex": index + 1,
             "roiBox": {
                 "x": spec["x1"],
@@ -1198,6 +1501,11 @@ def do_hd_inpaint(
         "maskResized": mask_resized,
         "maskNonZeroPixels": mask_pixels,
         "maskRatio": round(mask_pixels / float(image_width * image_height), 6),
+        "inputMaskNonZeroPixels": input_mask_pixels,
+        "inputMaskRatio": round(input_mask_pixels / float(image_width * image_height), 6),
+        "processingMaskNonZeroPixels": mask_pixels,
+        "processingMaskRatio": round(mask_pixels / float(image_width * image_height), 6),
+        **chromatic_debug,
         **component_debug,
         "eachRoiBox": [item["roiBox"] for item in inner_debugs],
         "eachRoiMaskRatio": [item["roiMaskRatio"] for item in inner_debugs],
@@ -1206,6 +1514,18 @@ def do_hd_inpaint(
         "roiInferenceSizes": [item.get("roiInferenceSize", "") for item in inner_debugs],
         "roiScales": [item.get("roiScale", 1.0) for item in inner_debugs],
         "roiDetails": inner_debugs,
+        "chromaticResidualDetected": any(bool(item.get("chromaticResidualDetected")) for item in inner_debugs),
+        "chromaticResidualPixels": sum(int(item.get("chromaticResidualPixels") or 0) for item in inner_debugs),
+        "chromaticResidualMaskPixels": sum(
+            int(item.get("chromaticResidualMaskPixels") or 0) for item in inner_debugs
+        ),
+        "chromaticRetryApplied": any(bool(item.get("chromaticRetryApplied")) for item in inner_debugs),
+        "chromaticLuminanceCleanupApplied": any(
+            bool(item.get("chromaticLuminanceCleanupApplied")) for item in inner_debugs
+        ),
+        "chromaticLuminanceCleanupPixels": sum(
+            int(item.get("chromaticLuminanceCleanupPixels") or 0) for item in inner_debugs
+        ),
         "imageDecodeMs": image_decode_ms,
         "maskDecodeMs": mask_decode_ms,
         "roiBuildMs": roi_build_ms,
