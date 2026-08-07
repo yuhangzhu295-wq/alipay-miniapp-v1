@@ -1,0 +1,277 @@
+﻿[
+    {
+        "run":  1,
+        "requestId":  "after-far-1-1786073530691",
+        "success":  true,
+        "engine":  "lama",
+        "fallbackUsed":  false,
+        "wallMs":  3451,
+        "httpStatus":  200,
+        "waitFirstByteMs":  3277.1,
+        "curlTotalMs":  3437.5,
+        "queueWaitMs":  0,
+        "totalServerMs":  2244,
+        "durationMs":  2238,
+        "lamaInferenceMs":  1606,
+        "lamaMs":  1952,
+        "iopaintHttpMs":  1948,
+        "lamaCallCount":  2,
+        "componentCount":  2,
+        "mergedRoiCount":  2,
+        "roiBoxes":  [
+                         {
+                             "x":  26,
+                             "y":  36,
+                             "width":  232,
+                             "height":  188
+                         },
+                         {
+                             "x":  1132,
+                             "y":  705,
+                             "width":  248,
+                             "height":  198
+                         }
+                     ],
+        "roiOriginalSizes":  [
+                                 "232x188",
+                                 "248x198"
+                             ],
+        "roiInferenceSizes":  [
+                                  "232x188",
+                                  "248x198"
+                              ],
+        "roiPaddings":  [
+                            64,
+                            64
+                        ],
+        "modelWarm":  true,
+        "modelLoadMs":  0,
+        "torchThreads":  4,
+        "interopThreads":  1,
+        "outsideRoiChangedPixels":  0,
+        "outputSize":  "1495x999",
+        "outputBytes":  955568,
+        "resultUrl":  "/uploads/watermark/hd/result_1786073534778_c426817f268c.png",
+        "fileHash":  "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12"
+    },
+    {
+        "run":  2,
+        "requestId":  "after-far-2-1786073534249",
+        "success":  true,
+        "engine":  "lama",
+        "fallbackUsed":  false,
+        "wallMs":  3395,
+        "httpStatus":  200,
+        "waitFirstByteMs":  3044.7,
+        "curlTotalMs":  3384.4,
+        "queueWaitMs":  0,
+        "totalServerMs":  2202,
+        "durationMs":  2197,
+        "lamaInferenceMs":  1600,
+        "lamaMs":  1942,
+        "iopaintHttpMs":  1937,
+        "lamaCallCount":  2,
+        "componentCount":  2,
+        "mergedRoiCount":  2,
+        "roiBoxes":  [
+                         {
+                             "x":  26,
+                             "y":  36,
+                             "width":  232,
+                             "height":  188
+                         },
+                         {
+                             "x":  1132,
+                             "y":  705,
+                             "width":  248,
+                             "height":  198
+                         }
+                     ],
+        "roiOriginalSizes":  [
+                                 "232x188",
+                                 "248x198"
+                             ],
+        "roiInferenceSizes":  [
+                                  "232x188",
+                                  "248x198"
+                              ],
+        "roiPaddings":  [
+                            64,
+                            64
+                        ],
+        "modelWarm":  true,
+        "modelLoadMs":  0,
+        "torchThreads":  4,
+        "interopThreads":  1,
+        "outsideRoiChangedPixels":  0,
+        "outputSize":  "1495x999",
+        "outputBytes":  955568,
+        "resultUrl":  "/uploads/watermark/hd/result_1786073538265_c426817f268c.png",
+        "fileHash":  "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12"
+    },
+    {
+        "run":  3,
+        "requestId":  "after-far-3-1786073537648",
+        "success":  true,
+        "engine":  "lama",
+        "fallbackUsed":  false,
+        "wallMs":  3087,
+        "httpStatus":  200,
+        "waitFirstByteMs":  2910.4,
+        "curlTotalMs":  3076.4,
+        "queueWaitMs":  0,
+        "totalServerMs":  2187,
+        "durationMs":  2182,
+        "lamaInferenceMs":  1593,
+        "lamaMs":  1929,
+        "iopaintHttpMs":  1925,
+        "lamaCallCount":  2,
+        "componentCount":  2,
+        "mergedRoiCount":  2,
+        "roiBoxes":  [
+                         {
+                             "x":  26,
+                             "y":  36,
+                             "width":  232,
+                             "height":  188
+                         },
+                         {
+                             "x":  1132,
+                             "y":  705,
+                             "width":  248,
+                             "height":  198
+                         }
+                     ],
+        "roiOriginalSizes":  [
+                                 "232x188",
+                                 "248x198"
+                             ],
+        "roiInferenceSizes":  [
+                                  "232x188",
+                                  "248x198"
+                              ],
+        "roiPaddings":  [
+                            64,
+                            64
+                        ],
+        "modelWarm":  true,
+        "modelLoadMs":  0,
+        "torchThreads":  4,
+        "interopThreads":  1,
+        "outsideRoiChangedPixels":  0,
+        "outputSize":  "1495x999",
+        "outputBytes":  955568,
+        "resultUrl":  "/uploads/watermark/hd/result_1786073541359_c426817f268c.png",
+        "fileHash":  "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12"
+    },
+    {
+        "run":  4,
+        "requestId":  "after-far-4-1786073540741",
+        "success":  true,
+        "engine":  "lama",
+        "fallbackUsed":  false,
+        "wallMs":  3044,
+        "httpStatus":  200,
+        "waitFirstByteMs":  2842.5,
+        "curlTotalMs":  3033.6,
+        "queueWaitMs":  0,
+        "totalServerMs":  2188,
+        "durationMs":  2183,
+        "lamaInferenceMs":  1584,
+        "lamaMs":  1929,
+        "iopaintHttpMs":  1925,
+        "lamaCallCount":  2,
+        "componentCount":  2,
+        "mergedRoiCount":  2,
+        "roiBoxes":  [
+                         {
+                             "x":  26,
+                             "y":  36,
+                             "width":  232,
+                             "height":  188
+                         },
+                         {
+                             "x":  1132,
+                             "y":  705,
+                             "width":  248,
+                             "height":  198
+                         }
+                     ],
+        "roiOriginalSizes":  [
+                                 "232x188",
+                                 "248x198"
+                             ],
+        "roiInferenceSizes":  [
+                                  "232x188",
+                                  "248x198"
+                              ],
+        "roiPaddings":  [
+                            64,
+                            64
+                        ],
+        "modelWarm":  true,
+        "modelLoadMs":  0,
+        "torchThreads":  4,
+        "interopThreads":  1,
+        "outsideRoiChangedPixels":  0,
+        "outputSize":  "1495x999",
+        "outputBytes":  955568,
+        "resultUrl":  "/uploads/watermark/hd/result_1786073544410_c426817f268c.png",
+        "fileHash":  "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12"
+    },
+    {
+        "run":  5,
+        "requestId":  "after-far-5-1786073543789",
+        "success":  true,
+        "engine":  "lama",
+        "fallbackUsed":  false,
+        "wallMs":  3196,
+        "httpStatus":  200,
+        "waitFirstByteMs":  3032,
+        "curlTotalMs":  3185.9,
+        "queueWaitMs":  0,
+        "totalServerMs":  2233,
+        "durationMs":  2227,
+        "lamaInferenceMs":  1633,
+        "lamaMs":  1975,
+        "iopaintHttpMs":  1970,
+        "lamaCallCount":  2,
+        "componentCount":  2,
+        "mergedRoiCount":  2,
+        "roiBoxes":  [
+                         {
+                             "x":  26,
+                             "y":  36,
+                             "width":  232,
+                             "height":  188
+                         },
+                         {
+                             "x":  1132,
+                             "y":  705,
+                             "width":  248,
+                             "height":  198
+                         }
+                     ],
+        "roiOriginalSizes":  [
+                                 "232x188",
+                                 "248x198"
+                             ],
+        "roiInferenceSizes":  [
+                                  "232x188",
+                                  "248x198"
+                              ],
+        "roiPaddings":  [
+                            64,
+                            64
+                        ],
+        "modelWarm":  true,
+        "modelLoadMs":  0,
+        "torchThreads":  4,
+        "interopThreads":  1,
+        "outsideRoiChangedPixels":  0,
+        "outputSize":  "1495x999",
+        "outputBytes":  955568,
+        "resultUrl":  "/uploads/watermark/hd/result_1786073547619_c426817f268c.png",
+        "fileHash":  "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12"
+    }
+]

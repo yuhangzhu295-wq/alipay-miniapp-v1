@@ -1,0 +1,212 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "single-small",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 1,
+      "mergedRoiCount": 1,
+      "roiBoxes": [
+        {
+          "x": 456,
+          "y": 296,
+          "width": 218,
+          "height": 173
+        }
+      ],
+      "roiPaddings": [
+        64
+      ],
+      "callSizes": [
+        "218x173"
+      ],
+      "lamaCallCount": 1
+    },
+    {
+      "name": "two-near",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 2,
+      "mergedRoiCount": 1,
+      "roiBoxes": [
+        {
+          "x": 356,
+          "y": 266,
+          "width": 283,
+          "height": 178
+        }
+      ],
+      "roiPaddings": [
+        64
+      ],
+      "callSizes": [
+        "283x178"
+      ],
+      "lamaCallCount": 1
+    },
+    {
+      "name": "two-far",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 2,
+      "mergedRoiCount": 2,
+      "roiBoxes": [
+        {
+          "x": 6,
+          "y": 16,
+          "width": 198,
+          "height": 173
+        },
+        {
+          "x": 976,
+          "y": 616,
+          "width": 208,
+          "height": 178
+        }
+      ],
+      "roiPaddings": [
+        64,
+        64
+      ],
+      "callSizes": [
+        "198x173",
+        "208x178"
+      ],
+      "lamaCallCount": 2
+    },
+    {
+      "name": "top-bottom",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 2,
+      "mergedRoiCount": 2,
+      "roiBoxes": [
+        {
+          "x": 456,
+          "y": 0,
+          "width": 208,
+          "height": 119
+        },
+        {
+          "x": 456,
+          "y": 681,
+          "width": 208,
+          "height": 119
+        }
+      ],
+      "roiPaddings": [
+        64,
+        64
+      ],
+      "callSizes": [
+        "208x168",
+        "208x168"
+      ],
+      "lamaCallCount": 2
+    },
+    {
+      "name": "many-small",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 5,
+      "mergedRoiCount": 2,
+      "roiBoxes": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 868,
+          "height": 588
+        },
+        {
+          "x": 976,
+          "y": 626,
+          "width": 168,
+          "height": 158
+        }
+      ],
+      "roiPaddings": [
+        128,
+        64
+      ],
+      "callSizes": [
+        "946x656",
+        "168x158"
+      ],
+      "lamaCallCount": 2
+    },
+    {
+      "name": "one-large",
+      "status": "PASS",
+      "checks": {
+        "roiCount": true,
+        "callCountBounded": true,
+        "outputSizePreserved": true,
+        "outsideRoiUnchanged": true,
+        "realEngineContract": true,
+        "cappedAsExpected": true
+      },
+      "componentCount": 1,
+      "mergedRoiCount": 1,
+      "roiBoxes": [
+        {
+          "x": 92,
+          "y": 52,
+          "width": 1016,
+          "height": 686
+        }
+      ],
+      "roiPaddings": [
+        128
+      ],
+      "callSizes": [
+        "1016x686"
+      ],
+      "lamaCallCount": 1
+    }
+  ],
+  "staticChecks": {
+    "normalizedStrokeTransportRetained": true,
+    "realStageLabelsPresent": true,
+    "elapsedWithoutFakePercent": true,
+    "duplicateHdSubmissionGuard": true,
+    "progressEndpointPresent": true,
+    "pageReceivesHdStatus": true,
+    "quickQualityMappingUnchanged": true
+  }
+}

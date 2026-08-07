@@ -116,6 +116,7 @@ Page({
     wmMaskRatio: '0.00',
     wmMaskRatioValue: 0,
     wmBackendDebug: {},
+    wmClientPerformance: {},
     wmApiBaseUrl: watermarkApi.getBaseUrl(),
     wmHealthStatus: '未检测',
     wmHdEnabled: watermarkApi.isHdRepairEnabled(),
@@ -163,6 +164,7 @@ Page({
     collectList: [],
 
     processing: false,
+    processingText: '处理中...',
 
     // ===== 开发诊断面板 =====
     diagApiBaseUrl: apiConfig.API_BASE_URL,
@@ -1722,14 +1724,22 @@ Page({
     var apiCall = wmApi.removeV2;
     var endpoint = '/api/watermark/remove-v2';
     var backendMode = modeKey === 'hd' ? 'hd' : (modeKey === 'quick' ? 'opencv_quick' : 'opencv_manual');
-    that.setData({ processing: true });
+    that.setData({
+      processing: true,
+      processingText: quality === 'hd' ? '正在上传图片，已等待0秒' : '处理中...'
+    });
 
     apiCall({
       imagePath: that.data.photoSrc,
       strokeInfo: strokeInfo,
       quality: modeKey,
       strength: that.data.wmStrength,
-      preserveDetail: true
+      preserveDetail: true,
+      onStatus: quality === 'hd' ? function(status) {
+        if (that.data.processing && status && status.text) {
+          that.setData({ processingText: status.text });
+        }
+      } : null
     }).then(function(res) {
       if (!res.tempFilePath) {
         that.setData({ processing: false });
@@ -1755,8 +1765,10 @@ Page({
         : (actualMode === 'quick' ? '已使用快速模式' : '已使用手动擦除模式');
       var statePatch = {
         processing: false,
+        processingText: '处理中...',
         resultImage: res.tempFilePath,
         wmBackendDebug: res.debug || {},
+        wmClientPerformance: res.clientPerformance || {},
         wmResultQuality: quality,
         wmResultModeLabel: that.getWatermarkModeLabel(actualMode),
         wmResultMessage: resultMessage,
@@ -1798,6 +1810,7 @@ Page({
         : that.getWatermarkUserError(err, '处理失败，请调整涂抹区域后重试。');
       that.setData({
         processing: false,
+        processingText: '处理中...',
         wmBackendDebug: err && err.debug ? err.debug : {},
         wmLastError: debugMsg
       });

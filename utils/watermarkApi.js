@@ -1,5 +1,6 @@
 /** Watermark API using compact normalized brush-stroke transport. */
 var watermarkConfig = require('./watermarkConfig.js');
+var activeHdRequests = {};
 
 function getBaseUrl() {
   return watermarkConfig.getWatermarkApiBaseUrl();
@@ -69,8 +70,78 @@ function _downloadResult(imageUrl) {
   });
 }
 
+function _utf8Bytes(value) {
+  try { return unescape(encodeURIComponent(String(value || ''))).length; }
+  catch (err) { return String(value || '').length; }
+}
+
+function _imageFileBytes(path) {
+  try {
+    var stat = wx.getFileSystemManager().statSync(path);
+    return Number((stat && stat.size) || 0);
+  } catch (err) {
+    return 0;
+  }
+}
+
+function _newHdRequestId() {
+  return 'wmhd-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10);
+}
+
+function _statusLabel(stage) {
+  var labels = {
+    uploading: '正在上传图片',
+    received: '正在分析涂抹区域',
+    analyzing: '正在分析涂抹区域',
+    repairing: '正在进行高清修复',
+    compositing: '正在合成处理结果',
+    encoding: '正在合成处理结果',
+    preview: '正在加载预览'
+  };
+  return labels[stage] || labels.repairing;
+}
+
+function _emitHdStatus(params, state, stage) {
+  state.stage = stage || state.stage || 'uploading';
+  var elapsedSeconds = Math.max(0, Math.floor((Date.now() - state.startedAt) / 1000));
+  var status = {
+    stage: state.stage,
+    label: _statusLabel(state.stage),
+    elapsedSeconds: elapsedSeconds,
+    text: _statusLabel(state.stage) + '，已等待' + elapsedSeconds + '秒'
+  };
+  if (typeof params.onStatus === 'function') params.onStatus(status);
+  return status;
+}
+
+function _startHdProgress(params, requestId, state) {
+  var stopped = false;
+  var elapsedTimer = setInterval(function() {
+    if (!stopped) _emitHdStatus(params, state, state.stage);
+  }, 1000);
+  var pollTimer = setInterval(function() {
+    if (stopped) return;
+    wx.request({
+      url: joinApiUrl(getBaseUrl(), '/api/watermark/hd-progress/' + requestId),
+      method: 'GET',
+      timeout: 5000,
+      success: function(res) {
+        if (res.statusCode === 200 && res.data && res.data.stage && res.data.stage !== 'done') {
+          _emitHdStatus(params, state, res.data.stage);
+        }
+      }
+    });
+  }, 900);
+  return function() {
+    stopped = true;
+    clearInterval(elapsedTimer);
+    clearInterval(pollTimer);
+  };
+}
+
 function removeV2(params) {
   return new Promise(function(resolve, reject) {
+    var clientStartedAt = Date.now();
     params = params || {};
     var strokeInfo = params.strokeInfo || {};
     var payload = strokeInfo.payload || {};
@@ -85,14 +156,38 @@ function removeV2(params) {
       return;
     }
 
+    var requestId = quality === 'hd' ? _newHdRequestId() : '';
+    var activeKey = params.imagePath + '|' + strokeInfo.strokesJson;
+    if (quality === 'hd' && activeHdRequests[activeKey]) {
+      reject(new Error('高清修复正在处理中，请勿重复提交。'));
+      return;
+    }
+    if (quality === 'hd') activeHdRequests[activeKey] = requestId;
+    var statusState = { startedAt: clientStartedAt, stage: 'uploading' };
+    var stopProgress = function() {};
+    var imageBytes = _imageFileBytes(params.imagePath);
+    var clientImagePrepareMs = Date.now() - clientStartedAt;
+    var uploadStartedAt = 0;
+    var uploadCompletedAt = 0;
+
+    function cleanupHdProgress() {
+      stopProgress();
+      if (quality === 'hd') delete activeHdRequests[activeKey];
+    }
+
     wx.showLoading({ title: quality === 'hd' ? '高清修复中...' : '去水印中...' });
+    if (quality === 'hd') {
+      _emitHdStatus(params, statusState, 'uploading');
+      stopProgress = _startHdProgress(params, requestId, statusState);
+    }
     checkHealth().then(function(health) {
       if (quality === 'hd' && (!health.hdAvailable || health.hdRealModelLoaded !== true || health.fallbackUsed === true)) {
         var unavailable = new Error('高清修复模型未就绪，请使用快速模式或稍后重试。');
         unavailable.fallbackAvailable = true;
         throw unavailable;
       }
-      wx.uploadFile({
+      uploadStartedAt = Date.now();
+      var uploadTask = wx.uploadFile({
         url: joinApiUrl(getBaseUrl(), '/api/watermark/remove-v2'),
         filePath: params.imagePath,
         name: 'image',
@@ -104,23 +199,47 @@ function removeV2(params) {
           displayHeight: String(payload.displayHeight),
           quality: quality,
           strength: String(params.strength || 'medium'),
-          preserveDetail: params.preserveDetail === false ? 'false' : 'true'
+          preserveDetail: params.preserveDetail === false ? 'false' : 'true',
+          requestId: requestId
         },
         timeout: quality === 'hd' ? 360000 : 180000,
         success: function(res) {
           wx.hideLoading();
+          if (!uploadCompletedAt) uploadCompletedAt = Date.now();
           try {
             var data = JSON.parse(res.data || '{}');
             var resultUrl = data.resultUrl || data.imageUrl;
             if (res.statusCode < 200 || res.statusCode >= 300 || !data.success || !resultUrl) {
+              cleanupHdProgress();
               reject(_makeApiError(data, '去水印处理失败'));
               return;
             }
             if (quality === 'hd' && (data.fallbackUsed === true || data.engine !== 'lama')) {
+              cleanupHdProgress();
               reject(_makeApiError(data, '高清模式未使用真实 LaMa 模型'));
               return;
             }
+            var responseAt = Date.now();
+            if (quality === 'hd') _emitHdStatus(params, statusState, 'preview');
+            var previewStartedAt = Date.now();
             _downloadResult(resultUrl).then(function(localPath) {
+              var previewLoadMs = Date.now() - previewStartedAt;
+              var clientPerformance = {
+                requestId: requestId,
+                imageWidth: Number(payload.originalWidth || 0),
+                imageHeight: Number(payload.originalHeight || 0),
+                imageBytes: imageBytes,
+                strokeCount: (payload.strokes || []).length,
+                maskBytes: Number(strokeInfo.transportBytes || _utf8Bytes(strokeInfo.strokesJson)),
+                clientImagePrepareMs: clientImagePrepareMs,
+                maskSerializeMs: Number(strokeInfo.serializeMs || 0),
+                uploadMs: Math.max(0, uploadCompletedAt - uploadStartedAt),
+                waitResponseMs: Math.max(0, responseAt - uploadCompletedAt),
+                previewLoadMs: previewLoadMs,
+                totalClientMs: Date.now() - clientStartedAt
+              };
+              cleanupHdProgress();
+              console.log('[watermark-hd-client]', clientPerformance);
               resolve({
                 tempFilePath: localPath,
                 resultUrl: resultUrl,
@@ -132,20 +251,35 @@ function removeV2(params) {
                 fallbackUsed: data.fallbackUsed === true,
                 backendMode: data.backendMode || '',
                 message: data.message || '处理成功',
-                debug: data.debug || null
+                debug: data.debug || null,
+                clientPerformance: clientPerformance
               });
-            }).catch(reject);
+            }).catch(function(err) {
+              cleanupHdProgress();
+              reject(err);
+            });
           } catch (err) {
+            cleanupHdProgress();
             reject(err instanceof Error ? err : new Error('后端返回异常'));
           }
         },
         fail: function(err) {
           wx.hideLoading();
+          cleanupHdProgress();
           reject(new Error(_formatNetworkError(err)));
         }
       });
+      if (quality === 'hd' && uploadTask && uploadTask.onProgressUpdate) {
+        uploadTask.onProgressUpdate(function(progress) {
+          if (progress && Number(progress.progress) >= 100 && !uploadCompletedAt) {
+            uploadCompletedAt = Date.now();
+            _emitHdStatus(params, statusState, 'analyzing');
+          }
+        });
+      }
     }).catch(function(err) {
       wx.hideLoading();
+      cleanupHdProgress();
       reject(err);
     });
   });

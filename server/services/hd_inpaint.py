@@ -5,11 +5,21 @@
 import os
 import time
 import base64
+import json
+import threading
 
 import cv2
 import numpy as np
 
 from services.manual_inpaint import _decode_image, _diff_debug, _mask_to_binary
+
+
+_IOPAINT_SESSION = None
+_IOPAINT_SESSION_LOCK = threading.Lock()
+_IOPAINT_HEALTH_LOCK = threading.Lock()
+_IOPAINT_HEALTH_CACHE = {"checkedAt": 0.0, "available": False, "model": ""}
+_IOPAINT_RUNTIME_PATH = os.environ.get("IOPAINT_RUNTIME_PATH", "/run/iopaint-lama-runtime.json")
+_IOPAINT_WARM_PATH = os.environ.get("IOPAINT_WARM_PATH", "/run/iopaint-lama-warm.json")
 
 
 class HdInpaintError(ValueError):
@@ -35,24 +45,90 @@ def get_hd_config():
     }
 
 
-def check_hd_available(timeout=1.5):
+def _get_iopaint_session():
+    global _IOPAINT_SESSION
+    if _IOPAINT_SESSION is not None:
+        return _IOPAINT_SESSION
+    with _IOPAINT_SESSION_LOCK:
+        if _IOPAINT_SESSION is None:
+            import requests
+
+            session = requests.Session()
+            adapter = requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            _IOPAINT_SESSION = session
+    return _IOPAINT_SESSION
+
+
+def _read_json_file(path):
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+
+def _process_uptime_seconds(pid):
+    try:
+        with open(f"/proc/{int(pid)}/stat", "r", encoding="utf-8") as handle:
+            start_ticks = int(handle.read().split()[21])
+        with open("/proc/uptime", "r", encoding="utf-8") as handle:
+            system_uptime = float(handle.read().split()[0])
+        return max(0, int(system_uptime - (start_ticks / float(os.sysconf("SC_CLK_TCK")))))
+    except Exception:
+        return 0
+
+
+def _iopaint_runtime_status(available):
+    runtime = _read_json_file(_IOPAINT_RUNTIME_PATH)
+    warm = _read_json_file(_IOPAINT_WARM_PATH)
+    pid = int(runtime.get("pid") or warm.get("pid") or 0)
+    uptime = _process_uptime_seconds(pid) if pid else 0
+    warm_matches = bool(pid and int(warm.get("pid") or 0) == pid and warm.get("modelWarm") is True)
+    model_warm = bool(available and (warm_matches or uptime >= 60))
+    return {
+        "modelLoaded": bool(available),
+        "modelWarm": model_warm,
+        "processPid": pid,
+        "processUptimeSeconds": uptime,
+        "lastWarmupMs": int(warm.get("lastWarmupMs") or 0) if warm_matches else 0,
+        "modelLoadMs": int(runtime.get("modelLoadMs") or 0),
+        "torchThreads": int(runtime.get("torchThreads") or 0),
+        "interopThreads": int(runtime.get("interopThreads") or 0),
+    }
+
+
+def check_hd_available(timeout=1.5, force=False):
     config = get_hd_config()
     if not config["enabled"]:
         return False
     if not config["url"]:
         return False
+    now = time.monotonic()
+    with _IOPAINT_HEALTH_LOCK:
+        if not force and now - float(_IOPAINT_HEALTH_CACHE["checkedAt"]) <= 2.0:
+            return bool(_IOPAINT_HEALTH_CACHE["available"])
     try:
-        import requests
-
-        response = requests.get(config["url"] + "/api/v1/model", timeout=timeout)
+        session = _get_iopaint_session()
+        response = session.get(config["url"] + "/api/v1/model", timeout=timeout)
         if response.status_code == 200:
             model = response.json()
             name = str(model.get("name", "")).lower()
-            return (not config["engine"]) or config["engine"].lower() in name or bool(name)
+            available = (not config["engine"]) or config["engine"].lower() in name or bool(name)
+            with _IOPAINT_HEALTH_LOCK:
+                _IOPAINT_HEALTH_CACHE.update({"checkedAt": now, "available": available, "model": name})
+            return available
 
-        legacy_response = requests.get(config["url"] + "/inpaint", timeout=timeout)
-        return legacy_response.status_code in (200, 204, 405)
+        legacy_response = session.get(config["url"] + "/inpaint", timeout=timeout)
+        available = legacy_response.status_code in (200, 204, 405)
+        with _IOPAINT_HEALTH_LOCK:
+            _IOPAINT_HEALTH_CACHE.update({"checkedAt": now, "available": available, "model": "legacy"})
+        return available
     except Exception:
+        with _IOPAINT_HEALTH_LOCK:
+            _IOPAINT_HEALTH_CACHE.update({"checkedAt": now, "available": False, "model": ""})
         return False
 
 
@@ -61,6 +137,7 @@ def get_hd_status():
     iopaint_available = check_hd_available()
     available = bool(config["enabled"] and iopaint_available)
     engine = config["engine"] if available else "not_ready"
+    runtime = _iopaint_runtime_status(available)
     return {
         "enabled": config["enabled"],
         "engine": engine,
@@ -71,6 +148,7 @@ def get_hd_status():
         "fallbackUsed": False,
         "fallbackAvailable": True,
         "fallbackEngine": "opencv_hd_fallback",
+        **runtime,
     }
 
 
@@ -90,8 +168,9 @@ def _encode_png(image):
     return encoded.tobytes()
 
 
-def _call_iopaint(image, mask_bin, feather=False, timeout=180):
+def _call_iopaint(image, mask_bin, feather=False, timeout=180, request_id=""):
     config = get_hd_config()
+    connect_started = time.perf_counter()
     if not check_hd_available():
         raise HdInpaintError(
             "高清修复服务暂不可用，请使用快速模式或稍后重试",
@@ -99,8 +178,10 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
             status_code=503,
         )
 
+    connect_ms = int((time.perf_counter() - connect_started) * 1000)
     try:
         import requests
+        session = _get_iopaint_session()
     except Exception as exc:
         raise HdInpaintError(
             "高清修复服务暂不可用，请使用快速模式或稍后重试",
@@ -108,6 +189,7 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
             status_code=503,
         )
 
+    encode_started = time.perf_counter()
     image_png = _encode_png(image)
     mask_png = _encode_png(mask_bin)
 
@@ -121,10 +203,18 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
             "sd_keep_unmasked_area": True,
             "sd_mask_blur": 5 if feather else 3,
             "sd_strength": 0.85,
-            "prompt": "",
+            "prompt": str(request_id or ""),
             "negative_prompt": "",
         }
-        response = requests.post(config["url"] + "/api/v1/inpaint", json=payload, timeout=timeout)
+        request_encode_ms = int((time.perf_counter() - encode_started) * 1000)
+        http_started = time.perf_counter()
+        response = session.post(
+            config["url"] + "/api/v1/inpaint",
+            json=payload,
+            timeout=timeout,
+            headers={"X-Request-ID": str(request_id or "")},
+        )
+        http_ms = int((time.perf_counter() - http_started) * 1000)
 
         if response.status_code in (404, 405):
             files = {
@@ -135,7 +225,9 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
                 "model": config["engine"],
                 "sizeLimit": "0",
             }
-            response = requests.post(config["url"] + "/inpaint", files=files, data=data, timeout=timeout)
+            http_started = time.perf_counter()
+            response = session.post(config["url"] + "/inpaint", files=files, data=data, timeout=timeout)
+            http_ms = int((time.perf_counter() - http_started) * 1000)
     except requests.exceptions.Timeout as exc:
         raise HdInpaintError(
             "高清修复耗时较长，请稍后重试或切换快速模式",
@@ -160,20 +252,57 @@ def _call_iopaint(image, mask_bin, feather=False, timeout=180):
             status_code=503,
         )
 
+    decode_started = time.perf_counter()
     result_arr = np.frombuffer(response.content, dtype=np.uint8)
     result = cv2.imdecode(result_arr, cv2.IMREAD_COLOR)
+    response_decode_ms = int((time.perf_counter() - decode_started) * 1000)
     if result is None:
         raise HdInpaintError(
             "高清修复模型未返回有效图片",
             debug={"engine": config["engine"], "response": response.text[:300]},
             status_code=502,
         )
-    return result
+    runtime = _iopaint_runtime_status(True)
+
+    def _header_int(name, default=0):
+        try:
+            return int(round(float(response.headers.get(name, default))))
+        except (TypeError, ValueError):
+            return int(default)
+
+    inference_ms = _header_int("X-IOPaint-Inference-Ms", http_ms)
+    output_encode_ms = _header_int("X-IOPaint-Output-Encode-Ms", 0)
+    iopaint_total_ms = _header_int("X-IOPaint-Total-Ms", http_ms)
+    return result, {
+        "iopaintConnectMs": connect_ms,
+        "iopaintRequestEncodeMs": request_encode_ms,
+        "iopaintHttpMs": http_ms,
+        "iopaintResponseDecodeMs": response_decode_ms,
+        "lamaInferenceMs": inference_ms,
+        "iopaintOutputEncodeMs": output_encode_ms,
+        "iopaintTotalMs": iopaint_total_ms,
+        "iopaintRequestBytes": len(image_png) + len(mask_png),
+        "iopaintResponseBytes": len(response.content),
+        "modelLoaded": runtime["modelLoaded"],
+        "modelWarm": runtime["modelWarm"],
+        "processUptimeSeconds": runtime["processUptimeSeconds"],
+        "modelLoadMs": 0 if runtime["modelWarm"] else runtime["modelLoadMs"],
+        "torchThreads": _header_int("X-IOPaint-Torch-Threads", runtime["torchThreads"]),
+        "interopThreads": _header_int("X-IOPaint-Interop-Threads", runtime["interopThreads"]),
+    }
 
 
-def _call_iopaint_scaled(image, mask_bin, feather=False, timeout=180):
+def _call_iopaint_scaled(
+    image,
+    mask_bin,
+    feather=False,
+    timeout=180,
+    request_id="",
+    inference_max_edge=None,
+):
     original_h, original_w = image.shape[:2]
-    max_edge = max(1024, min(1536, int(os.environ.get("HD_INPAINT_MAX_EDGE", "1536"))))
+    configured_max = max(768, min(1536, int(os.environ.get("HD_INPAINT_MAX_EDGE", "1536"))))
+    max_edge = max(768, min(configured_max, int(inference_max_edge or configured_max)))
     scale = min(1.0, max_edge / float(max(original_w, original_h)))
     if scale < 1.0:
         inference_size = (
@@ -187,15 +316,23 @@ def _call_iopaint_scaled(image, mask_bin, feather=False, timeout=180):
         inference_image = image
         inference_mask = mask_bin
     started = time.perf_counter()
-    repaired = _call_iopaint(inference_image, inference_mask, feather=feather, timeout=timeout)
+    repaired, transport_debug = _call_iopaint(
+        inference_image,
+        inference_mask,
+        feather=feather,
+        timeout=timeout,
+        request_id=request_id,
+    )
     call_ms = int((time.perf_counter() - started) * 1000)
     if repaired.shape[:2] != (original_h, original_w):
         repaired = cv2.resize(repaired, (original_w, original_h), interpolation=cv2.INTER_LANCZOS4)
     return repaired, {
+        **transport_debug,
         "roiOriginalSize": f"{original_w}x{original_h}",
         "roiInferenceSize": f"{inference_size[0]}x{inference_size[1]}",
         "roiScale": round(scale, 6),
         "lamaMs": call_ms,
+        "inferenceMaxEdge": max_edge,
     }
 
 
@@ -501,7 +638,15 @@ def _composite_mask_area(original, repaired, mask_bin, feather, sigma=1.2):
     return np.clip(blended, 0, 255).astype(np.uint8)
 
 
-def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preserve_detail=True) -> dict:
+def _do_hd_inpaint_single(
+    img_bytes: bytes,
+    mask_bytes: bytes,
+    strength="medium",
+    preserve_detail=True,
+    request_id="",
+    allow_retry=True,
+    inference_max_edge=None,
+) -> dict:
     started_at = time.time()
     if not img_bytes:
         raise HdInpaintError("原图数据为空", status_code=400)
@@ -599,7 +744,13 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
     composite_sigma = 1.2
 
     if iopaint_available:
-        repaired, first_lama_debug = _call_iopaint_scaled(image, hd_mask, feather=feather)
+        repaired, first_lama_debug = _call_iopaint_scaled(
+            image,
+            hd_mask,
+            feather=feather,
+            request_id=request_id,
+            inference_max_edge=inference_max_edge,
+        )
         debug.update(first_lama_debug)
         debug["lamaCallCount"] = 1
         debug["firstLamaMs"] = first_lama_debug["lamaMs"]
@@ -658,7 +809,9 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
     retry_min_pixels = max(512, int(image_w * image_h * 0.008))
     retry_eligible = int(cv2.countNonZero(quality_mask)) >= retry_min_pixels
     residual_detected = retry_eligible and _residual_needs_retry(before_quality, after_quality)
-    while residual_detected and auto_retry_count < 1:
+    debug["retryReason"] = "objective_residual_threshold" if residual_detected and allow_retry else ""
+    debug["firstResidualScore"] = after_quality["mean"]
+    while allow_retry and residual_detected and auto_retry_count < 1:
         residual_mask = _build_thin_watermark_mask(result, quality_mask)
         residual_mask = cv2.morphologyEx(
             residual_mask,
@@ -673,11 +826,24 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
         )
         if cv2.countNonZero(residual_mask) <= 0:
             break
-        retry_repaired, retry_lama_debug = _call_iopaint_scaled(result, residual_mask, feather=False)
+        retry_repaired, retry_lama_debug = _call_iopaint_scaled(
+            result,
+            residual_mask,
+            feather=False,
+            request_id=request_id,
+            inference_max_edge=inference_max_edge,
+        )
         result = _composite_mask_area(result, retry_repaired, residual_mask, True, sigma=0.35)
         auto_retry_count += 1
         debug["lamaCallCount"] += 1
         debug["retryLamaMs"] += retry_lama_debug["lamaMs"]
+        debug["secondInferenceMs"] = retry_lama_debug.get("lamaInferenceMs", retry_lama_debug["lamaMs"])
+        debug["retryRoi"] = {"x": 0, "y": 0, "width": image_w, "height": image_h}
+        for timing_key in (
+            "lamaInferenceMs", "iopaintConnectMs", "iopaintRequestEncodeMs",
+            "iopaintHttpMs", "iopaintResponseDecodeMs", "iopaintOutputEncodeMs", "iopaintTotalMs",
+        ):
+            debug[timing_key] = int(debug.get(timing_key) or 0) + int(retry_lama_debug.get(timing_key) or 0)
         after_quality = _residual_quality(result, quality_mask)
         residual_detected = _residual_needs_retry(before_quality, after_quality)
 
@@ -703,16 +869,378 @@ def do_hd_inpaint(img_bytes: bytes, mask_bytes: bytes, strength="medium", preser
     if diff_max <= 0:
         raise HdInpaintError("高清修复未产生有效变化，请调整涂抹区域后重试。", debug=debug, status_code=422)
 
-    ok, encoded = cv2.imencode(".jpg", result, [int(cv2.IMWRITE_JPEG_QUALITY), 96])
+    result_encode_started = time.perf_counter()
+    ok, encoded = cv2.imencode(".png", result, [int(cv2.IMWRITE_PNG_COMPRESSION), 3])
     if not ok:
         raise HdInpaintError("高清修复结果编码失败", debug=debug, status_code=500)
+    debug["resultEncodeMs"] = int((time.perf_counter() - result_encode_started) * 1000)
 
     return {
         "bytes": encoded.tobytes(),
+        "suffix": ".png",
         "backendMode": "LaMa/IOPaint 高清修复" if iopaint_available else "OpenCV 高清修复",
         "mode": "hd",
         "engine": debug["engine"],
         "fallbackUsed": not iopaint_available,
+        "message": "处理成功",
+        "debug": debug,
+    }
+
+
+def _rect_distance(left, right):
+    gap_x = max(left["x"] - (right["x"] + right["width"]), right["x"] - (left["x"] + left["width"]), 0)
+    gap_y = max(left["y"] - (right["y"] + right["height"]), right["y"] - (left["y"] + left["height"]), 0)
+    return float((gap_x * gap_x + gap_y * gap_y) ** 0.5)
+
+
+def _merge_region_pair(left, right):
+    x1 = min(left["x"], right["x"])
+    y1 = min(left["y"], right["y"])
+    x2 = max(left["x"] + left["width"], right["x"] + right["width"])
+    y2 = max(left["y"] + left["height"], right["y"] + right["height"])
+    return {
+        "x": x1,
+        "y": y1,
+        "width": x2 - x1,
+        "height": y2 - y1,
+        "area": int(left["area"] + right["area"]),
+        "brushEstimate": max(float(left["brushEstimate"]), float(right["brushEstimate"])),
+        "components": list(left["components"]) + list(right["components"]),
+    }
+
+
+def _component_regions(mask_bin, image_width, image_height):
+    started = time.perf_counter()
+    count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(mask_bin, connectivity=8)
+    component_count = max(0, count - 1)
+    min_area = max(4, int(round(image_width * image_height * 0.000002)))
+    regions = []
+    for label in range(1, count):
+        x, y, width, height, area = [int(value) for value in stats[label]]
+        if area < min_area or width <= 0 or height <= 0:
+            continue
+        brush_estimate = max(2.0, min(float(min(width, height)), area / float(max(width, height))))
+        regions.append({
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
+            "area": area,
+            "brushEstimate": brush_estimate,
+            "components": [label],
+        })
+    if not regions and component_count > 0:
+        largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        x, y, width, height, area = [int(value) for value in stats[largest]]
+        regions.append({
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
+            "area": area,
+            "brushEstimate": max(2.0, area / float(max(width, height))),
+            "components": [largest],
+        })
+
+    merge_floor = max(16, int(round(min(image_width, image_height) * 0.012)))
+    changed = True
+    while changed and len(regions) > 1:
+        changed = False
+        for left_index in range(len(regions)):
+            if changed:
+                break
+            for right_index in range(left_index + 1, len(regions)):
+                merge_distance = min(
+                    128,
+                    max(
+                        merge_floor,
+                        int(round(max(regions[left_index]["brushEstimate"], regions[right_index]["brushEstimate"]) * 1.75)),
+                    ),
+                )
+                if _rect_distance(regions[left_index], regions[right_index]) <= merge_distance:
+                    merged = _merge_region_pair(regions[left_index], regions[right_index])
+                    regions = [item for idx, item in enumerate(regions) if idx not in (left_index, right_index)] + [merged]
+                    changed = True
+                    break
+
+    capped = False
+    while len(regions) > 2:
+        capped = True
+        best = None
+        for left_index in range(len(regions)):
+            for right_index in range(left_index + 1, len(regions)):
+                merged = _merge_region_pair(regions[left_index], regions[right_index])
+                merged_area = merged["width"] * merged["height"]
+                source_area = (
+                    regions[left_index]["width"] * regions[left_index]["height"]
+                    + regions[right_index]["width"] * regions[right_index]["height"]
+                )
+                cost = merged_area - source_area
+                if best is None or cost < best[0]:
+                    best = (cost, left_index, right_index, merged)
+        _, left_index, right_index, merged = best
+        regions = [item for idx, item in enumerate(regions) if idx not in (left_index, right_index)] + [merged]
+
+    regions.sort(key=lambda item: (item["y"], item["x"]))
+    return regions, {
+        "componentCount": component_count,
+        "filteredComponentCount": sum(len(item["components"]) for item in regions),
+        "mergedRoiCount": len(regions),
+        "roiGroupingCapped": capped,
+        "componentMinArea": min_area,
+        "connectedComponentsMs": int((time.perf_counter() - started) * 1000),
+    }
+
+
+def _texture_complexity(image, box):
+    margin = 16
+    x1 = max(0, box["x"] - margin)
+    y1 = max(0, box["y"] - margin)
+    x2 = min(image.shape[1], box["x"] + box["width"] + margin)
+    y2 = min(image.shape[0], box["y"] + box["height"] + margin)
+    sample = image[y1:y2, x1:x2]
+    if sample.size <= 0:
+        return 0.0
+    gray = cv2.cvtColor(sample, cv2.COLOR_BGR2GRAY)
+    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def _dynamic_roi_padding(image, region):
+    image_height, image_width = image.shape[:2]
+    min_dim = min(image_width, image_height)
+    span = max(region["width"], region["height"])
+    fill_ratio = region["area"] / float(max(1, region["width"] * region["height"]))
+    texture = _texture_complexity(image, region)
+    padding = max(32, int(round(region["brushEstimate"] * 0.75)), int(round(span * 0.06)))
+    if texture >= 400 or region["brushEstimate"] >= 24:
+        padding = max(padding, 64)
+    if texture >= 1800 or span >= min_dim * 0.40 or (fill_ratio >= 0.35 and span >= 320):
+        padding = max(padding, 96)
+    if span >= min_dim * 0.70:
+        padding = max(padding, 128)
+    return min(128, padding), round(texture, 3)
+
+
+def _choose_inference_max_edge(width, height, texture):
+    longest = max(width, height)
+    if longest <= 768:
+        return 768
+    if longest <= 1280:
+        return 1280 if texture >= 1200 else 1024
+    return 1536 if texture >= 2400 else 1280
+
+
+def _safe_progress(callback, stage, **details):
+    if callback is None:
+        return
+    try:
+        callback(stage, **details)
+    except Exception:
+        pass
+
+
+def do_hd_inpaint(
+    img_bytes: bytes,
+    mask_bytes: bytes,
+    strength="medium",
+    preserve_detail=True,
+    request_id="",
+    progress_callback=None,
+) -> dict:
+    """Run LaMa on at most two mask-driven ROIs and composite losslessly."""
+    started = time.perf_counter()
+    decode_started = time.perf_counter()
+    image = _decode_image(img_bytes, cv2.IMREAD_COLOR, "原图")
+    image_decode_ms = int((time.perf_counter() - decode_started) * 1000)
+    mask_decode_started = time.perf_counter()
+    mask_raw = _decode_image(mask_bytes, cv2.IMREAD_UNCHANGED, "遮罩")
+    mask_decode_ms = int((time.perf_counter() - mask_decode_started) * 1000)
+    image_height, image_width = image.shape[:2]
+    mask_bin = _mask_to_binary(mask_raw)
+    mask_resized = False
+    if mask_bin.shape[:2] != image.shape[:2]:
+        mask_bin = cv2.resize(mask_bin, (image_width, image_height), interpolation=cv2.INTER_NEAREST)
+        mask_resized = True
+    mask_pixels = int(cv2.countNonZero(mask_bin))
+    if mask_pixels <= 0:
+        raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
+
+    _safe_progress(progress_callback, "analyzing", requestId=request_id)
+    regions, component_debug = _component_regions(mask_bin, image_width, image_height)
+    roi_started = time.perf_counter()
+    roi_specs = []
+    for region in regions:
+        padding, texture = _dynamic_roi_padding(image, region)
+        x1 = max(0, region["x"] - padding)
+        y1 = max(0, region["y"] - padding)
+        x2 = min(image_width, region["x"] + region["width"] + padding)
+        y2 = min(image_height, region["y"] + region["height"] + padding)
+        borders = {
+            "left": max(0, padding - region["x"]),
+            "top": max(0, padding - region["y"]),
+            "right": max(0, region["x"] + region["width"] + padding - image_width),
+            "bottom": max(0, region["y"] + region["height"] + padding - image_height),
+        }
+        roi_specs.append({
+            **region,
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "padding": padding,
+            "textureComplexity": texture,
+            "borders": borders,
+        })
+    roi_build_ms = int((time.perf_counter() - roi_started) * 1000)
+
+    output = image.copy()
+    roi_union = np.zeros((image_height, image_width), dtype=np.uint8)
+    inner_debugs = []
+    result_resize_ms = 0
+    result_composite_ms = 0
+    for index, spec in enumerate(roi_specs):
+        _safe_progress(
+            progress_callback,
+            "repairing",
+            requestId=request_id,
+            roiIndex=index + 1,
+            roiCount=len(roi_specs),
+        )
+        roi_image = image[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]].copy()
+        roi_mask = mask_bin[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]].copy()
+        borders = spec["borders"]
+        if any(borders.values()):
+            roi_image_engine = cv2.copyMakeBorder(
+                roi_image,
+                borders["top"], borders["bottom"], borders["left"], borders["right"],
+                cv2.BORDER_REFLECT_101,
+            )
+            roi_mask_engine = cv2.copyMakeBorder(
+                roi_mask,
+                borders["top"], borders["bottom"], borders["left"], borders["right"],
+                cv2.BORDER_CONSTANT,
+                value=0,
+            )
+        else:
+            roi_image_engine = roi_image
+            roi_mask_engine = roi_mask
+        inference_max_edge = _choose_inference_max_edge(
+            roi_image_engine.shape[1], roi_image_engine.shape[0], spec["textureComplexity"]
+        )
+        single = _do_hd_inpaint_single(
+            _encode_png(roi_image_engine),
+            _encode_png(roi_mask_engine),
+            strength=strength,
+            preserve_detail=preserve_detail,
+            request_id=f"{request_id}:{index + 1}" if request_id else str(index + 1),
+            allow_retry=len(roi_specs) == 1,
+            inference_max_edge=inference_max_edge,
+        )
+        repaired = cv2.imdecode(np.frombuffer(single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR)
+        if repaired is None:
+            raise HdInpaintError("高清修复模型未返回有效图片", status_code=502)
+        resize_started = time.perf_counter()
+        if repaired.shape[:2] != roi_image_engine.shape[:2]:
+            repaired = cv2.resize(
+                repaired,
+                (roi_image_engine.shape[1], roi_image_engine.shape[0]),
+                interpolation=cv2.INTER_LANCZOS4,
+            )
+        repaired = repaired[
+            borders["top"]:borders["top"] + roi_image.shape[0],
+            borders["left"]:borders["left"] + roi_image.shape[1],
+        ]
+        result_resize_ms += int((time.perf_counter() - resize_started) * 1000)
+        composite_started = time.perf_counter()
+        output[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = repaired
+        roi_union[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = 255
+        result_composite_ms += int((time.perf_counter() - composite_started) * 1000)
+        single_debug = dict(single.get("debug") or {})
+        single_debug.update({
+            "roiIndex": index + 1,
+            "roiBox": {
+                "x": spec["x1"],
+                "y": spec["y1"],
+                "width": spec["x2"] - spec["x1"],
+                "height": spec["y2"] - spec["y1"],
+            },
+            "roiPadding": spec["padding"],
+            "roiMaskRatio": round(
+                cv2.countNonZero(roi_mask_engine) / float(max(1, roi_mask_engine.size)), 6
+            ),
+            "textureComplexity": spec["textureComplexity"],
+            "roiReflectBorder": borders,
+        })
+        inner_debugs.append(single_debug)
+
+    _safe_progress(progress_callback, "compositing", requestId=request_id)
+    outside = roi_union == 0
+    outside_changed = int(np.count_nonzero(np.any(output[outside] != image[outside], axis=1)))
+    result_encode_started = time.perf_counter()
+    output_bytes = _encode_png(output)
+    result_encode_ms = int((time.perf_counter() - result_encode_started) * 1000)
+    total_ms = int((time.perf_counter() - started) * 1000)
+    first = inner_debugs[0]
+    sum_keys = (
+        "lamaCallCount", "firstLamaMs", "retryLamaMs", "lamaMs", "lamaInferenceMs",
+        "iopaintConnectMs", "iopaintRequestEncodeMs", "iopaintHttpMs",
+        "iopaintResponseDecodeMs", "iopaintOutputEncodeMs", "iopaintTotalMs",
+    )
+    debug = {
+        "engine": first.get("engine", "lama"),
+        "actualEngine": first.get("engine", "lama"),
+        "fallbackUsed": False,
+        "iopaintAvailable": True,
+        "imageWidth": image_width,
+        "imageHeight": image_height,
+        "imageSize": f"{image_width}x{image_height}",
+        "maskSize": f"{mask_bin.shape[1]}x{mask_bin.shape[0]}",
+        "maskResized": mask_resized,
+        "maskNonZeroPixels": mask_pixels,
+        "maskRatio": round(mask_pixels / float(image_width * image_height), 6),
+        **component_debug,
+        "eachRoiBox": [item["roiBox"] for item in inner_debugs],
+        "eachRoiMaskRatio": [item["roiMaskRatio"] for item in inner_debugs],
+        "eachRoiPadding": [item["roiPadding"] for item in inner_debugs],
+        "roiOriginalSizes": [item.get("roiOriginalSize", "") for item in inner_debugs],
+        "roiInferenceSizes": [item.get("roiInferenceSize", "") for item in inner_debugs],
+        "roiScales": [item.get("roiScale", 1.0) for item in inner_debugs],
+        "roiDetails": inner_debugs,
+        "imageDecodeMs": image_decode_ms,
+        "maskDecodeMs": mask_decode_ms,
+        "roiBuildMs": roi_build_ms,
+        "resultResizeMs": result_resize_ms,
+        "resultCompositeMs": result_composite_ms,
+        "resultEncodeMs": result_encode_ms,
+        "retryReason": [item.get("retryReason") for item in inner_debugs if item.get("retryReason")],
+        "outputSize": f"{image_width}x{image_height}",
+        "outputBytes": len(output_bytes),
+        "outsideRoiChangedPixels": outside_changed,
+        "durationMs": total_ms,
+        "totalDurationMs": total_ms,
+        "modelLoaded": all(bool(item.get("modelLoaded", True)) for item in inner_debugs),
+        "modelWarm": all(bool(item.get("modelWarm", False)) for item in inner_debugs),
+        "processUptimeSeconds": max(int(item.get("processUptimeSeconds") or 0) for item in inner_debugs),
+        "modelLoadMs": max(int(item.get("modelLoadMs") or 0) for item in inner_debugs),
+        "torchThreads": first.get("torchThreads", 0),
+        "interopThreads": first.get("interopThreads", 0),
+    }
+    for key in sum_keys:
+        debug[key] = sum(int(item.get(key) or 0) for item in inner_debugs)
+    debug["lamaCallCount"] = min(2, debug["lamaCallCount"])
+    diff_mean, diff_max = _diff_debug(image, output, mask_bin)
+    debug["diffMean"] = round(diff_mean, 6)
+    debug["diffMax"] = diff_max
+    if diff_max <= 0:
+        raise HdInpaintError("高清修复未产生有效变化，请调整涂抹区域后重试。", debug=debug, status_code=422)
+    _safe_progress(progress_callback, "encoding", requestId=request_id)
+    return {
+        "bytes": output_bytes,
+        "suffix": ".png",
+        "backendMode": "LaMa/IOPaint 高清修复",
+        "mode": "hd",
+        "engine": debug["engine"],
+        "fallbackUsed": False,
         "message": "处理成功",
         "debug": debug,
     }

@@ -44,6 +44,7 @@ from services.id_photo_v2 import (
     prepare_id_photo_v2,
 )
 from services.heavy_task_queue import HeavyTaskBusyError, heavy_task_queue
+from services.hd_progress import begin_request, finish_request, get_request, normalize_request_id, update_request
 from services.face_detector import get_face_detector_status
 from services.portrait_matting import matting_status
 from services.portrait_quality import PortraitQualityError, classify_image_type, validate_portrait_input
@@ -839,7 +840,14 @@ def _watermark_health_payload():
         "manualEngine": "opencv_manual",
         "quickEngine": "opencv_quick",
         "hdEngine": hd_status["engine"],
+        "actualEngine": hd_status["engine"],
         "hdRealModelLoaded": hd_status["hdRealModelLoaded"],
+        "modelLoaded": hd_status.get("modelLoaded", hd_status["hdRealModelLoaded"]),
+        "modelWarm": hd_status.get("modelWarm", False),
+        "processUptimeSeconds": hd_status.get("processUptimeSeconds", 0),
+        "lastWarmupMs": hd_status.get("lastWarmupMs", 0),
+        "torchThreads": hd_status.get("torchThreads", 0),
+        "interopThreads": hd_status.get("interopThreads", 0),
         "fallbackUsed": hd_status["fallbackUsed"],
         "fallbackAvailable": fallback_available,
         "fallbackEngine": hd_status.get("fallbackEngine", "opencv_hd_fallback"),
@@ -2012,31 +2020,68 @@ async def watermark_hd_remove(
     mask: UploadFile = File(None),
     mode: str = Form("hd"),
     strength: str = Form("medium"),
-    preserveDetail: str = Form("true")
+    preserveDetail: str = Form("true"),
+    requestId: str = Form(""),
 ):
     """高清修复去水印"""
+    request_started = time.perf_counter()
+    request_received_at = _utc_iso()
+    request_id = normalize_request_id(requestId)
+    if not begin_request(request_id):
+        return JSONResponse(status_code=409, content={
+            "success": False,
+            "code": "HD_REQUEST_ACTIVE",
+            "message": "该高清修复请求正在处理中，请勿重复提交。",
+            "requestId": request_id,
+        })
     try:
+        upload_started = time.perf_counter()
         img_bytes = await image.read()
         if mask:
             mask_bytes = await mask.read()
         else:
             raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
+        upload_save_ms = int((time.perf_counter() - upload_started) * 1000)
+        update_request(request_id, "analyzing")
 
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
+        queue_state = heavy_task_queue.snapshot()
         (res, queue_wait_ms) = await asyncio.to_thread(
             heavy_task_queue.run,
             "lama",
-            lambda: do_hd_inpaint(img_bytes, mask_bytes, strength=strength, preserve_detail=preserve_detail),
+            lambda: do_hd_inpaint(
+                img_bytes,
+                mask_bytes,
+                strength=strength,
+                preserve_detail=preserve_detail,
+                request_id=request_id,
+                progress_callback=lambda stage, **details: update_request(request_id, stage, **details),
+            ),
         )
-        res.setdefault("debug", {}).update({"queueWaitMs": queue_wait_ms})
-        saved = save_watermark_output(res["bytes"], "hd", ".jpg")
+        update_request(request_id, "encoding")
+        save_started = time.perf_counter()
+        saved = save_watermark_output(res["bytes"], "hd", res.get("suffix") or ".png")
+        save_output_ms = int((time.perf_counter() - save_started) * 1000)
         image_url = saved["url"]
-        if res.get("debug") is not None:
-            res["debug"]["resultUrl"] = image_url
-            res["debug"]["outputPath"] = saved["path"]
-            res["debug"]["fileHash"] = saved["hash"]
+        debug = res.setdefault("debug", {})
+        debug.update({
+            "requestId": request_id,
+            "requestReceivedAt": request_received_at,
+            "queueWaitMs": queue_wait_ms,
+            "queueActiveTaskTypeAtArrival": queue_state.get("activeTaskType"),
+            "uploadSaveMs": upload_save_ms,
+            "saveOutputMs": save_output_ms,
+            "responseWriteMs": 0,
+            "totalServerMs": int((time.perf_counter() - request_started) * 1000),
+            "resultUrl": image_url,
+            "outputPath": saved["path"],
+            "fileHash": saved["hash"],
+        })
+        finish_request(request_id, True, resultUrl=image_url)
+        print("[watermark-hd-speed] " + json.dumps(debug, ensure_ascii=False, separators=(",", ":")), flush=True)
         return {
             "success": True,
+            "requestId": request_id,
             "imageUrl": image_url,
             "resultUrl": image_url,
             "outputPath": saved["path"],
@@ -2046,11 +2091,13 @@ async def watermark_hd_remove(
             "fallbackUsed": bool(res.get("fallbackUsed")),
             "backendMode": res["backendMode"],
             "message": res["message"],
-            "debug": res.get("debug", {})
+            "debug": debug,
         }
     except HeavyTaskBusyError:
+        finish_request(request_id, False, code="HEAVY_TASK_BUSY")
         return JSONResponse(status_code=503, content={"success": False, "code": "HEAVY_TASK_BUSY", "message": "高清任务较多，请稍后重试。"})
     except HdInpaintError as he:
+        finish_request(request_id, False, code="HD_INPAINT_ERROR")
         return JSONResponse(
             status_code=he.status_code,
             content={
@@ -2061,11 +2108,13 @@ async def watermark_hd_remove(
             }
         )
     except ValueError as ve:
+        finish_request(request_id, False, code="INVALID_REQUEST")
         return JSONResponse(
             status_code=400,
             content={"success": False, "message": str(ve), "fallbackAvailable": True}
         )
     except Exception as e:
+        finish_request(request_id, False, code="HD_INTERNAL_ERROR")
         return JSONResponse(
             status_code=500,
             content={
@@ -2074,6 +2123,14 @@ async def watermark_hd_remove(
                 "fallbackAvailable": True,
             }
         )
+
+
+@app.get("/api/watermark/hd-progress/{request_id}")
+def watermark_hd_progress(request_id: str):
+    state = get_request(request_id)
+    if not state:
+        return JSONResponse(status_code=404, content={"success": False, "code": "HD_REQUEST_NOT_FOUND"})
+    return {"success": True, **state}
 
 
 @app.post("/api/watermark/remove-v2")
@@ -2087,9 +2144,22 @@ async def watermark_remove_v2(
     quality: str = Form("quick"),
     strength: str = Form("medium"),
     preserveDetail: str = Form("true"),
+    requestId: str = Form(""),
 ):
     """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
+    request_started = time.perf_counter()
+    request_received_at = _utc_iso()
+    is_hd = str(quality).lower() == "hd"
+    request_id = normalize_request_id(requestId) if is_hd else ""
+    if is_hd and not begin_request(request_id):
+        return JSONResponse(status_code=409, content={
+            "success": False,
+            "code": "HD_REQUEST_ACTIVE",
+            "message": "该高清修复请求正在处理中，请勿重复提交。",
+            "requestId": request_id,
+        })
     try:
+        parse_started = time.perf_counter()
         payload = json.loads(strokesJson)
         if not isinstance(payload, dict):
             raise ValueError("strokesJson must be an object")
@@ -2100,7 +2170,12 @@ async def watermark_remove_v2(
             "displayHeight": float(displayHeight),
         })
         normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        stroke_request_parse_ms = int((time.perf_counter() - parse_started) * 1000)
+        upload_started = time.perf_counter()
         image_bytes = await image.read()
+        upload_save_ms = int((time.perf_counter() - upload_started) * 1000)
+        if is_hd:
+            update_request(request_id, "analyzing")
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
         task = lambda: process_stroke_inpaint(
             image_bytes,
@@ -2108,17 +2183,41 @@ async def watermark_remove_v2(
             quality,
             strength,
             preserve_detail,
+            request_id=request_id,
+            progress_callback=(lambda stage, **details: update_request(request_id, stage, **details)) if is_hd else None,
         )
-        if str(quality).lower() == "hd":
+        queue_state = heavy_task_queue.snapshot() if is_hd else {}
+        if is_hd:
             result, queue_wait_ms = await asyncio.to_thread(heavy_task_queue.run, "lama", task)
-            result.setdefault("debug", {}).update({"queueWaitMs": queue_wait_ms})
         else:
             result = await asyncio.to_thread(task)
+            queue_wait_ms = 0
+        if is_hd:
+            update_request(request_id, "encoding")
+        save_started = time.perf_counter()
         saved = save_watermark_output(result["bytes"], result["mode"], result.get("suffix") or ".png")
+        save_output_ms = int((time.perf_counter() - save_started) * 1000)
         debug = result.get("debug") or {}
-        debug.update({"resultUrl": saved["url"], "outputPath": saved["path"], "fileHash": saved["hash"]})
+        debug.update({
+            "requestId": request_id,
+            "requestReceivedAt": request_received_at,
+            "queueWaitMs": queue_wait_ms,
+            "queueActiveTaskTypeAtArrival": queue_state.get("activeTaskType"),
+            "uploadSaveMs": upload_save_ms,
+            "strokeRequestParseMs": stroke_request_parse_ms,
+            "saveOutputMs": save_output_ms,
+            "responseWriteMs": 0,
+            "totalServerMs": int((time.perf_counter() - request_started) * 1000),
+            "resultUrl": saved["url"],
+            "outputPath": saved["path"],
+            "fileHash": saved["hash"],
+        })
+        if is_hd:
+            finish_request(request_id, True, resultUrl=saved["url"])
+            print("[watermark-hd-speed] " + json.dumps(debug, ensure_ascii=False, separators=(",", ":")), flush=True)
         return {
             "success": True,
+            "requestId": request_id,
             "imageUrl": saved["url"],
             "resultUrl": saved["url"],
             "outputPath": saved["path"],
@@ -2131,8 +2230,12 @@ async def watermark_remove_v2(
             "debug": debug,
         }
     except HeavyTaskBusyError:
+        if is_hd:
+            finish_request(request_id, False, code="HEAVY_TASK_BUSY")
         return JSONResponse(status_code=503, content={"success": False, "code": "HEAVY_TASK_BUSY", "message": "高清任务较多，请稍后重试。"})
     except HdInpaintError as exc:
+        if is_hd:
+            finish_request(request_id, False, code="HD_INPAINT_ERROR")
         return JSONResponse(status_code=exc.status_code, content={
             "success": False,
             "message": str(exc),
@@ -2140,12 +2243,16 @@ async def watermark_remove_v2(
             "debug": exc.debug,
         })
     except ValueError as exc:
+        if is_hd:
+            finish_request(request_id, False, code="INVALID_REQUEST")
         return JSONResponse(status_code=400, content={
             "success": False,
             "message": str(exc),
             "debug": getattr(exc, "debug", {}),
         })
     except Exception as exc:
+        if is_hd:
+            finish_request(request_id, False, code="HD_INTERNAL_ERROR")
         return JSONResponse(status_code=500, content={
             "success": False,
             "message": f"watermark processing failed: {str(exc)}",
