@@ -2022,6 +2022,8 @@ async def watermark_hd_remove(
     strength: str = Form("medium"),
     preserveDetail: str = Form("true"),
     requestId: str = Form(""),
+    smartExpand: str = Form("false"),
+    maskDilationPx: int = Form(5),
 ):
     """高清修复去水印"""
     request_started = time.perf_counter()
@@ -2045,6 +2047,7 @@ async def watermark_hd_remove(
         update_request(request_id, "analyzing")
 
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
+        smart_expand = str(smartExpand).lower() not in ("0", "false", "no", "off")
         queue_state = heavy_task_queue.snapshot()
         (res, queue_wait_ms) = await asyncio.to_thread(
             heavy_task_queue.run,
@@ -2056,6 +2059,8 @@ async def watermark_hd_remove(
                 preserve_detail=preserve_detail,
                 request_id=request_id,
                 progress_callback=lambda stage, **details: update_request(request_id, stage, **details),
+                smart_expand=smart_expand,
+                mask_dilation_px=maskDilationPx,
             ),
         )
         update_request(request_id, "encoding")
@@ -2145,6 +2150,8 @@ async def watermark_remove_v2(
     strength: str = Form("medium"),
     preserveDetail: str = Form("true"),
     requestId: str = Form(""),
+    smartExpand: str = Form("false"),
+    maskDilationPx: int = Form(5),
 ):
     """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
     request_started = time.perf_counter()
@@ -2177,6 +2184,7 @@ async def watermark_remove_v2(
         if is_hd:
             update_request(request_id, "analyzing")
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
+        smart_expand = str(smartExpand).lower() not in ("0", "false", "no", "off")
         task = lambda: process_stroke_inpaint(
             image_bytes,
             normalized_json,
@@ -2185,6 +2193,8 @@ async def watermark_remove_v2(
             preserve_detail,
             request_id=request_id,
             progress_callback=(lambda stage, **details: update_request(request_id, stage, **details)) if is_hd else None,
+            smart_expand=smart_expand,
+            mask_dilation_px=maskDilationPx,
         )
         queue_state = heavy_task_queue.snapshot() if is_hd else {}
         if is_hd:

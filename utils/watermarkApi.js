@@ -200,6 +200,8 @@ function removeV2(params) {
           quality: quality,
           strength: String(params.strength || 'medium'),
           preserveDetail: params.preserveDetail === false ? 'false' : 'true',
+          smartExpand: params.smartExpand === true ? 'true' : 'false',
+          maskDilationPx: String(Math.max(3, Math.min(12, Number(params.maskDilationPx || 5)))),
           requestId: requestId
         },
         timeout: quality === 'hd' ? 360000 : 180000,

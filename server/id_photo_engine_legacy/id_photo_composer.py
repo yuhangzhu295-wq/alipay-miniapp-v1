@@ -1263,6 +1263,227 @@ def _repair_lower_shoulder_gaps(result, layer, bg_rgb, face_box):
     }
 
 
+def _alpha_row_span(binary, row, center_x):
+    xs = np.flatnonzero(binary[row])
+    if xs.size == 0:
+        return None
+    split_points = np.flatnonzero(np.diff(xs) > 1) + 1
+    runs = np.split(xs, split_points)
+    containing = [run for run in runs if run[0] <= center_x <= run[-1]]
+    candidates = containing or runs
+    run = min(
+        candidates,
+        key=lambda item: (0 if item[0] <= center_x <= item[-1] else min(abs(item[0] - center_x), abs(item[-1] - center_x)), -item.size),
+    )
+    return int(run[0]), int(run[-1]) + 1
+
+
+def _solve_id_photo_layout(cutout, face_box, target_size, composition, composition_profile):
+    target_w, target_h = int(target_size[0]), int(target_size[1])
+    image_w, image_h = cutout.size
+    alpha = np.asarray(cutout.getchannel("A"))
+    binary = alpha > 24
+    ys, xs = np.where(binary)
+    if xs.size == 0:
+        raise ValueError("ID photo foreground is empty")
+
+    fx = float(face_box["x"])
+    fy = float(face_box["y"])
+    fw = max(1.0, float(face_box["width"]))
+    fh = max(1.0, float(face_box["height"]))
+    face_cx = fx + fw / 2.0
+
+    alpha_left = int(xs.min())
+    alpha_top = int(ys.min())
+    alpha_right = int(xs.max()) + 1
+    alpha_bottom = int(ys.max()) + 1
+    head_x1 = max(0, int(round(face_cx - fw * 1.05)))
+    head_x2 = min(image_w, int(round(face_cx + fw * 1.05)))
+    head_y2 = min(image_h, int(round(fy + fh * 0.30)))
+    head_region = binary[:head_y2, head_x1:head_x2]
+    head_rows = np.where(np.any(head_region, axis=1))[0]
+    estimated_head_top = float(head_rows.min()) if head_rows.size else max(0.0, fy - fh * 0.58)
+    estimated_head_height = max(fh * 1.70, (fy + fh) - estimated_head_top)
+
+    shoulder_y1 = max(0, int(round(fy + fh * 0.86)))
+    shoulder_y2 = min(alpha_bottom, int(round(fy + fh * (2.25 if composition != "half_body" else 3.6))))
+    shoulder_spans = []
+    if shoulder_y2 > shoulder_y1:
+        step = max(1, (shoulder_y2 - shoulder_y1) // 48)
+        for row in range(shoulder_y1, shoulder_y2, step):
+            span = _alpha_row_span(binary, row, face_cx)
+            if span:
+                shoulder_spans.append(span)
+    if shoulder_spans:
+        shoulder_left = float(np.percentile([item[0] for item in shoulder_spans], 20))
+        shoulder_right = float(np.percentile([item[1] for item in shoulder_spans], 80))
+    else:
+        shoulder_left = max(float(alpha_left), face_cx - fw * 1.35)
+        shoulder_right = min(float(alpha_right), face_cx + fw * 1.35)
+
+    # Matting sheets and lower-body fragments can span the whole source.  They
+    # must not control ID-photo scale.  Clamp the observed shoulder envelope to
+    # a face-relative human range, then use it (plus the detected head) as the
+    # stable horizontal crop prior.
+    shoulder_left = max(shoulder_left, face_cx - fw * 1.90)
+    shoulder_right = min(shoulder_right, face_cx + fw * 1.90)
+    if shoulder_right - shoulder_left < fw * 1.65:
+        shoulder_left = face_cx - fw * 0.825
+        shoulder_right = face_cx + fw * 0.825
+    shoulder_width = max(fw * 1.65, shoulder_right - shoulder_left)
+
+    head_spans = []
+    head_span_y1 = max(0, int(round(estimated_head_top)))
+    head_span_y2 = min(image_h, int(round(fy + fh * 0.98)))
+    if head_span_y2 > head_span_y1:
+        step = max(1, (head_span_y2 - head_span_y1) // 36)
+        for row in range(head_span_y1, head_span_y2, step):
+            span = _alpha_row_span(binary, row, face_cx)
+            if span:
+                head_spans.append(span)
+    if head_spans:
+        head_left = float(np.percentile([item[0] for item in head_spans], 8))
+        head_right = float(np.percentile([item[1] for item in head_spans], 92))
+    else:
+        head_left = face_cx - fw * 0.88
+        head_right = face_cx + fw * 0.88
+
+    horizontal_pad = max(fw * 0.10, shoulder_width * 0.035)
+    content_left = min(head_left, shoulder_left, face_cx - fw * 0.92) - horizontal_pad
+    content_right = max(head_right, shoulder_right, face_cx + fw * 0.92) + horizontal_pad
+    crop_left = max(0, int(np.floor(content_left)))
+    crop_top = max(0, min(alpha_top, int(round(estimated_head_top - fh * 0.05))))
+    crop_right = min(image_w, int(np.ceil(content_right)))
+    lower_limit = image_h if composition == "half_body" else int(round(fy + fh * 2.35))
+    crop_bottom = min(image_h, max(int(round(fy + fh * 1.75)), min(alpha_bottom, lower_limit)))
+    if crop_right <= crop_left or crop_bottom <= crop_top:
+        crop_left, crop_top, crop_right, crop_bottom = 0, 0, image_w, image_h
+
+    crop_alpha = binary[crop_top:crop_bottom, crop_left:crop_right]
+    crop_ys, crop_xs = np.where(crop_alpha)
+    if crop_xs.size == 0:
+        raise ValueError("ID photo crop does not contain the subject")
+    subject_left = float(crop_xs.min())
+    subject_top = float(crop_ys.min())
+    subject_right = float(crop_xs.max() + 1)
+    subject_bottom = float(crop_ys.max() + 1)
+    face_cx_crop = face_cx - crop_left
+    head_top_crop = estimated_head_top - crop_top
+    layout_left = max(0.0, min(head_left, shoulder_left) - crop_left)
+    layout_right = min(float(crop_right - crop_left), max(head_right, shoulder_right) - crop_left)
+
+    profile = dict(composition_profile or {})
+    head_min = float(profile.get("headHeightRatioMin") or 0.58)
+    head_max = float(profile.get("headHeightRatioMax") or 0.70)
+    shoulder_min = float(profile.get("shoulderWidthRatioMin") or 0.75)
+    shoulder_max = float(profile.get("shoulderWidthRatioMax") or 1.0)
+    top_min = float(profile.get("topMarginRatioMin") or 0.066)
+    top_max = float(profile.get("topMarginRatioMax") or 0.123)
+    side_safety = max(0, int(np.ceil(target_w * float(profile.get("sideSafetyRatio") or 0.0))))
+    bottom_safety = max(0, int(np.ceil(target_h * float(profile.get("bottomSafetyRatio") or 0.0))))
+    target_top = target_h * ((top_min + top_max) / 2.0)
+    target_head_ratio = (head_min + head_max) / 2.0
+    target_shoulder_ratio = min(shoulder_max - 0.02, max(shoulder_min + 0.02, (shoulder_min + shoulder_max) / 2.0))
+
+    head_scale = target_h * target_head_ratio / max(1.0, estimated_head_height)
+    shoulder_scale = target_w * target_shoulder_ratio / max(1.0, shoulder_width)
+    desired_scale = head_scale * 0.74 + shoulder_scale * 0.26
+
+    head_scale_min = target_h * head_min / max(1.0, estimated_head_height)
+    head_scale_max = target_h * head_max / max(1.0, estimated_head_height)
+    chin_bottom_min = profile.get("chinBottomRatioMin")
+    chin_bottom_max = profile.get("chinBottomRatioMax")
+    face_bottom_crop = (fy + fh) - crop_top
+    face_bottom_from_head = max(1.0, (fy + fh) - estimated_head_top)
+    chin_scale_min = 0.0
+    if chin_bottom_max is not None:
+        chin_scale_min = (
+            target_h * (1.0 - float(chin_bottom_max)) - target_top
+        ) / face_bottom_from_head
+    # Official head size and chin placement take precedence over irrelevant
+    # lower-body width.  Shoulders may naturally meet the lower side edges of
+    # an ID-photo crop, while the head must never be shrunk to fit a half-body
+    # source in full.
+    scale = min(max(desired_scale, head_scale_min, chin_scale_min), head_scale_max)
+    scale = max(0.02, scale)
+
+    crop_w = crop_right - crop_left
+    crop_h = crop_bottom - crop_top
+    crop_retry_count = 0
+    layer = None
+    person = None
+    px = 0
+    py = 0
+    for attempt in range(3):
+        new_w = max(1, int(round(crop_w * scale)))
+        new_h = max(1, int(round(crop_h * scale)))
+        person = cutout.crop((crop_left, crop_top, crop_right, crop_bottom)).resize((new_w, new_h), Image.LANCZOS)
+        preferred_x = target_w / 2.0 - face_cx_crop * scale
+        min_x = side_safety - layout_left * scale
+        max_x = target_w - side_safety - layout_right * scale
+        preferred_y = target_top - head_top_crop * scale
+        if chin_bottom_max is not None:
+            preferred_y = max(
+                preferred_y,
+                target_h * (1.0 - float(chin_bottom_max)) - face_bottom_crop * scale,
+            )
+        if chin_bottom_min is not None:
+            preferred_y = min(
+                preferred_y,
+                target_h * (1.0 - float(chin_bottom_min)) - face_bottom_crop * scale,
+            )
+        px = int(round(min(max(preferred_x, min_x), max_x))) if min_x <= max_x else int(round(preferred_x))
+        py = int(round(preferred_y))
+        layer = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
+        layer.paste(person, (px, py), person)
+        bbox = layer.getbbox()
+        if not bbox:
+            break
+        expected_left = px + layout_left * scale
+        expected_right = px + layout_right * scale
+        expected_top = py + subject_top * scale
+        horizontal_inside = expected_left >= side_safety and expected_right <= target_w - side_safety
+        # Head-and-shoulder output is a crop by definition.  A wide torso may
+        # exit the lower side edges, but it must never force the official head
+        # size smaller.  Half-body mode still keeps its full horizontal fit.
+        inside = expected_top >= 0 and (horizontal_inside or composition != "half_body")
+        if inside or attempt >= 2:
+            break
+        fit_x = (target_w - 2.0 * side_safety) / max(1.0, layout_right - layout_left)
+        if expected_top < 0:
+            fit_top = max(0.82, min(0.995, scale * 0.98))
+            scale = min(scale * 0.98, fit_top)
+        else:
+            scale = min(scale * 0.995, fit_x)
+        crop_retry_count += 1
+
+    return {
+        "person": person,
+        "layer": layer,
+        "crop": (crop_left, crop_top, crop_right, crop_bottom),
+        "scale": scale,
+        "translate": (px, py),
+        "estimatedHeadTop": estimated_head_top,
+        "estimatedHeadHeight": estimated_head_height,
+        "shoulderWidth": shoulder_width,
+        "sideSafetyPx": side_safety,
+        "bottomSafetyPx": bottom_safety,
+        "cropRetryCount": crop_retry_count,
+        "targetRange": {
+            "headHeightRatioMin": head_min,
+            "headHeightRatioMax": head_max,
+            "topMarginRatioMin": top_min,
+            "topMarginRatioMax": top_max,
+            "shoulderWidthRatioMin": shoulder_min,
+            "shoulderWidthRatioMax": shoulder_max,
+            "sideSafetyRatioMin": round(side_safety / float(target_w), 6),
+            "bottomSafetyRatioMin": round(bottom_safety / float(target_h), 6),
+            "chinBottomRatioMin": float(chin_bottom_min) if chin_bottom_min is not None else None,
+            "chinBottomRatioMax": float(chin_bottom_max) if chin_bottom_max is not None else None,
+        },
+    }
+
+
 def compose_id_photo(
     foreground_path,
     face_box,
@@ -1285,30 +1506,16 @@ def compose_id_photo(
     fh = float(face_box["height"])
     face_cx = fx + fw / 2.0
 
-    side_expand = 1.65 if composition != "half_body" else 1.9
-    crop_left = max(0, int(face_cx - fw * side_expand))
-    crop_top = max(0, int(fy - fh * 1.15))
-    crop_right = min(cutout.width, int(face_cx + fw * side_expand))
-    crop_bottom = min(cutout.height, int(fy + fh * (2.75 if composition != "half_body" else 4.2)))
-    if composition != "half_body":
-        alpha_arr = np.asarray(cutout.getchannel("A"))
-        head_x1 = max(0, int(face_cx - fw * 2.0))
-        head_x2 = min(cutout.width, int(face_cx + fw * 2.0))
-        head_y2 = min(cutout.height, int(fy + fh * 1.15))
-        head_region = alpha_arr[:head_y2, head_x1:head_x2] > 24
-        ys, xs = np.where(head_region)
-        if xs.size:
-            crop_left = max(0, min(crop_left, head_x1 + int(xs.min()) - 3))
-            crop_right = min(cutout.width, max(crop_right, head_x1 + int(xs.max()) + 4))
-            crop_top = max(0, min(crop_top, int(ys.min()) - 3))
-    if crop_right <= crop_left or crop_bottom <= crop_top:
-        crop_left, crop_top, crop_right, crop_bottom = 0, 0, cutout.width, cutout.height
-
-    cropped_person = cutout.crop((crop_left, crop_top, crop_right, crop_bottom))
-    crop_w, crop_h = cropped_person.size
-    if composition != "half_body" and crop_w > 24:
-        alpha = cropped_person.getchannel("A")
-        cropped_person.putalpha(alpha.filter(ImageFilter.GaussianBlur(radius=0.28)))
+    solution = _solve_id_photo_layout(
+        cutout,
+        face_box,
+        (target_w, target_h),
+        composition,
+        composition_profile,
+    )
+    crop_left, crop_top, crop_right, crop_bottom = solution["crop"]
+    crop_w = crop_right - crop_left
+    crop_h = crop_bottom - crop_top
     head_height_min = float(composition_profile.get("headHeightRatioMin") or 0.58)
     head_height_max = float(composition_profile.get("headHeightRatioMax") or 0.70)
     head_width_min = composition_profile.get("headWidthRatioMin")
@@ -1320,103 +1527,45 @@ def compose_id_photo(
     top_min = float(composition_profile.get("topMarginRatioMin") or 0.066)
     top_max = float(composition_profile.get("topMarginRatioMax") or 0.123)
     target_head_height = (head_height_min + head_height_max) / 2.0
-    face_height_ratio = target_head_height / 1.75 if composition != "half_body" else 0.26
-    target_face_h = target_h * face_height_ratio
-    scale_by_face = target_face_h / max(1.0, fh)
-    scale_by_width = target_w * (1.90 if composition != "half_body" else 1.12) / max(1.0, crop_w)
-    scale_by_height = target_h * (1.38 if composition != "half_body" else 1.08) / max(1.0, crop_h)
-    scale = min(scale_by_face, scale_by_width, scale_by_height)
-
-    def render_with_scale(render_scale):
-        new_w = max(1, int(crop_w * render_scale))
-        new_h = max(1, int(crop_h * render_scale))
-        person = cropped_person.resize((new_w, new_h), Image.LANCZOS)
-        face_cx_in_crop = (face_cx - crop_left) * render_scale
-        estimated_head_top = (fy - fh * 0.55 - crop_top) * render_scale
-        top_padding = target_h * ((top_min + top_max) / 2.0)
-        px = int(target_w / 2.0 - face_cx_in_crop)
-        py = int(top_padding - estimated_head_top)
-        px = max(target_w - new_w, min(0, px))
-        py = max(int(target_h * 0.02) - new_h, min(int(target_h * max(0.12, top_max)), py))
-        layer = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
-        layer.paste(person, (px, py), person)
-        return person, layer, px, py, new_w, new_h
-
-    crop_retry_count = 0
+    scale = solution["scale"]
+    person = solution["person"]
+    layer = solution["layer"]
+    px, py = solution["translate"]
+    new_w, new_h = person.size
+    crop_retry_count = int(solution["cropRetryCount"])
     measured_before = {}
     target_range = {
-        "headHeightRatioMin": head_height_min,
-        "headHeightRatioMax": head_height_max,
+        **solution["targetRange"],
         "headWidthRatioMin": head_width_min,
         "headWidthRatioMax": head_width_max,
-        "topMarginRatioMin": top_min,
-        "topMarginRatioMax": top_max,
-        "shoulderWidthRatioMin": shoulder_min,
-        "shoulderWidthRatioMax": shoulder_max,
     }
-    # Initial render plus at most two deterministic crop recalculations. The
-    # alpha matte is reused throughout; no model is invoked from this loop.
-    for attempt in range(3):
-        person, layer, px, py, new_w, new_h = render_with_scale(scale)
-        bbox = layer.getbbox()
-        if not bbox:
-            break
-        fg_w_ratio = (bbox[2] - bbox[0]) / float(target_w)
-        bottom_padding = (target_h - bbox[3]) / float(target_h)
-        face_h_ratio = (fh * scale) / float(target_h)
-        head_h_ratio = (face_h_ratio * 1.75)
-        profile_head_w_ratio = (fw * scale * 1.18) / float(target_w)
-        measured = {
-            "headHeightRatio": round(head_h_ratio, 6),
-            "headWidthRatio": round(profile_head_w_ratio, 6),
-            "shoulderWidthRatio": round(fg_w_ratio, 6),
-            "bottomPaddingRatio": round(bottom_padding, 6),
-        }
-        if attempt == 0:
-            measured_before = dict(measured)
-        if attempt >= 2:
-            break
-        if head_h_ratio > head_height_max and scale > 0.05:
-            scale *= max(0.86, target_head_height / max(0.01, head_h_ratio))
-            crop_retry_count += 1
-            continue
-        if head_h_ratio < head_height_min and fg_w_ratio < shoulder_max and bottom_padding > 0.04:
-            scale *= min(1.16, target_head_height / max(0.01, head_h_ratio))
-            crop_retry_count += 1
-            continue
-        if head_width_max is not None and profile_head_w_ratio > head_width_max and head_h_ratio > head_height_min:
-            target_head_width = head_width_max - (head_width_max - (head_width_min or head_width_max)) * 0.25
-            scale *= max(0.88, target_head_width / max(0.01, profile_head_w_ratio))
-            crop_retry_count += 1
-            continue
-        if head_width_min is not None and profile_head_w_ratio < head_width_min and head_h_ratio < head_height_max:
-            target_head_width = head_width_min + ((head_width_max or head_width_min) - head_width_min) * 0.25
-            scale *= min(1.12, target_head_width / max(0.01, profile_head_w_ratio))
-            crop_retry_count += 1
-            continue
-        if fg_w_ratio < shoulder_min and head_h_ratio < head_height_max:
-            scale *= min(1.14, ((shoulder_min + shoulder_max) / 2.0) / max(0.01, fg_w_ratio))
-            crop_retry_count += 1
-            continue
-        break
+    bbox = layer.getbbox()
+    measured_before = {
+        "headHeightRatio": round((solution["estimatedHeadHeight"] * scale) / float(target_h), 6),
+        "headWidthRatio": round((fw * scale * 1.18) / float(target_w), 6),
+        "shoulderWidthRatio": round((solution["shoulderWidth"] * scale) / float(target_w), 6),
+        "bottomPaddingRatio": round((target_h - (bbox[3] if bbox else target_h)) / float(target_h), 6),
+    }
 
     bbox = layer.getbbox()
     if bbox:
         desired_top = target_h * ((top_min + top_max) / 2.0)
         min_top = target_h * top_min
         max_top = target_h * top_max
-        desired_bottom = target_h * 0.05
-        min_bottom = 0.0
+        desired_bottom = float(solution["bottomSafetyPx"])
+        min_bottom = float(solution["bottomSafetyPx"])
         max_bottom = target_h * 0.25
         dx = 0
         dy = 0
         face_left_out = px + (fx - crop_left) * scale
         current_face_center = face_left_out + fw * scale / 2.0
         dx += int(round(target_w / 2.0 - current_face_center))
-        if bbox[0] + dx < 0:
-            dx -= bbox[0] + dx
-        if bbox[2] + dx > target_w:
-            dx -= (bbox[2] + dx) - target_w
+        side_safety_px = int(solution["sideSafetyPx"])
+        if bbox[2] - bbox[0] < target_w - side_safety_px * 2:
+            if bbox[0] + dx < side_safety_px:
+                dx += side_safety_px - (bbox[0] + dx)
+            if bbox[2] + dx > target_w - side_safety_px:
+                dx -= (bbox[2] + dx) - (target_w - side_safety_px)
         if bbox[1] < min_top:
             dy += int(round(desired_top - bbox[1]))
         elif bbox[1] > max_top:
@@ -1539,7 +1688,7 @@ def compose_id_photo(
     bbox = layer.getbbox()
     fg_w = (bbox[2] - bbox[0]) if bbox else 0
     fg_h = (bbox[3] - bbox[1]) if bbox else 0
-    head_h_ratio = (face_h_out * 1.75) / float(target_h)
+    head_h_ratio = (solution["estimatedHeadHeight"] * scale) / float(target_h)
     head_w_ratio = (fw * scale * 1.45) / float(target_w)
     profile_head_w_ratio = (fw * scale * 1.18) / float(target_w)
     chin_bottom_ratio = max(0.0, (target_h - (face_top_out + face_h_out)) / float(target_h))
@@ -1550,6 +1699,9 @@ def compose_id_photo(
         "chinBottomRatio": round(chin_bottom_ratio, 6),
         "shoulderWidthRatio": round(fg_w / float(target_w), 6),
         "faceCenterOffset": round(abs((face_left_out + fw * scale / 2.0) - target_w / 2.0) / float(target_w), 6),
+        "subjectWithinCanvas": bool(bbox and bbox[0] >= 0 and bbox[1] >= 0 and bbox[2] <= target_w and bbox[3] <= target_h),
+        "sideSafetyRatio": round(min((bbox[0] if bbox else 0), target_w - (bbox[2] if bbox else target_w)) / float(target_w), 6),
+        "bottomSafetyRatio": round((target_h - (bbox[3] if bbox else target_h)) / float(target_h), 6),
     }
     quality = {
         "composedMaskPath": composed_mask_path,
@@ -1573,6 +1725,9 @@ def compose_id_photo(
         "chinBottomRatio": round(chin_bottom_ratio, 6),
         "topPaddingRatio": round((bbox[1] if bbox else 0) / float(target_h), 6),
         "bottomPaddingRatio": round((target_h - (bbox[3] if bbox else target_h)) / float(target_h), 6),
+        "bottomSafetyRatio": round((target_h - (bbox[3] if bbox else target_h)) / float(target_h), 6),
+        "sideSafetyRatio": round(min((bbox[0] if bbox else 0), target_w - (bbox[2] if bbox else target_w)) / float(target_w), 6),
+        "subjectWithinCanvas": bool(bbox and bbox[0] >= 0 and bbox[1] >= 0 and bbox[2] <= target_w and bbox[3] <= target_h),
         "foregroundWidthRatio": round(fg_w / float(target_w), 6),
         "foregroundHeightRatio": round(fg_h / float(target_h), 6),
         "shoulderWidthRatio": round(fg_w / float(target_w), 6),
@@ -1582,6 +1737,15 @@ def compose_id_photo(
         "targetRange": target_range,
         "measuredAfter": measured_after,
         "cropRetryCount": crop_retry_count,
+        "compositionSolver": {
+            "version": "dynamic-face-shoulder-v4",
+            "estimatedHeadTop": round(solution["estimatedHeadTop"], 3),
+            "estimatedHeadHeight": round(solution["estimatedHeadHeight"], 3),
+            "estimatedShoulderWidth": round(solution["shoulderWidth"], 3),
+            "sideSafetyPx": int(solution["sideSafetyPx"]),
+            "bottomSafetyPx": int(solution["bottomSafetyPx"]),
+            "deterministicRetries": crop_retry_count,
+        },
         "cropBox": {
             "x": crop_left,
             "y": crop_top,
@@ -1611,6 +1775,8 @@ def compose_id_photo(
             "topPaddingRatio": round((bbox[1] if bbox else 0) / float(target_h), 6),
             "headHeightRatio": round(head_h_ratio, 6),
             "shoulderWidthRatio": round(fg_w / float(target_w), 6),
+            "bottomSafetyRatio": round((target_h - (bbox[3] if bbox else target_h)) / float(target_h), 6),
+            "sideSafetyRatio": round(min((bbox[0] if bbox else 0), target_w - (bbox[2] if bbox else target_w)) / float(target_w), 6),
             "cropRetryCount": crop_retry_count,
         },
     }

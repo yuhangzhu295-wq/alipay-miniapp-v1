@@ -31,6 +31,8 @@ CROP_FAIL_CODES = {
     "ID_PHOTO_FACE_NOT_CENTERED",
     "ID_PHOTO_FACE_TOO_SMALL",
     "ID_PHOTO_BODY_TOO_MUCH",
+    "ID_PHOTO_SUBJECT_OUTSIDE_CANVAS",
+    "ID_PHOTO_SIDE_SAFETY_BAD",
 }
 
 MATTING_FAIL_CODES = {
@@ -123,6 +125,11 @@ def _composition_thresholds(width_px: int, height_px: int, composition_profile=N
         "shoulderMin": 0.75,
         "shoulderMax": 1.0,
         "centerMax": 0.045 if small_canvas else 0.04,
+        "sideSafetyMin": 0.0,
+        # The lower torso normally exits an ID-photo canvas.  Chin-to-bottom is
+        # the composition safety metric; requiring a blue strip below the body
+        # makes half-body inputs shrink until the face is unusably small.
+        "bottomSafetyMin": 0.0,
     }
     profile = composition_profile or {}
     profile_fields = {
@@ -139,6 +146,10 @@ def _composition_thresholds(width_px: int, height_px: int, composition_profile=N
         value = profile.get(profile_key)
         if value is not None:
             thresholds[threshold_key] = float(value)
+    if profile.get("sideSafetyRatio") is not None:
+        thresholds["sideSafetyMin"] = float(profile["sideSafetyRatio"])
+    if profile.get("bottomSafetyRatio") is not None:
+        thresholds["bottomSafetyMin"] = float(profile["bottomSafetyRatio"])
     thresholds["chinBottomMin"] = (
         float(profile["chinBottomRatioMin"])
         if profile.get("chinBottomRatioMin") is not None
@@ -1074,6 +1085,9 @@ def build_quality_report(
     shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
     center = float(metrics.get("faceCenterOffset") or 0)
     fg_h = float(metrics.get("foregroundHeightRatio") or 0)
+    side_safety = float(metrics.get("sideSafetyRatio") or 0)
+    bottom_safety = float(metrics.get("bottomSafetyRatio") or bottom)
+    subject_within_canvas = metrics.get("subjectWithinCanvas") is not False
 
     checks.update({
         "faceDetected": bool(metrics.get("faceDetected", True)),
@@ -1088,7 +1102,10 @@ def build_quality_report(
         "faceCenterXRatio": round(0.5 + min(0.49, center), 4),
         "faceCenterYRatio": round(float((metrics.get("outputFaceBox") or {}).get("y", 0)) / max(1, int(height_px)), 4),
         "bodyTooMuch": fg_h > 0.95 and head_h < 0.58,
-        "shoulderTouchEdge": False,
+        "shoulderTouchEdge": shoulder > float(profile.get("shoulderWidthRatioMax") or 1.0),
+        "subjectWithinCanvas": subject_within_canvas,
+        "sideSafetyRatio": round(side_safety, 4),
+        "bottomSafetyRatio": round(bottom_safety, 4),
         "holeAreaRatio": round(float(metrics.get("holeAreaRatio") or 0), 4),
         "originalBackgroundLeak": purity < 0.985,
         "usedForegroundPng": debug.get("usedForegroundPng") is True,
@@ -1164,6 +1181,9 @@ def build_quality_report(
         fail_reasons.append("ID_PHOTO_SHOULDER_TOO_WIDE")
     require(center <= thresholds["centerMax"], "ID_PHOTO_FACE_NOT_CENTERED", 8)
     require(not checks["bodyTooMuch"], "ID_PHOTO_BODY_TOO_MUCH", 10)
+    require(subject_within_canvas, "ID_PHOTO_SUBJECT_OUTSIDE_CANVAS", 20)
+    require(side_safety >= thresholds["sideSafetyMin"], "ID_PHOTO_SIDE_SAFETY_BAD", 8)
+    require(bottom_safety >= thresholds["bottomSafetyMin"], "ID_PHOTO_BOTTOM_PADDING_BAD", 8)
     chin_bottom = float(metrics.get("chinBottomRatio") or 0)
     checks["chinBottomRatio"] = round(chin_bottom, 4)
     if thresholds.get("chinBottomMin") is not None:
@@ -1252,6 +1272,9 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
     )
     shoulder = float(metrics.get("shoulderWidthRatio") or metrics.get("foregroundWidthRatio") or 0)
     center = float(metrics.get("faceCenterOffset") or 0)
+    side_safety = float(metrics.get("sideSafetyRatio") or 0)
+    bottom_safety = float(metrics.get("bottomSafetyRatio") or metrics.get("bottomPaddingRatio") or 0)
+    subject_within_canvas = metrics.get("subjectWithinCanvas") is not False
     if top < thresholds["topMin"]:
         failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_SMALL"])
     elif top > thresholds["topMax"]:
@@ -1268,6 +1291,12 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
         failures.extend(["ID_PHOTO_SHOULDER_WIDTH_BAD", "ID_PHOTO_SHOULDER_TOO_WIDE"])
     if center > thresholds["centerMax"]:
         failures.append("ID_PHOTO_FACE_NOT_CENTERED")
+    if not subject_within_canvas:
+        failures.append("ID_PHOTO_SUBJECT_OUTSIDE_CANVAS")
+    if side_safety < thresholds["sideSafetyMin"]:
+        failures.append("ID_PHOTO_SIDE_SAFETY_BAD")
+    if bottom_safety < thresholds["bottomSafetyMin"]:
+        failures.append("ID_PHOTO_BOTTOM_PADDING_BAD")
     if float(metrics.get("faceHeightRatio") or 0) < 0.20:
         failures.append("ID_PHOTO_FACE_TOO_SMALL")
     chin_bottom = float(metrics.get("chinBottomRatio") or 0)

@@ -507,6 +507,17 @@ def _build_hd_translucent_mask(mask_bin):
     }
 
 
+def _build_strict_chromatic_cleanup_mask(image, allowed_mask):
+    """Find colored watermark residue only inside the user's local mask."""
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    saturation = hsv[:, :, 1]
+    residual = np.where((allowed_mask > 0) & (saturation >= 50), 255, 0).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    residual = cv2.morphologyEx(residual, cv2.MORPH_CLOSE, kernel, iterations=1)
+    residual = cv2.dilate(residual, kernel, iterations=1)
+    return cv2.bitwise_and(residual, allowed_mask)
+
+
 def _local_hd_translucent_cleanup(image, mask_bin, preserve_detail=True):
     """Fallback for tiled/semi-transparent watermark masks.
 
@@ -684,7 +695,7 @@ def _expand_chromatic_watermark_mask(image, mask_bin):
         "chromaticComponentCount": 0,
         "chromaticComponents": [],
     }
-    if input_pixels <= 0 or not _env_enabled("HD_CHROMATIC_MASK_EXPANSION", True):
+    if input_pixels <= 0 or not _env_enabled("HD_CHROMATIC_MASK_EXPANSION", False):
         return mask_bin, empty, debug
 
     image_h, image_w = image.shape[:2]
@@ -857,6 +868,7 @@ def _do_hd_inpaint_single(
     request_id="",
     allow_retry=True,
     inference_max_edge=None,
+    allow_pattern_expansion=False,
 ) -> dict:
     started_at = time.time()
     if not img_bytes:
@@ -923,7 +935,11 @@ def _do_hd_inpaint_single(
 
     component_count = max(0, cv2.connectedComponents(mask_bin, connectivity=8)[0] - 1)
     grid_mask, grid_debug = _detect_repeating_diagonal_grid_mask(image)
-    should_expand_grid = bool(grid_debug.get("gridDetected") and (input_ratio >= 0.08 or component_count >= 4))
+    should_expand_grid = bool(
+        allow_pattern_expansion
+        and grid_debug.get("gridDetected")
+        and (input_ratio >= 0.08 or component_count >= 4)
+    )
     if should_expand_grid:
         mask_bin = cv2.bitwise_or(mask_bin, grid_mask)
     else:
@@ -1222,14 +1238,17 @@ def _dynamic_roi_padding(image, region):
     span = max(region["width"], region["height"])
     fill_ratio = region["area"] / float(max(1, region["width"] * region["height"]))
     texture = _texture_complexity(image, region)
-    padding = max(32, int(round(region["brushEstimate"] * 0.75)), int(round(span * 0.06)))
+    # LaMa needs read-only context around a small manual stroke.  The repaired
+    # pixels are still composited only through the finite allowed mask below,
+    # so a larger context cannot expand the user's edit.
+    padding = max(96, int(round(region["brushEstimate"] * 1.25)), int(round(span * 0.10)))
     if texture >= 400 or region["brushEstimate"] >= 24:
         padding = max(padding, 64)
     if texture >= 1800 or span >= min_dim * 0.40 or (fill_ratio >= 0.35 and span >= 320):
         padding = max(padding, 96)
     if span >= min_dim * 0.70:
-        padding = max(padding, 128)
-    return min(128, padding), round(texture, 3)
+        padding = max(padding, 160)
+    return min(192, padding), round(texture, 3)
 
 
 def _choose_inference_max_edge(width, height, texture):
@@ -1257,6 +1276,8 @@ def do_hd_inpaint(
     preserve_detail=True,
     request_id="",
     progress_callback=None,
+    smart_expand=False,
+    mask_dilation_px=5,
 ) -> dict:
     """Run LaMa on at most two mask-driven ROIs and composite losslessly."""
     started = time.perf_counter()
@@ -1276,8 +1297,26 @@ def do_hd_inpaint(
     if input_mask_pixels <= 0:
         raise HdInpaintError("遮罩为空，请重新涂抹水印区域。", status_code=400)
 
+    input_mask = mask_bin.copy()
+    dilation_px = max(3, min(12, int(mask_dilation_px or 5)))
+    limited_mask = cv2.dilate(
+        input_mask,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation_px * 2 + 1, dilation_px * 2 + 1)),
+        iterations=1,
+    )
     _safe_progress(progress_callback, "analyzing", requestId=request_id)
-    mask_bin, chromatic_intent_mask, chromatic_debug = _expand_chromatic_watermark_mask(image, mask_bin)
+    if smart_expand:
+        mask_bin, chromatic_intent_mask, chromatic_debug = _expand_chromatic_watermark_mask(image, limited_mask)
+    else:
+        mask_bin = limited_mask
+        chromatic_intent_mask = np.zeros_like(mask_bin)
+        chromatic_debug = {
+            "chromaticMaskExpanded": False,
+            "chromaticExpansionPixels": 0,
+            "chromaticIntentPixels": 0,
+            "chromaticComponentCount": 0,
+            "chromaticComponents": [],
+        }
     mask_pixels = int(cv2.countNonZero(mask_bin))
     regions, component_debug = _component_regions(mask_bin, image_width, image_height)
     roi_started = time.perf_counter()
@@ -1357,8 +1396,12 @@ def do_hd_inpaint(
             strength=strength,
             preserve_detail=preserve_detail,
             request_id=f"{request_id}:{index + 1}" if request_id else str(index + 1),
-            allow_retry=len(roi_specs) == 1 and not has_chromatic_intent,
+            # A second residual pass is useful only for explicit smart/global
+            # expansion.  In strict manual mode it can mistake document text
+            # for residual watermark and reduce local quality.
+            allow_retry=bool(smart_expand and len(roi_specs) == 1 and not has_chromatic_intent),
             inference_max_edge=inference_max_edge,
+            allow_pattern_expansion=bool(smart_expand),
         )
         repaired = cv2.imdecode(np.frombuffer(single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR)
         if repaired is None:
@@ -1378,6 +1421,8 @@ def do_hd_inpaint(
             "chromaticRetryApplied": False,
             "chromaticLuminanceCleanupApplied": False,
             "chromaticLuminanceCleanupPixels": 0,
+            "strictChromaCleanupApplied": False,
+            "strictChromaCleanupPixels": 0,
         }
         if len(roi_specs) == 1 and has_chromatic_intent:
             dominant_hues = [
@@ -1399,6 +1444,7 @@ def do_hd_inpaint(
                     request_id=(f"{request_id}:{index + 1}:chromatic-retry" if request_id else "chromatic-retry"),
                     allow_retry=False,
                     inference_max_edge=inference_max_edge,
+                    allow_pattern_expansion=bool(smart_expand),
                 )
                 retry_repaired = cv2.imdecode(
                     np.frombuffer(retry_single["bytes"], dtype=np.uint8), cv2.IMREAD_COLOR
@@ -1449,13 +1495,33 @@ def do_hd_inpaint(
                 repaired = cv2.inpaint(repaired, luminance_cleanup_mask, 3, cv2.INPAINT_TELEA)
                 chromatic_retry_debug["chromaticLuminanceCleanupApplied"] = True
                 chromatic_retry_debug["chromaticLuminanceCleanupPixels"] = luminance_cleanup_pixels
+        if not smart_expand:
+            strict_chroma_mask = _build_strict_chromatic_cleanup_mask(
+                roi_image_engine,
+                roi_mask_engine,
+            )
+            strict_chroma_pixels = int(cv2.countNonZero(strict_chroma_mask))
+            if strict_chroma_pixels >= 8:
+                # LaMa remains the primary HD repair.  This bounded residual
+                # pass removes colored stamp traces that survive the model,
+                # and cannot affect pixels outside the finite allowed mask.
+                repaired = cv2.inpaint(repaired, strict_chroma_mask, 3, cv2.INPAINT_TELEA)
+                chromatic_retry_debug["strictChromaCleanupApplied"] = True
+                chromatic_retry_debug["strictChromaCleanupPixels"] = strict_chroma_pixels
         repaired = repaired[
             borders["top"]:borders["top"] + roi_image.shape[0],
             borders["left"]:borders["left"] + roi_image.shape[1],
         ]
         result_resize_ms += int((time.perf_counter() - resize_started) * 1000)
         composite_started = time.perf_counter()
-        output[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = repaired
+        roi_allowed_mask = mask_bin[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]]
+        composited_roi = _composite_mask_area(
+            roi_image,
+            repaired,
+            roi_allowed_mask,
+            feather=False,
+        )
+        output[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = composited_roi
         roi_union[spec["y1"]:spec["y2"], spec["x1"]:spec["x2"]] = 255
         result_composite_ms += int((time.perf_counter() - composite_started) * 1000)
         single_debug.update({
@@ -1479,6 +1545,10 @@ def do_hd_inpaint(
     _safe_progress(progress_callback, "compositing", requestId=request_id)
     outside = roi_union == 0
     outside_changed = int(np.count_nonzero(np.any(output[outside] != image[outside], axis=1)))
+    outside_allowed = mask_bin == 0
+    outside_allowed_changed = int(
+        np.count_nonzero(np.any(output[outside_allowed] != image[outside_allowed], axis=1))
+    )
     result_encode_started = time.perf_counter()
     output_bytes = _encode_png(output)
     result_encode_ms = int((time.perf_counter() - result_encode_started) * 1000)
@@ -1503,6 +1573,11 @@ def do_hd_inpaint(
         "maskRatio": round(mask_pixels / float(image_width * image_height), 6),
         "inputMaskNonZeroPixels": input_mask_pixels,
         "inputMaskRatio": round(input_mask_pixels / float(image_width * image_height), 6),
+        "maskPolicy": "smart_expand" if smart_expand else "strict_local",
+        "smartExpand": bool(smart_expand),
+        "maskDilationPx": dilation_px,
+        "allowedMaskNonZeroPixels": mask_pixels,
+        "allowedMaskRatio": round(mask_pixels / float(image_width * image_height), 6),
         "processingMaskNonZeroPixels": mask_pixels,
         "processingMaskRatio": round(mask_pixels / float(image_width * image_height), 6),
         **chromatic_debug,
@@ -1526,6 +1601,12 @@ def do_hd_inpaint(
         "chromaticLuminanceCleanupPixels": sum(
             int(item.get("chromaticLuminanceCleanupPixels") or 0) for item in inner_debugs
         ),
+        "strictChromaCleanupApplied": any(
+            bool(item.get("strictChromaCleanupApplied")) for item in inner_debugs
+        ),
+        "strictChromaCleanupPixels": sum(
+            int(item.get("strictChromaCleanupPixels") or 0) for item in inner_debugs
+        ),
         "imageDecodeMs": image_decode_ms,
         "maskDecodeMs": mask_decode_ms,
         "roiBuildMs": roi_build_ms,
@@ -1536,6 +1617,7 @@ def do_hd_inpaint(
         "outputSize": f"{image_width}x{image_height}",
         "outputBytes": len(output_bytes),
         "outsideRoiChangedPixels": outside_changed,
+        "outsideAllowedMaskChangedPixels": outside_allowed_changed,
         "durationMs": total_ms,
         "totalDurationMs": total_ms,
         "modelLoaded": all(bool(item.get("modelLoaded", True)) for item in inner_debugs),

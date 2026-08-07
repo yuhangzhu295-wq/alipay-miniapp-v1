@@ -1389,7 +1389,18 @@ def _prepare_cutout(
         )
         fast_b = None
         fast_b_duration_ms = 0
-        if fast_a.get("status") == "FAST_RISK":
+        fast_a_reasons = set(fast_a.get("failReasons") or [])
+        run_fast_b = fast_a.get("status") == "FAST_RISK" or bool(
+            fast_a.get("status") == "FAST_WARNING"
+            and fast_a_reasons
+            & {
+                "backgroundSheetRetained",
+                "headSideBackgroundRetained",
+                "foregroundIncomplete",
+                "abnormalAlpha",
+            }
+        )
+        if run_fast_b:
             try:
                 from id_photo_engines.hivision.runner import get_model_routing
 
