@@ -1,0 +1,438 @@
+{
+  "status": "PASS",
+  "summary": {
+    "total": 52,
+    "passed": 52,
+    "failed": 0,
+    "functionalFailures": 0
+  },
+  "runtime": {
+    "startedAt": "2026-08-07T04:11:08.931Z",
+    "automatorPort": 9430,
+    "cliPath": "C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.bat",
+    "backendBaseUrl": "https://tupzjianzhao.chat",
+    "consoleErrors": [],
+    "exceptions": [],
+    "screenshotLimitations": [
+      {
+        "name": "01-home",
+        "error": "capture 01-home timed out after 3000ms"
+      },
+      {
+        "name": "02-id-photo-red-result",
+        "error": "capture 02-id-photo-red-result timed out after 3000ms"
+      },
+      {
+        "name": "03-my-photos-saved",
+        "error": "capture 03-my-photos-saved timed out after 3000ms"
+      },
+      {
+        "name": "04-watermark-controls",
+        "error": "capture 04-watermark-controls timed out after 3000ms"
+      }
+    ],
+    "cliStdout": "",
+    "cliStderr": "- 初始化\n\n√ IDE 已启动，HTTP 服务地址 http://127.0.0.1:27781\n- 准备中\n- 获取 AppID () 权限信息\n√ 使用 AppID: wx8026aeed4929d381\n√ auto\n",
+    "cliExitCode": 0,
+    "automationRestarts": 2,
+    "outfitRemoval": {
+      "outfitGridCount": 0,
+      "outfitItemCount": 0,
+      "outfitOptionsAbsent": true
+    },
+    "finishedAt": "2026-08-07T04:13:59.988Z"
+  },
+  "results": [
+    {
+      "name": "WeChat DevTools automation connected",
+      "passed": true,
+      "details": {
+        "platform": "devtools",
+        "model": "iPhone 12/13 (Pro)"
+      }
+    },
+    {
+      "name": "Home route opens",
+      "passed": true,
+      "details": {
+        "path": "pages/index/index"
+      }
+    },
+    {
+      "name": "Home search entry exists",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Home hot specifications render",
+      "passed": true,
+      "details": {
+        "count": 5
+      }
+    },
+    {
+      "name": "Home to specifications click flow",
+      "passed": true,
+      "details": {
+        "path": "pages/specs/specs"
+      }
+    },
+    {
+      "name": "Specification search control exists",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Specification filter control exists",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Specification cards render",
+      "passed": true,
+      "details": {
+        "count": 14
+      }
+    },
+    {
+      "name": "Specification home hides pending-verification labels",
+      "passed": true,
+      "details": {
+        "pendingBadgeElements": 0,
+        "pendingNoteElements": 0,
+        "itemCount": 14
+      }
+    },
+    {
+      "name": "Accounting specs hides pending-verification labels",
+      "passed": true,
+      "details": {
+        "count": 4,
+        "pendingBadgeElements": 0,
+        "pendingNoteElements": 0
+      }
+    },
+    {
+      "name": "Civil-service specs hides pending-verification labels",
+      "passed": true,
+      "details": {
+        "count": 4,
+        "pendingBadgeElements": 0,
+        "pendingNoteElements": 0
+      }
+    },
+    {
+      "name": "Civil-service specs preserves applicable region text",
+      "passed": true,
+      "details": {
+        "sample": [
+          "适用：北京、天津、河北、山西、内蒙古、辽宁、吉林、黑龙江、上海、江苏、浙江、...",
+          "",
+          ""
+        ]
+      }
+    },
+    {
+      "name": "Specification target opens one-inch generator",
+      "passed": true,
+      "details": {
+        "path": "pages/generate/generate",
+        "query": {
+          "specId": "yicun"
+        },
+        "isolatedAfterSpecPage": true
+      }
+    },
+    {
+      "name": "ID-photo generator route opens",
+      "passed": true,
+      "details": {
+        "path": "pages/generate/generate"
+      }
+    },
+    {
+      "name": "ID-photo preview frame exists",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Five background color controls render",
+      "passed": true,
+      "details": {
+        "count": 5
+      }
+    },
+    {
+      "name": "ID-photo primary action exists",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Re-upload and re-take controls exist",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "ID-photo generator source warning bar is removed",
+      "passed": true,
+      "details": {
+        "sourceLineElements": 0
+      }
+    },
+    {
+      "name": "Fresh random sample is available inside mini program",
+      "passed": true,
+      "details": {
+        "statusCode": 200,
+        "tempFilePath": "http://tmp/_jwpsBHnYocice55b18e3c0497396c86227d1bc5bf1e.jpg"
+      }
+    },
+    {
+      "name": "Fresh random-sample result injected into real preview",
+      "passed": true,
+      "details": {
+        "sampleId": "watermark-hd-unrelated-fresh",
+        "idReportStatus": "PASS"
+      }
+    },
+    {
+      "name": "Real frontend red-background compose finishes",
+      "passed": true,
+      "details": {
+        "processState": "ready",
+        "resultImage": "http://tmp/3_GMDE91vswc0f34c119a241f18e18a3391e9f5e1aca.jpg",
+        "statusText": "红色底 · 可下载"
+      }
+    },
+    {
+      "name": "Background switch updates downloadable result",
+      "passed": true,
+      "details": {
+        "bgColorId": "red",
+        "resultColorId": "red",
+        "canDownload": true
+      }
+    },
+    {
+      "name": "Download business action keeps preview/download consistent",
+      "passed": true,
+      "details": {
+        "savedBefore": 1,
+        "savedAfter": 2,
+        "resultImage": "http://tmp/3_GMDE91vswc0f34c119a241f18e18a3391e9f5e1aca.jpg"
+      }
+    },
+    {
+      "name": "My photos displays the newly saved result",
+      "passed": true,
+      "details": {
+        "count": 1
+      }
+    },
+    {
+      "name": "My photos preview action completes",
+      "passed": true,
+      "details": {
+        "recordId": "photo_1786075943444"
+      }
+    },
+    {
+      "name": "My photos deletes only the newly created test record",
+      "passed": true,
+      "details": {
+        "before": 1,
+        "after": 0
+      }
+    },
+    {
+      "name": "Home TabBar switch",
+      "passed": true,
+      "details": {
+        "path": "pages/index/index",
+        "selector": ".search-bar"
+      }
+    },
+    {
+      "name": "Tools TabBar switch",
+      "passed": true,
+      "details": {
+        "path": "pages/tools/tools",
+        "selector": ".tool-card"
+      }
+    },
+    {
+      "name": "Photos TabBar switch",
+      "passed": true,
+      "details": {
+        "path": "pages/photos/photos",
+        "selector": ".action-area"
+      }
+    },
+    {
+      "name": "Profile TabBar switch",
+      "passed": true,
+      "details": {
+        "path": "pages/profile/profile",
+        "selector": ".profile-card"
+      }
+    },
+    {
+      "name": "Tools page exposes expected tool count after career entry removal",
+      "passed": true,
+      "details": {
+        "count": 10
+      }
+    },
+    {
+      "name": "Tool route opens: verifyPhoto",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "verifyPhoto"
+      }
+    },
+    {
+      "name": "Tool route opens: changeBg",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "changeBg"
+      }
+    },
+    {
+      "name": "Tool route opens: customSize",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "customSize"
+      }
+    },
+    {
+      "name": "Tool route opens: editImage",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "editImage"
+      }
+    },
+    {
+      "name": "Tool route opens: formatConvert",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "formatConvert"
+      }
+    },
+    {
+      "name": "Tool route opens: colorize",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "colorize"
+      }
+    },
+    {
+      "name": "Tool route opens: addWatermark",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "addWatermark"
+      }
+    },
+    {
+      "name": "Tool route opens: removeWatermark",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "removeWatermark"
+      }
+    },
+    {
+      "name": "Tool route opens: layout",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "layout"
+      }
+    },
+    {
+      "name": "Tool route opens: collect",
+      "passed": true,
+      "details": {
+        "path": "pages/tool-detail/tool-detail",
+        "toolType": "collect"
+      }
+    },
+    {
+      "name": "Watermark UI reaches real gateway",
+      "passed": true,
+      "details": {
+        "healthStatus": "已连接: watermark-opencv-lama",
+        "hdStatus": "已就绪",
+        "baseUrl": "https://tupzjianzhao.chat"
+      }
+    },
+    {
+      "name": "Ordinary watermark UI hides debug panel",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Watermark mode switches: manual",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Watermark mode switches: stamp",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Watermark modes use the unified stroke-transport endpoint",
+      "passed": true,
+      "details": {
+        "hdUrl": "https://tupzjianzhao.chat/api/watermark/remove-v2",
+        "fastUrl": "https://tupzjianzhao.chat/api/watermark/remove-v2",
+        "hdQuality": "hd",
+        "fastQuality": "fast"
+      }
+    },
+    {
+      "name": "Watermark undo/redo/clear actions do not throw",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "One-click outfit surface is removed from generator",
+      "passed": true,
+      "details": {
+        "outfitGridCount": 0,
+        "outfitItemCount": 0,
+        "outfitOptionsAbsent": true
+      }
+    },
+    {
+      "name": "Generator download still works after outfit removal",
+      "passed": true,
+      "details": {
+        "savedBefore": 0,
+        "savedAfter": 1,
+        "resultImage": "http://tmp/_jwpsBHnYocice55b18e3c0497396c86227d1bc5bf1e.jpg"
+      }
+    },
+    {
+      "name": "Specification search enters search mode",
+      "passed": true,
+      "details": {
+        "pageMode": "search",
+        "resultCount": 4
+      }
+    },
+    {
+      "name": "Specification search returns results",
+      "passed": true,
+      "details": {}
+    }
+  ],
+  "businessGaps": []
+}

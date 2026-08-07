@@ -1,0 +1,51 @@
+{
+  "uniqueConcurrent": [
+    {
+      "statusCode": 200,
+      "clientMs": 5902.4,
+      "code": null,
+      "queueWaitMs": 2426,
+      "lamaInferenceMs": 1604,
+      "serverMs": 4633,
+      "engine": "lama",
+      "fallback": false
+    },
+    {
+      "statusCode": 200,
+      "clientMs": 3610.6,
+      "code": null,
+      "queueWaitMs": 0,
+      "lamaInferenceMs": 1640,
+      "serverMs": 2490,
+      "engine": "lama",
+      "fallback": false
+    }
+  ],
+  "duplicateRequestId": [
+    {
+      "statusCode": 409,
+      "clientMs": 1222.7,
+      "code": "HD_REQUEST_ACTIVE",
+      "queueWaitMs": null,
+      "lamaInferenceMs": null,
+      "serverMs": null,
+      "engine": null,
+      "fallback": null
+    },
+    {
+      "statusCode": 200,
+      "clientMs": 3249.4,
+      "code": null,
+      "queueWaitMs": 0,
+      "lamaInferenceMs": 1539,
+      "serverMs": 2097,
+      "engine": "lama",
+      "fallback": false
+    }
+  ],
+  "checks": {
+    "uniqueBothPass": true,
+    "queueWaitSeparated": true,
+    "duplicateGuard": true
+  }
+}

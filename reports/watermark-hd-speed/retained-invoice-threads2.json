@@ -1,0 +1,133 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "clientTotalMs": 4422.6,
+      "serverMs": 3174,
+      "lamaMs": 2558,
+      "lamaCallCount": 2,
+      "hash": "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12",
+      "outside": 0,
+      "engine": "lama",
+      "fallback": false,
+      "rois": [
+        {
+          "x": 26,
+          "y": 36,
+          "width": 232,
+          "height": 188
+        },
+        {
+          "x": 1132,
+          "y": 705,
+          "width": 248,
+          "height": 198
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "clientTotalMs": 4477.9,
+      "serverMs": 3176,
+      "lamaMs": 2581,
+      "lamaCallCount": 2,
+      "hash": "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12",
+      "outside": 0,
+      "engine": "lama",
+      "fallback": false,
+      "rois": [
+        {
+          "x": 26,
+          "y": 36,
+          "width": 232,
+          "height": 188
+        },
+        {
+          "x": 1132,
+          "y": 705,
+          "width": 248,
+          "height": 198
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "clientTotalMs": 4307.5,
+      "serverMs": 3200,
+      "lamaMs": 2600,
+      "lamaCallCount": 2,
+      "hash": "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12",
+      "outside": 0,
+      "engine": "lama",
+      "fallback": false,
+      "rois": [
+        {
+          "x": 26,
+          "y": 36,
+          "width": 232,
+          "height": 188
+        },
+        {
+          "x": 1132,
+          "y": 705,
+          "width": 248,
+          "height": 198
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "clientTotalMs": 4135.8,
+      "serverMs": 3163,
+      "lamaMs": 2582,
+      "lamaCallCount": 2,
+      "hash": "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12",
+      "outside": 0,
+      "engine": "lama",
+      "fallback": false,
+      "rois": [
+        {
+          "x": 26,
+          "y": 36,
+          "width": 232,
+          "height": 188
+        },
+        {
+          "x": 1132,
+          "y": 705,
+          "width": 248,
+          "height": 198
+        }
+      ]
+    },
+    {
+      "run": 5,
+      "clientTotalMs": 4024.7,
+      "serverMs": 3196,
+      "lamaMs": 2582,
+      "lamaCallCount": 2,
+      "hash": "c426817f268c0fac06035692f46803001374a667175f4f8e94e17caa7c8bcf12",
+      "outside": 0,
+      "engine": "lama",
+      "fallback": false,
+      "rois": [
+        {
+          "x": 26,
+          "y": 36,
+          "width": 232,
+          "height": 188
+        },
+        {
+          "x": 1132,
+          "y": 705,
+          "width": 248,
+          "height": 198
+        }
+      ]
+    }
+  ],
+  "clientP50Ms": 4307.5,
+  "clientP95ObservedMaxMs": 4477.9,
+  "serverP50Ms": 3176,
+  "lamaP50Ms": 2582
+}

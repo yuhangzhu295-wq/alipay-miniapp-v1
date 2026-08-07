@@ -1,0 +1,331 @@
+{
+  "status": "PASS",
+  "sizeVariants": [
+    {
+      "label": "small-768",
+      "inputSize": "768x538",
+      "maxEdge": 768,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 5478,
+        "wallP95Ms": 5484,
+        "inferenceP50Ms": 5303,
+        "inferenceP95Ms": 5310,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0164
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 5478,
+          "inferenceMs": 5303,
+          "totalMs": 5473,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0164,
+          "outputSha256": "fdb3adab21faed6cb8048e1ad27672a476366fb2e9540a38ec2d3258f805129e"
+        },
+        {
+          "run": 2,
+          "wallMs": 5450,
+          "inferenceMs": 5274,
+          "totalMs": 5446,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0164,
+          "outputSha256": "fdb3adab21faed6cb8048e1ad27672a476366fb2e9540a38ec2d3258f805129e"
+        },
+        {
+          "run": 3,
+          "wallMs": 5484,
+          "inferenceMs": 5310,
+          "totalMs": 5480,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0164,
+          "outputSha256": "fdb3adab21faed6cb8048e1ad27672a476366fb2e9540a38ec2d3258f805129e"
+        }
+      ]
+    },
+    {
+      "label": "small-1024",
+      "inputSize": "1024x717",
+      "maxEdge": 1024,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 9664,
+        "wallP95Ms": 9731,
+        "inferenceP50Ms": 9475,
+        "inferenceP95Ms": 9535,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0247
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 9664,
+          "inferenceMs": 9475,
+          "totalMs": 9660,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        },
+        {
+          "run": 2,
+          "wallMs": 9731,
+          "inferenceMs": 9535,
+          "totalMs": 9728,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        },
+        {
+          "run": 3,
+          "wallMs": 9656,
+          "inferenceMs": 9459,
+          "totalMs": 9652,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        }
+      ]
+    },
+    {
+      "label": "medium-1024",
+      "inputSize": "1024x717",
+      "maxEdge": 1024,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 9770,
+        "wallP95Ms": 9797,
+        "inferenceP50Ms": 9574,
+        "inferenceP95Ms": 9598,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0247
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 9770,
+          "inferenceMs": 9574,
+          "totalMs": 9766,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        },
+        {
+          "run": 2,
+          "wallMs": 9797,
+          "inferenceMs": 9598,
+          "totalMs": 9793,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        },
+        {
+          "run": 3,
+          "wallMs": 9734,
+          "inferenceMs": 9535,
+          "totalMs": 9730,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0247,
+          "outputSha256": "d54262f433be43f2160b4d3e94272c4e2b9846f976962ec71b67965b00b13233"
+        }
+      ]
+    },
+    {
+      "label": "medium-1280",
+      "inputSize": "1280x896",
+      "maxEdge": 1280,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 15567,
+        "wallP95Ms": 15626,
+        "inferenceP50Ms": 15357,
+        "inferenceP95Ms": 15417,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0026
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 15535,
+          "inferenceMs": 15311,
+          "totalMs": 15532,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        },
+        {
+          "run": 2,
+          "wallMs": 15567,
+          "inferenceMs": 15357,
+          "totalMs": 15563,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        },
+        {
+          "run": 3,
+          "wallMs": 15626,
+          "inferenceMs": 15417,
+          "totalMs": 15622,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        }
+      ]
+    },
+    {
+      "label": "large-1280",
+      "inputSize": "1280x896",
+      "maxEdge": 1280,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 15394,
+        "wallP95Ms": 15456,
+        "inferenceP50Ms": 15181,
+        "inferenceP95Ms": 15244,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0026
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 15324,
+          "inferenceMs": 15120,
+          "totalMs": 15320,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        },
+        {
+          "run": 2,
+          "wallMs": 15394,
+          "inferenceMs": 15181,
+          "totalMs": 15390,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        },
+        {
+          "run": 3,
+          "wallMs": 15456,
+          "inferenceMs": 15244,
+          "totalMs": 15453,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0026,
+          "outputSha256": "fa5950162fc212250665421ba832ec7226343c310fdbfcc8e353c365da67eb9f"
+        }
+      ]
+    },
+    {
+      "label": "large-1536",
+      "inputSize": "1536x1075",
+      "maxEdge": 1536,
+      "runs": 3,
+      "summary": {
+        "wallP50Ms": 23379,
+        "wallP95Ms": 24443,
+        "inferenceP50Ms": 23125,
+        "inferenceP95Ms": 24120,
+        "outsideChangedPixelsMax": 0,
+        "outputSizePreserved": true,
+        "watermarkRedResidualRatioMax": 0.0082
+      },
+      "rows": [
+        {
+          "run": 1,
+          "wallMs": 24443,
+          "inferenceMs": 24120,
+          "totalMs": 24438,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0082,
+          "outputSha256": "3ad890848f7a4d3e4f3148d276aedad10e6a98140ab95bf29d128d1b0117ba1a"
+        },
+        {
+          "run": 2,
+          "wallMs": 23379,
+          "inferenceMs": 23125,
+          "totalMs": 23364,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0082,
+          "outputSha256": "3ad890848f7a4d3e4f3148d276aedad10e6a98140ab95bf29d128d1b0117ba1a"
+        },
+        {
+          "run": 3,
+          "wallMs": 23110,
+          "inferenceMs": 22870,
+          "totalMs": 23107,
+          "outsideChangedPixels": 0,
+          "outputSizePreserved": true,
+          "watermarkRedResidualRatio": 0.0082,
+          "outputSha256": "3ad890848f7a4d3e4f3148d276aedad10e6a98140ab95bf29d128d1b0117ba1a"
+        }
+      ]
+    }
+  ],
+  "transport": {
+    "inputImageBytes": 27364,
+    "inputMaskBytes": 2345,
+    "base64Json": {
+      "runs": 20,
+      "p50Ms": 0.216,
+      "p95Ms": 0.263,
+      "maxMs": 0.331,
+      "supportedByInstalledIOPaint": true
+    },
+    "multipartBinary": {
+      "runs": 20,
+      "p50Ms": 0.021,
+      "p95Ms": 0.034,
+      "maxMs": 0.113,
+      "supportedByInstalledIOPaint": false
+    },
+    "temporaryFiles": {
+      "runs": 20,
+      "p50Ms": 0.289,
+      "p95Ms": 1.482,
+      "maxMs": 5.351,
+      "supportedByInstalledIOPaint": false
+    },
+    "directReusableAdapter": {
+      "supportedByInstalledIOPaint": false,
+      "reason": "The installed IOPaint service exposes an HTTP model manager, not an import-stable adapter API."
+    },
+    "availablePaths": [
+      "/api/v1/adjust_mask",
+      "/api/v1/gen-info",
+      "/api/v1/inpaint",
+      "/api/v1/inputimage",
+      "/api/v1/model",
+      "/api/v1/run_plugin_gen_image",
+      "/api/v1/run_plugin_gen_mask",
+      "/api/v1/samplers",
+      "/api/v1/save_image",
+      "/api/v1/server-config",
+      "/api/v1/switch_plugin_model"
+    ],
+    "selected": "base64JsonPersistentSession",
+    "selectionReason": "It is the installed stable API; measured encode/decode overhead is small relative to LaMa inference and the persistent Session reuses localhost connections."
+  }
+}

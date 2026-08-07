@@ -1,0 +1,186 @@
+{
+  "label": "threads-4",
+  "runs": 20,
+  "pid": 2336806,
+  "modelWarm": true,
+  "torchThreads": 4,
+  "interopThreads": 1,
+  "inputSize": "384x256",
+  "summary": {
+    "inferenceP50Ms": 1392,
+    "inferenceP95Ms": 1411,
+    "inferenceMaxMs": 1456,
+    "wallP50Ms": 1548,
+    "wallP95Ms": 1580,
+    "wallMaxMs": 1614,
+    "processCpuTicks": 11438,
+    "systemIowaitTicks": 5,
+    "rssBeforeMb": 665.1,
+    "rssAfterMb": 764.2,
+    "swapBeforeMb": 0.0,
+    "swapAfterMb": 0.0,
+    "processThreads": 17
+  },
+  "rows": [
+    {
+      "run": 1,
+      "wallMs": 1614,
+      "inferenceMs": 1456,
+      "outputEncodeMs": 3,
+      "totalMs": 1610,
+      "responseBytes": 6583
+    },
+    {
+      "run": 2,
+      "wallMs": 1580,
+      "inferenceMs": 1411,
+      "outputEncodeMs": 3,
+      "totalMs": 1577,
+      "responseBytes": 6583
+    },
+    {
+      "run": 3,
+      "wallMs": 1546,
+      "inferenceMs": 1391,
+      "outputEncodeMs": 4,
+      "totalMs": 1543,
+      "responseBytes": 6583
+    },
+    {
+      "run": 4,
+      "wallMs": 1558,
+      "inferenceMs": 1403,
+      "outputEncodeMs": 3,
+      "totalMs": 1555,
+      "responseBytes": 6583
+    },
+    {
+      "run": 5,
+      "wallMs": 1562,
+      "inferenceMs": 1399,
+      "outputEncodeMs": 3,
+      "totalMs": 1559,
+      "responseBytes": 6583
+    },
+    {
+      "run": 6,
+      "wallMs": 1549,
+      "inferenceMs": 1393,
+      "outputEncodeMs": 3,
+      "totalMs": 1546,
+      "responseBytes": 6583
+    },
+    {
+      "run": 7,
+      "wallMs": 1555,
+      "inferenceMs": 1406,
+      "outputEncodeMs": 3,
+      "totalMs": 1552,
+      "responseBytes": 6583
+    },
+    {
+      "run": 8,
+      "wallMs": 1558,
+      "inferenceMs": 1397,
+      "outputEncodeMs": 3,
+      "totalMs": 1555,
+      "responseBytes": 6583
+    },
+    {
+      "run": 9,
+      "wallMs": 1546,
+      "inferenceMs": 1389,
+      "outputEncodeMs": 3,
+      "totalMs": 1543,
+      "responseBytes": 6583
+    },
+    {
+      "run": 10,
+      "wallMs": 1546,
+      "inferenceMs": 1389,
+      "outputEncodeMs": 3,
+      "totalMs": 1543,
+      "responseBytes": 6583
+    },
+    {
+      "run": 11,
+      "wallMs": 1535,
+      "inferenceMs": 1377,
+      "outputEncodeMs": 3,
+      "totalMs": 1532,
+      "responseBytes": 6583
+    },
+    {
+      "run": 12,
+      "wallMs": 1559,
+      "inferenceMs": 1408,
+      "outputEncodeMs": 3,
+      "totalMs": 1556,
+      "responseBytes": 6583
+    },
+    {
+      "run": 13,
+      "wallMs": 1559,
+      "inferenceMs": 1407,
+      "outputEncodeMs": 3,
+      "totalMs": 1556,
+      "responseBytes": 6583
+    },
+    {
+      "run": 14,
+      "wallMs": 1535,
+      "inferenceMs": 1389,
+      "outputEncodeMs": 3,
+      "totalMs": 1533,
+      "responseBytes": 6583
+    },
+    {
+      "run": 15,
+      "wallMs": 1547,
+      "inferenceMs": 1383,
+      "outputEncodeMs": 3,
+      "totalMs": 1545,
+      "responseBytes": 6583
+    },
+    {
+      "run": 16,
+      "wallMs": 1555,
+      "inferenceMs": 1402,
+      "outputEncodeMs": 3,
+      "totalMs": 1552,
+      "responseBytes": 6583
+    },
+    {
+      "run": 17,
+      "wallMs": 1538,
+      "inferenceMs": 1391,
+      "outputEncodeMs": 3,
+      "totalMs": 1536,
+      "responseBytes": 6583
+    },
+    {
+      "run": 18,
+      "wallMs": 1530,
+      "inferenceMs": 1387,
+      "outputEncodeMs": 3,
+      "totalMs": 1528,
+      "responseBytes": 6583
+    },
+    {
+      "run": 19,
+      "wallMs": 1525,
+      "inferenceMs": 1379,
+      "outputEncodeMs": 3,
+      "totalMs": 1522,
+      "responseBytes": 6583
+    },
+    {
+      "run": 20,
+      "wallMs": 1537,
+      "inferenceMs": 1390,
+      "outputEncodeMs": 3,
+      "totalMs": 1534,
+      "responseBytes": 6583
+    }
+  ]
+}
