@@ -1,0 +1,60 @@
+{
+  "capturedAt": "2026-08-07T10:50:00+08:00",
+  "productionUrl": "https://tupzjianzhao.chat",
+  "server": "42.192.107.208",
+  "repo": {
+    "localBranch": "master",
+    "cloudBranch": "master",
+    "localSha": "63876c2b408d76c63fc952cd3170aa9ceea85687",
+    "githubMasterSha": "63876c2b408d76c63fc952cd3170aa9ceea85687",
+    "cloudSha": "63876c2b408d76c63fc952cd3170aa9ceea85687",
+    "cloudWorkingDirectory": "/root/photo-generator",
+    "cloudUntracked": ["backups/20260803-cloud/"]
+  },
+  "hardware": {
+    "cpu": "AMD EPYC 7K62",
+    "cpuCores": 4,
+    "memoryTotalGiB": 3.6,
+    "memoryAvailableGiB": 2.3,
+    "swapTotalGiB": 5.9,
+    "swapUsedGiB": 1.7
+  },
+  "backend": {
+    "port": 8000,
+    "pid": 2191106,
+    "workingDirectory": "/root/photo-generator/server",
+    "command": "/root/photo-generator/server/.venv/bin/python3 /root/photo-generator/server/main.py",
+    "startedAt": "2026-08-07T01:05:43+08:00",
+    "active": true
+  },
+  "iopaint": {
+    "port": 8081,
+    "pid": 1916966,
+    "workingDirectory": "/root/photo-generator/server",
+    "command": "/opt/iopaint-venv/bin/iopaint start --model=lama --device=cpu --port=8081",
+    "model": "lama",
+    "device": "cpu",
+    "startedAt": "2026-08-06T05:00:12+08:00",
+    "processUptimeSeconds": 107388,
+    "rssKiB": 497228,
+    "swapKiB": 165004,
+    "threads": 14,
+    "active": true,
+    "modelEndpointStatus": 200,
+    "modelLoaded": true,
+    "modelWarmEvidence": "The same long-running process served repeated requests without a model-load or download event."
+  },
+  "hivision": {
+    "port": 8091,
+    "pid": 2192950,
+    "active": true,
+    "modifiedOrRestarted": false
+  },
+  "nginx": {
+    "proxyPass": "http://127.0.0.1:8000",
+    "clientMaxBodySize": "50M",
+    "proxyConnectTimeoutSeconds": 10,
+    "proxySendTimeoutSeconds": 360,
+    "proxyReadTimeoutSeconds": 360
+  }
+}

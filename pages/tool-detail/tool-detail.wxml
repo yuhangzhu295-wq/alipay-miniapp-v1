@@ -33,7 +33,7 @@
   </view>
 
   <!-- Loading -->
-  <view class="loading-area" wx:if="{{processing}}"><text>处理中...</text></view>
+  <view class="loading-area" wx:if="{{processing}}"><text>{{processingText || '处理中...'}}</text></view>
 
   <!-- Result preview -->
   <view class="result-section" wx:if="{{resultImage}}">

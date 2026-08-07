@@ -406,6 +406,7 @@ function getDisplayRect() {
 }
 
 function getStrokeTransportPayload() {
+  var serializeStartedAt = Date.now();
   if (!imgW || !imgH || !displayedImageWidth || !displayedImageHeight) {
     throw new Error('原图或显示尺寸未初始化');
   }
@@ -480,9 +481,12 @@ function getStrokeTransportPayload() {
     displayHeight: displayedImageHeight,
     strokes: normalized
   };
+  var strokesJson = JSON.stringify(payload);
   return {
     payload: payload,
-    strokesJson: JSON.stringify(payload),
+    strokesJson: strokesJson,
+    serializeMs: Date.now() - serializeStartedAt,
+    transportBytes: unescape(encodeURIComponent(strokesJson)).length,
     width: imgW,
     height: imgH,
     nonZeroPixels: nonZeroPixels,

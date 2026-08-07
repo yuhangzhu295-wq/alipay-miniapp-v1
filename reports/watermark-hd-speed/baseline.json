@@ -1,0 +1,46 @@
+{
+  "capturedAt": "2026-08-07T10:56:13+08:00",
+  "productionUrl": "https://tupzjianzhao.chat/api/watermark/remove-v2",
+  "source": {
+    "description": "Production-retained result of the user's slow invoice request, reused at identical invoice dimensions because the upload source is intentionally not persisted.",
+    "width": 1495,
+    "height": 999,
+    "bytes": 947401
+  },
+  "scenario": {
+    "name": "two distant small invoice regions",
+    "strokeCount": 2,
+    "maskComponentCount": 2,
+    "quality": "hd",
+    "strength": "medium"
+  },
+  "runs": [
+    {"run":1,"totalClientMs":23230.7,"waitResponseMs":22948.6,"queueWaitMs":0,"totalServerMs":21832,"lamaInferenceMs":19140,"lamaCallCount":1,"roiOriginalSize":"1422x935","roiPixelRatio":0.885226,"actualEngine":"lama","fallbackUsed":false,"outsideRoiChangedPixels":0,"outputSize":"1495x999"},
+    {"run":2,"totalClientMs":20005.4,"waitResponseMs":19707.4,"queueWaitMs":0,"totalServerMs":18967,"lamaInferenceMs":18642,"lamaCallCount":1,"roiOriginalSize":"1422x935","roiPixelRatio":0.885226,"actualEngine":"lama","fallbackUsed":false,"outsideRoiChangedPixels":0,"outputSize":"1495x999"},
+    {"run":3,"totalClientMs":19899.4,"waitResponseMs":19758.4,"queueWaitMs":0,"totalServerMs":19113,"lamaInferenceMs":18783,"lamaCallCount":1,"roiOriginalSize":"1422x935","roiPixelRatio":0.885226,"actualEngine":"lama","fallbackUsed":false,"outsideRoiChangedPixels":0,"outputSize":"1495x999"},
+    {"run":4,"totalClientMs":20132.4,"waitResponseMs":19926.2,"queueWaitMs":0,"totalServerMs":19268,"lamaInferenceMs":18942,"lamaCallCount":1,"roiOriginalSize":"1422x935","roiPixelRatio":0.885226,"actualEngine":"lama","fallbackUsed":false,"outsideRoiChangedPixels":0,"outputSize":"1495x999"},
+    {"run":5,"totalClientMs":19897.0,"waitResponseMs":19755.3,"queueWaitMs":0,"totalServerMs":19145,"lamaInferenceMs":18815,"lamaCallCount":1,"roiOriginalSize":"1422x935","roiPixelRatio":0.885226,"actualEngine":"lama","fallbackUsed":false,"outsideRoiChangedPixels":0,"outputSize":"1495x999"}
+  ],
+  "summary": {
+    "clientP50Ms": 20005.4,
+    "clientP95Ms": 23230.7,
+    "serverP50Ms": 19145,
+    "serverP95Ms": 21832,
+    "lamaP50Ms": 18815,
+    "lamaP95Ms": 19140,
+    "queueWaitP95Ms": 0,
+    "roiPixelRatio": 0.885226
+  },
+  "smallRoiControl": {
+    "roiOriginalSize": "335x210",
+    "clientP50Ms": 2107.3,
+    "clientP95Ms": 2670.2,
+    "lamaP50Ms": 1219,
+    "lamaP95Ms": 1243
+  },
+  "rootCause": [
+    "Two distant mask components are reduced to one global bounding box in stroke_inpaint.py.",
+    "The resulting ROI contains 88.52% of the invoice even though the painted regions are small.",
+    "LaMa inference accounts for about 94% to 98% of measured server time; queue wait is zero."
+  ]
+}

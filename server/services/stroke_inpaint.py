@@ -117,15 +117,21 @@ def process_stroke_inpaint(
     quality: str = "quick",
     strength: str = "medium",
     preserve_detail: bool = True,
+    request_id: str = "",
+    progress_callback=None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
+    decode_started = time.perf_counter()
     image_arr = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(image_arr, cv2.IMREAD_COLOR)
     if image is None:
         raise ManualInpaintError("原图读取失败，请重新上传图片")
     image_height, image_width = image.shape[:2]
+    image_decode_ms = int((time.perf_counter() - decode_started) * 1000)
 
+    parse_started = time.perf_counter()
     payload = parse_strokes_payload(strokes_json)
+    stroke_parse_ms = int((time.perf_counter() - parse_started) * 1000)
     declared_width = int(_number(payload.get("originalWidth")))
     declared_height = int(_number(payload.get("originalHeight")))
     if declared_width != image_width or declared_height != image_height:
@@ -133,7 +139,47 @@ def process_stroke_inpaint(
             f"笔迹原图尺寸 {declared_width}x{declared_height} 与上传图片 {image_width}x{image_height} 不一致"
         )
 
+    mask_started = time.perf_counter()
     mask, mask_debug = build_mask_from_strokes(payload, image_width, image_height)
+    mask_build_ms = int((time.perf_counter() - mask_started) * 1000)
+    mode = str(quality or "quick").lower()
+    if mode in {"hd", "high", "high_quality"}:
+        mask_encode_started = time.perf_counter()
+        mask_png = _encode_png(mask, "ROI 遮罩")
+        mask_encode_ms = int((time.perf_counter() - mask_encode_started) * 1000)
+        result = do_hd_inpaint(
+            image_bytes,
+            mask_png,
+            strength=strength,
+            preserve_detail=preserve_detail,
+            request_id=request_id,
+            progress_callback=progress_callback,
+        )
+        engine_debug = dict(result.get("debug") or {})
+        total_ms = int((time.perf_counter() - started) * 1000)
+        engine_debug.update({
+            **mask_debug,
+            "transport": "normalized_strokes_json",
+            "strokesPayloadBytes": len(strokes_json.encode("utf-8")),
+            "imageUploadBytes": len(image_bytes),
+            "originalSize": f"{image_width}x{image_height}",
+            "imageDecodeMs": image_decode_ms + int(engine_debug.get("imageDecodeMs") or 0),
+            "strokeParseMs": stroke_parse_ms,
+            "maskBuildMs": mask_build_ms,
+            "maskEncodeMs": mask_encode_ms,
+            "outputSize": f"{image_width}x{image_height}",
+            "outputBytes": len(result["bytes"]),
+            "durationMs": total_ms,
+            "totalDurationMs": total_ms,
+        })
+        return {
+            **result,
+            "bytes": result["bytes"],
+            "suffix": ".png",
+            "mode": "hd",
+            "debug": engine_debug,
+        }
+
     box = mask_debug["maskBoundingBox"]
     base_padding = int(round(min(image_width, image_height) * 0.04))
     stroke_span = max(int(box["width"]), int(box["height"]))
@@ -173,11 +219,7 @@ def process_stroke_inpaint(
 
     image_png = _encode_png(roi_image_for_engine, "ROI 原图")
     mask_png = _encode_png(roi_mask_for_engine, "ROI 遮罩")
-    mode = str(quality or "quick").lower()
-    if mode in {"hd", "high", "high_quality"}:
-        result = do_hd_inpaint(image_png, mask_png, strength=strength, preserve_detail=preserve_detail)
-        mode = "hd"
-    elif mode in {"manual"}:
+    if mode in {"manual"}:
         result = do_manual_inpaint(image_png, mask_png, strength=strength)
         mode = "manual"
     else:
