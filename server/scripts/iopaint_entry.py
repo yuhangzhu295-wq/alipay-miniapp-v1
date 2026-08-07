@@ -140,6 +140,7 @@ def _install_telemetry():
     ModelManager.__init__ = timed_init
     ModelManager.__call__ = timed_call
     api_module.pil_to_bytes = timed_pil_to_bytes
+    timed_api_inpaint.__annotations__ = dict(getattr(original_api_inpaint, "__annotations__", {}))
     Api.api_inpaint = timed_api_inpaint
 
 
