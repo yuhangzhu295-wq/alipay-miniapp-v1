@@ -322,6 +322,76 @@ function _getImageInfo(filePath) {
   });
 }
 
+function _makeUploadPreparationError(code, cause) {
+  var error = new Error('Unable to prepare a resized upload copy. Please retry or choose another photo.');
+  error.code = code;
+  error.cause = cause || null;
+  return error;
+}
+
+function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
+  return new Promise(function(resolve, reject) {
+    if (!wx.createOffscreenCanvas) {
+      reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_UNSUPPORTED'));
+      return;
+    }
+    try {
+      var canvas = wx.createOffscreenCanvas({ type: '2d', width: targetWidth, height: targetHeight });
+      var context = canvas.getContext('2d');
+      var image = canvas.createImage();
+      image.onload = function() {
+        context.drawImage(image, 0, 0, targetWidth, targetHeight);
+        var exportOptions = {
+          fileType: 'jpg',
+          quality: ID_PHOTO_UPLOAD_QUALITY / 100,
+          success: function(res) {
+            if (res && res.tempFilePath) resolve(res.tempFilePath);
+            else reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EMPTY'));
+          },
+          fail: function(err) {
+            reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_FAILED', err));
+          }
+        };
+        if (canvas && typeof canvas.toTempFilePath === 'function') {
+          canvas.toTempFilePath(exportOptions);
+        } else if (wx.canvasToTempFilePath) {
+          exportOptions.canvas = canvas;
+          wx.canvasToTempFilePath(exportOptions);
+        } else {
+          reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_UNSUPPORTED'));
+        }
+      };
+      image.onerror = function(err) {
+        reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_DRAW_FAILED', err));
+      };
+      image.src = photoSrc;
+    } catch (err) {
+      reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_CREATE_FAILED', err));
+    }
+  });
+}
+
+function _readIdPhotoUploadCopy(base, uploadPath, targetWidth, targetHeight, compressFallback, startedAt) {
+  return Promise.all([_getImageInfo(uploadPath), _getLocalFileSize(uploadPath)]).then(function(values) {
+    var uploadInfo = values[0] || {};
+    var uploadWidth = Number(uploadInfo.width || targetWidth);
+    var uploadHeight = Number(uploadInfo.height || targetHeight);
+    if (!uploadPath || Math.max(uploadWidth, uploadHeight) > ID_PHOTO_UPLOAD_MAX_SIDE) {
+      throw _makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_DIMENSION_INVALID');
+    }
+    return Object.assign({}, base, {
+      uploadPath: uploadPath,
+      uploadWidth: uploadWidth,
+      uploadHeight: uploadHeight,
+      uploadBytes: Number(values[1] || 0),
+      quality: ID_PHOTO_UPLOAD_QUALITY,
+      compressed: true,
+      compressFallback: !!compressFallback,
+      compressMs: Date.now() - startedAt
+    });
+  });
+}
+
 function prepareIdPhotoUploadSource(photoSrc, options) {
   options = options || {};
   var startedAt = Date.now();
@@ -345,59 +415,47 @@ function prepareIdPhotoUploadSource(photoSrc, options) {
         quality: null,
         maxSide: ID_PHOTO_UPLOAD_MAX_SIDE,
         compressed: false,
+        compressFallback: false,
         compressMs: Date.now() - startedAt
       };
-      if (!maxSide || maxSide <= ID_PHOTO_UPLOAD_MAX_SIDE || !wx.compressImage) {
+      if (!maxSide) {
+        throw _makeUploadPreparationError('ID_PHOTO_UPLOAD_SOURCE_INFO_UNAVAILABLE');
+      }
+      if (maxSide <= ID_PHOTO_UPLOAD_MAX_SIDE) {
         return base;
       }
       var scale = ID_PHOTO_UPLOAD_MAX_SIDE / maxSide;
       var targetWidth = Math.max(1, Math.round(originalWidth * scale));
       var targetHeight = Math.max(1, Math.round(originalHeight * scale));
-      return new Promise(function(resolve) {
+      function makeCanvasCopy() {
+        return _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight).then(function(uploadPath) {
+          return _readIdPhotoUploadCopy(base, uploadPath, targetWidth, targetHeight, true, startedAt);
+        });
+      }
+      if (!wx.compressImage) {
+        return makeCanvasCopy();
+      }
+      return new Promise(function(resolve, reject) {
         wx.compressImage({
           src: photoSrc,
           quality: ID_PHOTO_UPLOAD_QUALITY,
           compressedWidth: targetWidth,
           compressedHeight: targetHeight,
           success: function(res) {
-            var uploadPath = res.tempFilePath || photoSrc;
-            Promise.all([_getImageInfo(uploadPath), _getLocalFileSize(uploadPath)]).then(function(values) {
-              var uploadInfo = values[0] || {};
-              resolve(Object.assign({}, base, {
-                uploadPath: uploadPath,
-                uploadWidth: Number(uploadInfo.width || targetWidth),
-                uploadHeight: Number(uploadInfo.height || targetHeight),
-                uploadBytes: Number(values[1] || 0),
-                quality: ID_PHOTO_UPLOAD_QUALITY,
-                compressed: uploadPath !== photoSrc,
-                compressMs: Date.now() - startedAt
-              }));
+            if (!res || !res.tempFilePath) {
+              makeCanvasCopy().then(resolve).catch(reject);
+              return;
+            }
+            _readIdPhotoUploadCopy(base, res.tempFilePath, targetWidth, targetHeight, false, startedAt).then(resolve).catch(function() {
+              makeCanvasCopy().then(resolve).catch(reject);
             });
           },
           fail: function(err) {
             console.warn('[id-photo-speed] work copy fallback:', err);
-            resolve(Object.assign({}, base, { compressMs: Date.now() - startedAt, compressFallback: true }));
+            makeCanvasCopy().then(resolve).catch(reject);
           }
         });
       });
-    });
-  }).catch(function(err) {
-    console.warn('[id-photo-speed] image info fallback:', err);
-    return _getLocalFileSize(photoSrc).then(function(bytes) {
-      return {
-        originalPath: photoSrc,
-        uploadPath: photoSrc,
-        originalWidth: 0,
-        originalHeight: 0,
-        uploadWidth: 0,
-        uploadHeight: 0,
-        originalBytes: bytes,
-        uploadBytes: bytes,
-        originalFormat: '',
-        compressed: false,
-        compressFallback: true,
-        compressMs: Date.now() - startedAt
-      };
     });
   }).then(function(meta) {
     console.log('[id-photo-speed] originalWidth=' + meta.originalWidth);
@@ -406,6 +464,8 @@ function prepareIdPhotoUploadSource(photoSrc, options) {
     console.log('[id-photo-speed] uploadWidth=' + meta.uploadWidth);
     console.log('[id-photo-speed] uploadHeight=' + meta.uploadHeight);
     console.log('[id-photo-speed] uploadBytes=' + meta.uploadBytes);
+    console.log('[id-photo-speed] compressed=' + meta.compressed);
+    console.log('[id-photo-speed] compressFallback=' + meta.compressFallback);
     console.log('[id-photo-speed] compressMs=' + meta.compressMs);
     return meta;
   });
@@ -413,9 +473,14 @@ function prepareIdPhotoUploadSource(photoSrc, options) {
 
 function prepareIdPhotoV2(imagePath, options) {
   options = options || {};
+  var runtimeInfo = config.getApiRuntimeInfo ? config.getApiRuntimeInfo() : {
+    envVersion: 'unknown',
+    storedApiTarget: '',
+    actualApiBaseUrl: config.API_BASE_URL
+  };
   return prepareIdPhotoUploadSource(imagePath, options).then(function(uploadMeta) {
     return new Promise(function(resolve, reject) {
-    var endpoint = config.API_BASE_URL + '/api/id-photo/prepare';
+    var endpoint = runtimeInfo.actualApiBaseUrl + '/api/id-photo/prepare';
     var formData = {
       purpose: options.purpose || 'official_id_photo',
       specId: options.specId || '',
@@ -428,6 +493,7 @@ function prepareIdPhotoV2(imagePath, options) {
       composition: options.composition || '',
       hairRetouch: options.hairRetouch ? 'true' : 'false'
     };
+    console.log('[id-photo-api] runtime:', runtimeInfo);
     console.log('[id-photo-api] prepare endpoint:', endpoint);
     console.log('[id-photo-fe] prepare endpoint=' + endpoint);
     console.log('[id-photo-api] prepare request:', {
@@ -461,6 +527,27 @@ function prepareIdPhotoV2(imagePath, options) {
           console.log('[id-photo-fe] prepare debug:', data && data.debug ? data.debug : null);
           var uploadMs = Date.now() - uploadStartedAt;
           var serverMs = data && data.performance ? Number(data.performance.totalServerMs || 0) : 0;
+          var diagnostic = {
+            envVersion: runtimeInfo.envVersion,
+            storedApiTarget: runtimeInfo.storedApiTarget,
+            actualApiBaseUrl: runtimeInfo.actualApiBaseUrl,
+            endpoint: endpoint,
+            httpStatus: Number(res.statusCode || 0),
+            serverResponseCode: (data && data.code) || '',
+            timeout: false,
+            originalWidth: uploadMeta.originalWidth,
+            originalHeight: uploadMeta.originalHeight,
+            originalBytes: uploadMeta.originalBytes,
+            uploadWidth: uploadMeta.uploadWidth,
+            uploadHeight: uploadMeta.uploadHeight,
+            uploadBytes: uploadMeta.uploadBytes,
+            compressed: uploadMeta.compressed,
+            compressFallback: uploadMeta.compressFallback,
+            compressMs: uploadMeta.compressMs,
+            uploadMs: uploadMs,
+            serverMs: serverMs
+          };
+          console.log('[id-photo-prepare] diagnostic:', diagnostic);
           console.log('[id-photo-speed] uploadMs=' + uploadMs);
           console.log('[id-photo-speed] serverMs=' + serverMs);
           if (data && data.success && data.preparedId) {
@@ -471,21 +558,54 @@ function prepareIdPhotoV2(imagePath, options) {
             var apiError = _makeApiError(data, '人像预处理失败，请重新上传清晰正面照片。');
             apiError.uploadMeta = uploadMeta;
             apiError.uploadMs = uploadMs;
+            apiError.diagnostic = diagnostic;
             reject(apiError);
           }
         } catch (e) {
+          console.error('[id-photo-prepare] response parse failed:', {
+            envVersion: runtimeInfo.envVersion,
+            storedApiTarget: runtimeInfo.storedApiTarget,
+            actualApiBaseUrl: runtimeInfo.actualApiBaseUrl,
+            endpoint: endpoint,
+            httpStatus: Number(res.statusCode || 0),
+            errMsg: e && e.message,
+            uploadBytes: uploadMeta.uploadBytes,
+            uploadMs: Date.now() - uploadStartedAt,
+            responsePreview: String(res.data || '').slice(0, 160)
+          });
           var err = new Error('生成服务暂不可用，请稍后重试。');
           err.code = 'SERVICE_UNAVAILABLE';
+          err.diagnostic = {
+            actualApiBaseUrl: runtimeInfo.actualApiBaseUrl,
+            httpStatus: Number(res.statusCode || 0),
+            errMsg: e && e.message,
+            uploadBytes: uploadMeta.uploadBytes,
+            uploadMs: Date.now() - uploadStartedAt
+          };
           reject(err);
         }
       },
       fail: function(err) {
         console.error('[id-photo-api] prepare upload failed:', err);
         var isTimeout = err && err.errMsg && err.errMsg.indexOf('timeout') >= 0;
+        var uploadMs = Date.now() - uploadStartedAt;
+        var diagnostic = {
+          envVersion: runtimeInfo.envVersion,
+          storedApiTarget: runtimeInfo.storedApiTarget,
+          actualApiBaseUrl: runtimeInfo.actualApiBaseUrl,
+          endpoint: endpoint,
+          httpStatus: 0,
+          errMsg: (err && err.errMsg) || '',
+          timeout: !!isTimeout,
+          uploadBytes: uploadMeta.uploadBytes,
+          uploadMs: uploadMs
+        };
+        console.error('[id-photo-prepare] transport failed:', diagnostic);
         var apiErr = new Error('生成服务暂不可用，请稍后重试。');
         apiErr.code = isTimeout ? 'ID_PHOTO_TIMEOUT' : 'SERVICE_UNAVAILABLE';
         apiErr.uploadMeta = uploadMeta;
-        apiErr.uploadMs = Date.now() - uploadStartedAt;
+        apiErr.uploadMs = uploadMs;
+        apiErr.diagnostic = diagnostic;
         reject(apiErr);
       }
     });
@@ -497,6 +617,19 @@ function prepareIdPhotoV2(imagePath, options) {
       });
     }
     });
+  }).catch(function(err) {
+    var diagnostic = (err && err.diagnostic) || {
+      envVersion: runtimeInfo.envVersion,
+      storedApiTarget: runtimeInfo.storedApiTarget,
+      actualApiBaseUrl: runtimeInfo.actualApiBaseUrl,
+      errMsg: (err && err.message) || '',
+      timeout: !!(err && err.code === 'ID_PHOTO_TIMEOUT'),
+      uploadBytes: err && err.uploadMeta ? err.uploadMeta.uploadBytes : 0,
+      uploadMs: err && err.uploadMs ? err.uploadMs : 0
+    };
+    if (err) err.diagnostic = diagnostic;
+    console.error('[id-photo-prepare] failed:', diagnostic);
+    throw err;
   });
 }
 
