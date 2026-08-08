@@ -1410,7 +1410,7 @@ def validate_final_id_photo(
     head_right = int(np.percentile([span[1] for span in head_rows], 92)) if head_rows else head_roi_right
     silhouette_head_width = max(1, head_right - head_left)
     head_width_cap_factor = (
-        1.18
+        1.12
         if profile.get("headWidthRatioMin") is not None
         and profile.get("headWidthRatioMax") is not None
         else 1.28
@@ -1685,7 +1685,7 @@ def validate_composition_metrics(metrics, composition_profile=None, width_px=295
         failures.extend(["ID_PHOTO_TOP_PADDING_BAD", "ID_PHOTO_TOP_PADDING_TOO_LARGE"])
     ratio_rounding_epsilon = 1e-6
     height_pixel_tolerance = 2.0 / float(max(1, int(height_px))) + ratio_rounding_epsilon
-    width_pixel_tolerance = 1.0 / float(max(1, int(width_px))) + ratio_rounding_epsilon
+    width_pixel_tolerance = 2.5 / float(max(1, int(width_px))) + 0.04
     if head_h < thresholds["headHeightMin"] - height_pixel_tolerance:
         failures.extend(["ID_PHOTO_HEAD_SIZE_BAD", "ID_PHOTO_HEAD_TOO_SMALL"])
     elif head_h > thresholds["headHeightMax"] + height_pixel_tolerance:

@@ -48,20 +48,12 @@ page {
 .portrait-guide {
   position: absolute;
   z-index: 4;
-  top: 54%;
-  left: 50%;
-  width: 70vw;
-  height: 100vw;
-  max-width: 560rpx;
-  max-height: 805rpx;
-  transform: translate(-50%, -50%);
   opacity: 0.98;
 }
 
 .eye-label {
   position: absolute;
   z-index: 5;
-  top: 52%;
   right: 0;
   left: 0;
   color: rgba(255, 255, 255, 0.78);
@@ -137,6 +129,10 @@ page {
 .shutter-active {
   transform: scale(0.92);
   opacity: 0.68;
+}
+
+.shutter-disabled {
+  opacity: 0.4;
 }
 
 .confirm-view {

@@ -1,4 +1,6 @@
-/** Watermark API using compact normalized brush-stroke transport. */
+/** Watermark API using compact normalized brush-stroke transport.
+ * Mapped endpoints: /api/watermark/manual-remove, /api/watermark/quick-remove, /api/watermark/hd-remove -> /api/watermark/remove-v2
+ */
 var watermarkConfig = require('./watermarkConfig.js');
 var activeHdRequests = {};
 

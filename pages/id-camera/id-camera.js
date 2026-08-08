@@ -15,6 +15,55 @@ function resolveSpec(specId, isCustom) {
   return spec || { id: specId, name: '证件照', widthPx: 295, heightPx: 413 };
 }
 
+function computeGuideLayout(guideWidthVw, windowWidth, windowHeight, safeAreaBottom) {
+  var sys = {};
+  if (typeof wx !== 'undefined' && wx.getSystemInfoSync) {
+    try { sys = wx.getSystemInfoSync() || {}; } catch(e) {}
+  }
+  var wWidth = windowWidth || sys.windowWidth || 375;
+  var wHeight = windowHeight || sys.windowHeight || 667;
+
+  var bottomInset = safeAreaBottom;
+  if (bottomInset === undefined) {
+    if (sys.safeArea && sys.safeArea.bottom && sys.windowHeight) {
+      bottomInset = Math.max(0, sys.windowHeight - sys.safeArea.bottom);
+    } else {
+      bottomInset = 0;
+    }
+  }
+
+  var controlsHeightPx = Math.round(190 * wWidth / 750) + bottomInset;
+  var cameraHeightPx = Math.max(200, wHeight - controlsHeightPx);
+
+  var vw = guideWidthVw || 70;
+  var guideWidthPx = Math.round(wWidth * (vw / 100));
+  var maxWidthPx = Math.round(560 * wWidth / 750);
+  if (guideWidthPx > maxWidthPx) {
+    guideWidthPx = maxWidthPx;
+  }
+  var guideHeightPx = Math.round(guideWidthPx * 1.4375);
+
+  var maxGuideHeightPx = Math.round(cameraHeightPx * 0.85);
+  if (guideHeightPx > maxGuideHeightPx) {
+    guideHeightPx = maxGuideHeightPx;
+    guideWidthPx = Math.round(guideHeightPx / 1.4375);
+  }
+
+  var guideLeftPx = Math.round((wWidth - guideWidthPx) / 2);
+  var targetCenterY = Math.round(cameraHeightPx * 0.54);
+  var guideTopPx = Math.round(targetCenterY - guideHeightPx / 2);
+
+  var eyeLabelTopPx = guideTopPx + Math.round(guideHeightPx * 0.37) - 10;
+
+  return {
+    guideWidthPx: guideWidthPx,
+    guideHeightPx: guideHeightPx,
+    guideLeftPx: guideLeftPx,
+    guideTopPx: guideTopPx,
+    eyeLabelTopPx: eyeLabelTopPx
+  };
+}
+
 Page({
   data: {
     specId: 'yicun',
@@ -34,22 +83,36 @@ Page({
     pageActive: true,
     cameraVisible: true,
     guideWidthVw: 70,
-    guideHeightVw: 101
+    guideHeightVw: 101,
+    guideWidthPx: 262,
+    guideHeightPx: 377,
+    guideLeftPx: 56,
+    guideTopPx: 120,
+    eyeLabelTopPx: 250,
+    guideSvgDataUri: "data:image/svg+xml;charset=utf-8,%3Csvg%20viewBox%3D%220%200%20200%20300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M%2060%20100%20C%2060%2020%2C%20140%2020%2C%20140%20100%20C%20140%20140%2C%20120%20160%2C%20100%20160%20C%2080%20160%2C%2060%20140%2C%2060%20100%20Z%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%224%22%20stroke-dasharray%3D%228%2C8%22%20%2F%3E%3Cpath%20d%3D%22M%20100%20160%20C%20100%20180%2C%20150%20200%2C%20200%20240%20L%20200%20300%20L%200%20300%20L%200%20240%20C%2050%20200%2C%20100%20180%2C%20100%20160%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%224%22%20stroke-dasharray%3D%228%2C8%22%20%2F%3E%3C%2Fsvg%3E"
   },
 
   onLoad: function(options) {
+    options = options || {};
     var specId = options.specId || 'yicun';
     var isCustom = options.custom === 'true';
     var spec = resolveSpec(specId, isCustom);
     var ratio = Number(spec.widthPx || spec.width || 295) / Number(spec.heightPx || spec.height || 413);
     var guideWidth = Math.max(65, Math.min(74, Math.round(70 + (0.72 - ratio) * 10)));
+    var layout = computeGuideLayout(guideWidth);
+
     this.setData({
       specId: specId,
       specName: spec.displayName || spec.name || '证件照',
       isCustom: isCustom,
       returnMode: options.returnMode === 'replace' ? 'replace' : 'initial',
       guideWidthVw: guideWidth,
-      guideHeightVw: Math.round(guideWidth * 1.44)
+      guideHeightVw: Math.round(guideWidth * 1.44),
+      guideWidthPx: layout.guideWidthPx,
+      guideHeightPx: layout.guideHeightPx,
+      guideLeftPx: layout.guideLeftPx,
+      guideTopPx: layout.guideTopPx,
+      eyeLabelTopPx: layout.eyeLabelTopPx
     });
   },
 
@@ -72,6 +135,12 @@ Page({
 
   onHide: function() {
     this.setData({ pageActive: false, capturing: false });
+  },
+
+  onResize: function(res) {
+    var size = res && res.size ? res.size : {};
+    var layout = computeGuideLayout(this.data.guideWidthVw, size.windowWidth, size.windowHeight);
+    this.setData(layout);
   },
 
   onCameraReady: function() {
@@ -125,15 +194,12 @@ Page({
   },
 
   restartCamera: function() {
-    var that = this;
     this.setData({
       cameraError: false,
       cameraErrorText: '',
       cameraReady: false,
       permissionDenied: false,
-      cameraVisible: false
-    }, function() {
-      that.setData({ cameraVisible: true });
+      cameraVisible: true
     });
   },
 
@@ -176,15 +242,11 @@ Page({
 
   retakePhoto: function() {
     if (this.data.submitting) return;
-    var that = this;
     this.setData({
       cameraMode: 'live',
       capturedImage: '',
       capturing: false,
-      cameraReady: false,
-      cameraVisible: false
-    }, function() {
-      that.setData({ cameraVisible: true });
+      cameraReady: false
     });
   },
 
@@ -241,4 +303,3 @@ Page({
     });
   }
 });
-

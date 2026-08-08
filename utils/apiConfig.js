@@ -43,17 +43,15 @@ function getApiBaseUrl() {
   if (envVersion === 'release' || envVersion === 'trial') {
     return CLOUD_API_BASE_URL;
   }
-  // 强制默认使用云端接口（方便本地开发者工具测试）
-  return CLOUD_API_BASE_URL;
+  return LOCAL_API_BASE_URL;
 }
 
-var API_BASE_URL = getApiBaseUrl();
 var ENABLE_AI = true;                          // 启用 AI 功能
 
 module.exports = {
   LOCAL_API_BASE_URL: LOCAL_API_BASE_URL,
   CLOUD_API_BASE_URL: CLOUD_API_BASE_URL,
-  API_BASE_URL: API_BASE_URL,
+  get API_BASE_URL() { return getApiBaseUrl(); },
   getApiBaseUrl: getApiBaseUrl,
   ENABLE_AI: ENABLE_AI
 };

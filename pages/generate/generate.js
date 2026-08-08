@@ -528,6 +528,33 @@ Page({
       return aiImageApi.composeIdPhotoV2(Object.assign({}, composePayload, {
         preparedId: preparedId
       })).catch(function(err) {
+        var isExpired = err && (err.code === 'PREPARED_NOT_FOUND' || err.code === 'ID_PHOTO_PREPARED_EXPIRED' || err.code === 'PREPARED_ID_INVALID' || (err.message && (err.message.indexOf('预处理') >= 0 || err.message.indexOf('失效') >= 0)));
+        if (isExpired && hasPrepared && attempt === 0) {
+          console.warn('[id-photo-fe] preparedId expired or invalid, re-preparing source...');
+          hasPrepared = false;
+          that.setData({ preparedId: '', preparedKey: '' });
+          return aiImageApi.prepareIdPhotoV2(requestPhotoSrc, Object.assign({}, requestPayload, {
+            onStage: function(stage) {
+              var labels = {
+                optimizing: ['optimizing', '正在优化上传图片'],
+                uploading: ['uploading', '正在上传照片'],
+                fastMatting: ['fastMatting', '正在快速抠图']
+              };
+              var next = labels[stage];
+              if (next) that.updateProcessStage(next[0], next[1]);
+            }
+          })).then(function(newPrepared) {
+            if (!newPrepared || !newPrepared.preparedId) {
+              throw err;
+            }
+            that.setData({
+              preparedId: newPrepared.preparedId,
+              preparedKey: prepareKey,
+              sourceId: newPrepared.sourceId || that.data.sourceId
+            });
+            return composeWithRetry(newPrepared.preparedId, attempt + 1);
+          });
+        }
         var retryable = err && (err.code === 'SERVICE_TIMEOUT' || err.code === 'ID_PHOTO_TIMEOUT' || err.code === 'SERVICE_UNAVAILABLE');
         if (!retryable || attempt >= 1) {
           throw err;

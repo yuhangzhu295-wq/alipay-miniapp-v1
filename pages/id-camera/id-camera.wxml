@@ -7,28 +7,28 @@
       mode="normal"
       binderror="onCameraError"
       bindinitdone="onCameraReady"
-    >
-      <cover-view class="camera-copy">
-        <cover-view class="camera-title">站在纯色背景前，拍摄效果最佳</cover-view>
-        <cover-view class="camera-subtitle">请将头部和肩膀放入轮廓内</cover-view>
-      </cover-view>
-      <cover-image class="portrait-guide" style="width: {{guideWidthVw}}vw; height: {{guideHeightVw}}vw;" src="/images/id-photo-camera-guide.svg"></cover-image>
-      <cover-view class="eye-label">眼睛保持在虚线附近</cover-view>
-    </camera>
+    ></camera>
 
-    <cover-view class="camera-controls">
-      <cover-view class="control-side">
-        <cover-view class="control-icon album-icon" bindtap="chooseFromAlbum">▣</cover-view>
-        <cover-view class="control-label">相册</cover-view>
-      </cover-view>
-      <cover-view class="shutter-outer {{capturing ? 'shutter-active' : ''}}" bindtap="takePhoto">
-        <cover-view class="shutter-inner"></cover-view>
-      </cover-view>
-      <cover-view class="control-side" bindtap="switchCamera">
-        <cover-view class="control-icon">↻</cover-view>
-        <cover-view class="control-label">切换</cover-view>
-      </cover-view>
-    </cover-view>
+    <view class="camera-copy">
+      <view class="camera-title">站在纯色背景前，拍摄效果最佳</view>
+      <view class="camera-subtitle">请将头部和肩膀放入轮廓内</view>
+    </view>
+    <view class="portrait-guide" style="left: {{guideLeftPx}}px; top: {{guideTopPx}}px; width: {{guideWidthPx}}px; height: {{guideHeightPx}}px; background-image: url('{{guideSvgDataUri}}'); background-size: 100% 100%;"></view>
+    <view class="eye-label" style="top: {{eyeLabelTopPx}}px;">眼睛保持在虚线附近</view>
+
+    <view class="camera-controls">
+      <view class="control-side" bindtap="chooseFromAlbum">
+        <view class="control-icon album-icon">▣</view>
+        <view class="control-label">相册</view>
+      </view>
+      <view class="shutter-outer {{capturing ? 'shutter-active' : ''}} {{!cameraReady ? 'shutter-disabled' : ''}}" bindtap="takePhoto">
+        <view class="shutter-inner"></view>
+      </view>
+      <view class="control-side" bindtap="switchCamera">
+        <view class="control-icon">↻</view>
+        <view class="control-label">切换</view>
+      </view>
+    </view>
   </block>
 
   <view wx:elif="{{cameraMode === 'confirm'}}" class="confirm-view">

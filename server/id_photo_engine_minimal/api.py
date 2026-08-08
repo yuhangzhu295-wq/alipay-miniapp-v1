@@ -69,8 +69,8 @@ def generate_id_photo_v2(
     check_quality(alpha, stage="alpha_gate")
     rgba = cleanup_alpha(rgba, alpha, bypass_hole_filling=bypass_hole_filling)
     face_res = detect_face(img_bytes)
-    cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res)
-    final_img = compose_background(cropped_rgba, bg_color)
+    cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res, composition_profile=spec.get("compositionProfile"))
+    final_img = compose_background(cropped_rgba, bg_color, background_policy=spec.get("compositionProfile", {}).get("backgroundPolicy", ""))
     check_quality(final_img, stage="final")
     
     suffix = ".jpg" if output_type.lower() in ("jpg", "jpeg") else ".png"
@@ -163,7 +163,7 @@ def prepare_id_photo_v2(
     check_quality(alpha, stage="alpha_gate")
     rgba = cleanup_alpha(rgba, alpha, bypass_hole_filling=bypass_hole_filling)
     face_res = detect_face(img_bytes)
-    cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res)
+    cropped_rgba, crop_params = crop_id_photo(rgba, w, h, face_res=face_res, composition_profile=spec.get("compositionProfile"))
 
     prepared_id = str(uuid.uuid4())
     PREPARE_CACHE[prepared_id] = {
@@ -191,7 +191,9 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     if not item:
         raise Exception("PREPARED_NOT_FOUND")
     
-    final_img = compose_background(item["rgba"], bg_color)
+    spec = item.get("spec") or {}
+    bg_policy = (spec.get("compositionProfile") or {}).get("backgroundPolicy", "")
+    final_img = compose_background(item["rgba"], bg_color, background_policy=bg_policy)
     check_quality(final_img, stage="final")
     
     suffix = ".jpg" if output_type.lower() in ("jpg", "jpeg") else ".png"
