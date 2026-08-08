@@ -566,13 +566,24 @@ def compose_headshot(
     person = cutout.crop(crop_box)
     crop_w, crop_h = person.size
 
-    target_face_h = target_h * face_height_ratio
-    scale_by_face = target_face_h / max(1, fh)
-    # 头肩照允许肩线自然贴近画布边缘，宽度不再把人像压得过小。
-    width_factor = 1.12 if composition == "half_body" else (1.34 if composition == "square_avatar" else 1.45)
-    scale_by_width = target_w * width_factor / max(1, crop_w)
-    scale_by_height = target_h * 1.06 / max(1, crop_h)
-    scale = min(scale_by_face, scale_by_width, scale_by_height)
+    person_bbox = person.getbbox()
+    hairTopY_in_crop = person_bbox[1] if person_bbox else 0
+    chinY_in_crop = (fy + fh) - crop_top
+    detectedHeadHeight = max(1, chinY_in_crop - hairTopY_in_crop)
+
+    profile = spec.get("compositionProfile") if spec else None
+    
+    if profile and profile.get("headHeightRatioTarget"):
+        targetHeadHeight = target_h * profile.get("headHeightRatioTarget")
+        scale = targetHeadHeight / float(detectedHeadHeight)
+    else:
+        target_face_h = target_h * face_height_ratio
+        scale_by_face = target_face_h / max(1, fh)
+        # 头肩照允许肩线自然贴近画布边缘，宽度不再把人像压得过小。
+        width_factor = 1.12 if composition == "half_body" else (1.34 if composition == "square_avatar" else 1.45)
+        scale_by_width = target_w * width_factor / max(1, crop_w)
+        scale_by_height = target_h * 1.06 / max(1, crop_h)
+        scale = min(scale_by_face, scale_by_width, scale_by_height)
 
     new_w = max(1, int(crop_w * scale))
     new_h = max(1, int(crop_h * scale))
@@ -581,9 +592,14 @@ def compose_headshot(
     face_center_x_in_crop = (fx + fw / 2.0 - crop_left) * scale
     face_top_in_crop = (fy - crop_top) * scale
     face_h_out = fh * scale
-    person_bbox = person.getbbox()
-    foreground_top_in_crop = ((person_bbox[1] if person_bbox else 0) * scale)
-    target_top_padding = target_h * (0.07 if composition == "half_body" else 0.09)
+    foreground_top_in_crop = hairTopY_in_crop * scale
+
+    if profile and profile.get("topGapRatioTarget"):
+        targetTopGap = target_h * profile.get("topGapRatioTarget")
+        py = int(targetTopGap - foreground_top_in_crop)
+    else:
+        target_top_padding = target_h * (0.07 if composition == "half_body" else 0.09)
+        py = int(target_top_padding - foreground_top_in_crop)
 
     face_px = int(target_w / 2.0 - face_center_x_in_crop)
     
@@ -598,8 +614,6 @@ def compose_headshot(
             px = int(face_px * 0.6 + body_px * 0.4)
     else:
         px = face_px
-
-    py = int(target_top_padding - foreground_top_in_crop)
     px = _clamp_int(px, target_w - new_w, 0)
     py = _clamp_int(py, int(target_h * 0.02) - new_h, int(target_h * 0.10))
 
@@ -626,6 +640,11 @@ def compose_headshot(
     face_center_out = px + face_center_x_in_crop
     face_left_out = px + (fx - crop_left) * scale
     face_top_out = py + face_top_in_crop
+    
+    head_height_actual = max(1, (chinY_in_crop - hairTopY_in_crop) * scale)
+    top_gap_actual = py + hairTopY_in_crop * scale
+    chin_y_actual = py + chinY_in_crop * scale
+
     metrics = {
         "headRatio": round((face_h_out * 1.55) / float(target_h), 6),
         "faceHeightRatio": round(face_h_out / float(target_h), 6),
@@ -633,6 +652,10 @@ def compose_headshot(
         "bodyHeightBelowShoulder": round(body_height_below_shoulder, 6),
         "topPaddingRatio": round(top_padding_ratio, 6),
         "faceCenterOffset": round(abs(face_center_out - target_w / 2.0) / float(target_w), 6),
+        "headHeightRatioActual": round(head_height_actual / float(target_h), 6),
+        "topGapRatioActual": round(top_gap_actual / float(target_h), 6),
+        "chinYRatioActual": round(chin_y_actual / float(target_h), 6),
+        "shoulderSpanRatioActual": round(shoulder_width_ratio, 6),
         "outputFaceBox": {
             "x": round(face_left_out, 3),
             "y": round(face_top_out, 3),
