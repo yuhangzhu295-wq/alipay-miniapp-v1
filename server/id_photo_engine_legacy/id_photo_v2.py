@@ -2244,6 +2244,7 @@ def generate_id_photo_v2(
             bg,
             target_size=target_size,
             composition=composition,
+            spec=spec,
         )
         if final_mode == "official":
             warnings.append("已按所选规格裁切，请以提交平台最终审核为准。")

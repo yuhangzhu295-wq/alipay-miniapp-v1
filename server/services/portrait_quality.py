@@ -481,7 +481,65 @@ def get_portrait_crop_box(image_size, face_box, composition="head_shoulder"):
     return get_headshot_crop_box(image_size, face_box)
 
 
-def compose_headshot(cutout, quality, background, target_size=(413, 579), face_height_ratio=0.36, composition="head_shoulder"):
+def verify_document_standard_compliance(metrics, spec, composition):
+    """Verify headshot alignment against standard document profile.
+    Returns (True, None) if valid, or (False, reason) if invalid.
+    """
+    profile = spec.get("compositionProfile") if spec else None
+    
+    if not profile:
+        # Default fallback bounds
+        min_head_ratio = 0.36 if composition == "half_body" else 0.42
+        if metrics.get("headRatio", 1) < min_head_ratio:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if metrics.get("topPaddingRatio", 0) > 0.16:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if metrics.get("faceCenterOffset", 0) > 0.12:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if composition != "half_body" and metrics.get("bodyHeightBelowShoulder", 0) > 0.30:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        return True, None
+        
+    # Standard document profile checks
+    head_ratio = metrics.get("headRatio", 0)
+    face_h_ratio = metrics.get("faceHeightRatio", 0)
+    top_padding = metrics.get("topPaddingRatio", 0)
+    face_offset = metrics.get("faceCenterOffset", 0)
+    
+    if face_offset > 0.15:
+        return False, "FACE_OFF_CENTER"
+        
+    head_h_min = profile.get("headHeightRatioMin")
+    head_h_max = profile.get("headHeightRatioMax")
+    op_head_max = profile.get("operationalHeadHeightRatioMax")
+    
+    if head_h_min and head_ratio < head_h_min * 0.95:  # 5% tolerance
+        return False, "HEAD_TOO_SMALL"
+    
+    if op_head_max and head_ratio > op_head_max:
+        return False, "HEAD_TOO_LARGE"
+    elif head_h_max and head_ratio > head_h_max * 1.05:
+        return False, "HEAD_TOO_LARGE"
+        
+    chin_min = profile.get("chinBottomRatioMin")
+    if chin_min:
+        # Distance from chin to bottom = 1.0 - (top_padding + face_h_ratio)
+        chin_to_bottom = max(0, 1.0 - (top_padding + face_h_ratio))
+        if chin_to_bottom < chin_min * 0.9:
+            return False, "CHIN_TOO_LOW"
+            
+    return True, None
+
+
+def compose_headshot(
+    cutout_rgba: Image.Image,
+    quality: dict,
+    background: Image.Image,
+    target_size=(413, 579),
+    face_height_ratio=0.36,
+    composition="head_shoulder",
+    spec=None,
+):
     """
     将 RGBA 人像合成为标准头肩证件照/职业头像照。
 
@@ -527,7 +585,20 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     foreground_top_in_crop = ((person_bbox[1] if person_bbox else 0) * scale)
     target_top_padding = target_h * (0.07 if composition == "half_body" else 0.09)
 
-    px = int(target_w / 2.0 - face_center_x_in_crop)
+    face_px = int(target_w / 2.0 - face_center_x_in_crop)
+    
+    if person_bbox:
+        person_left = person_bbox[0] * scale
+        person_right = person_bbox[2] * scale
+        person_w = person_right - person_left
+        if person_w >= target_w:
+            px = _clamp_int(face_px, int(target_w - person_right), int(-person_left))
+        else:
+            body_px = int(target_w / 2.0 - (person_left + person_right) / 2.0)
+            px = int(face_px * 0.6 + body_px * 0.4)
+    else:
+        px = face_px
+
     py = int(target_top_padding - foreground_top_in_crop)
     px = _clamp_int(px, target_w - new_w, 0)
     py = _clamp_int(py, int(target_h * 0.02) - new_h, int(target_h * 0.10))
@@ -583,14 +654,9 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     }
 
     quality.update(metrics)
-    min_head_ratio = 0.36 if composition == "half_body" else 0.42
-    if (
-        metrics["headRatio"] < min_head_ratio
-        or metrics["topPaddingRatio"] > 0.16
-        or metrics["faceCenterOffset"] > 0.12
-        or (composition != "half_body" and metrics["bodyHeightBelowShoulder"] > 0.30)
-    ):
-        quality["code"] = "HEADSHOT_LAYOUT_INVALID"
-        raise PortraitQualityError("HEADSHOT_LAYOUT_INVALID", quality)
+    is_compliant, fail_reason = verify_document_standard_compliance(metrics, spec, composition)
+    if not is_compliant:
+        quality["code"] = fail_reason
+        raise PortraitQualityError(fail_reason, quality)
 
     return result.convert("RGB"), quality
