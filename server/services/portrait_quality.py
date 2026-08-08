@@ -532,7 +532,7 @@ def verify_document_standard_compliance(metrics, spec, composition):
 
 
 def compose_headshot(
-    cutout_rgba: Image.Image,
+    cutout: Image.Image,
     quality: dict,
     background: Image.Image,
     target_size=(413, 579),
