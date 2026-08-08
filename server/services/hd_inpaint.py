@@ -1357,11 +1357,17 @@ def _do_hd_inpaint_single(
         debug["lamaCallCount"] = 1
         debug["firstLamaMs"] = first_lama_debug["lamaMs"]
         debug["backendEngine"] = "iopaint"
-        # IOPaint/LaMa is the HD gate. Large tiled watermark masks need to keep
-        # the model result as the primary image; heavy local smoothing makes
-        # flower/table samples look repainted. Smaller tiled masks still get a
-        # light local cleanup pass to suppress faint residue.
-        if debug["maskRatio"] >= 0.18:
+        # IOPaint/LaMa is the HD reconstruction engine.  The following thin
+        # cleanup is for an explicitly expanded, repeating watermark pattern;
+        # a large single manual stroke can occupy the same ROI ratio, but is
+        # not a tiled watermark.  Applying this blend to a strict-local edit
+        # reintroduces faint text-shaped residue on dark or textured images.
+        tiled_pattern_cleanup = bool(
+            allow_pattern_expansion
+            and (should_expand_grid or component_count >= 4)
+        )
+        debug["tiledPatternCleanupEligible"] = tiled_pattern_cleanup
+        if tiled_pattern_cleanup and debug["maskRatio"] >= 0.18:
             thin_cleanup_mask = _build_thin_watermark_mask(image, mask_bin)
             thin_cleanup_ratio = round(float(cv2.countNonZero(thin_cleanup_mask)) / float(image_w * image_h), 6)
             if thin_cleanup_ratio > 0:
@@ -1376,7 +1382,7 @@ def _do_hd_inpaint_single(
             })
             composite_mask = hd_mask
             composite_sigma = 0.75
-        elif debug["maskRatio"] >= 0.025:
+        elif tiled_pattern_cleanup and debug["maskRatio"] >= 0.025:
             local_repaired, cleanup_mask = _local_hd_tiled_watermark_cleanup(image, mask_bin, preserve_detail=preserve_detail)
             repaired = cv2.addWeighted(repaired, 0.78, local_repaired, 0.22, 0)
             debug.update({
@@ -1387,6 +1393,8 @@ def _do_hd_inpaint_single(
             })
             composite_mask = cleanup_mask
             composite_sigma = 0.65
+        else:
+            debug["postCleanup"] = "disabled_for_strict_local_or_non_tiled_mask"
     else:
         if debug["maskRatio"] >= 0.18:
             fallback_mask, fallback_debug = _build_hd_translucent_mask(mask_bin)
