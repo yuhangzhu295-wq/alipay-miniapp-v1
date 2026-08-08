@@ -35,25 +35,36 @@ function getStoredApiTarget() {
 }
 
 function getApiBaseUrl() {
-  var storedTarget = getStoredApiTarget();
-  if (storedTarget === 'local') return LOCAL_API_BASE_URL;
-  if (storedTarget === 'cloud') return CLOUD_API_BASE_URL;
-
   var envVersion = getRuntimeEnvVersion();
   if (envVersion === 'release' || envVersion === 'trial') {
     return CLOUD_API_BASE_URL;
   }
-  // 强制默认使用云端接口（方便本地开发者工具测试）
+  if (envVersion === 'develop') {
+    var storedTarget = getStoredApiTarget();
+    if (storedTarget === 'cloud') return CLOUD_API_BASE_URL;
+    if (storedTarget === 'local') return LOCAL_API_BASE_URL;
+  }
   return CLOUD_API_BASE_URL;
 }
 
-var API_BASE_URL = getApiBaseUrl();
+function getApiRuntimeInfo() {
+  var envVersion = getRuntimeEnvVersion() || 'unknown';
+  var storedApiTarget = getStoredApiTarget();
+  var actualApiBaseUrl = getApiBaseUrl();
+  return {
+    envVersion: envVersion,
+    storedApiTarget: storedApiTarget,
+    actualApiBaseUrl: actualApiBaseUrl,
+    forcedCloud: envVersion === 'release' || envVersion === 'trial'
+  };
+}
 var ENABLE_AI = true;                          // 启用 AI 功能
 
 module.exports = {
   LOCAL_API_BASE_URL: LOCAL_API_BASE_URL,
   CLOUD_API_BASE_URL: CLOUD_API_BASE_URL,
-  API_BASE_URL: API_BASE_URL,
+  get API_BASE_URL() { return getApiBaseUrl(); },
   getApiBaseUrl: getApiBaseUrl,
+  getApiRuntimeInfo: getApiRuntimeInfo,
   ENABLE_AI: ENABLE_AI
 };

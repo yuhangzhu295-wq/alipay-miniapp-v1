@@ -634,6 +634,7 @@ Page({
         console.error('[id-photo-generate] compose endpoint:', composeEndpoint);
         console.error('[id-photo-generate] code:', err && err.code);
         console.error('[id-photo-generate] requestId:', err && err.requestId);
+        console.error('[id-photo-generate] diagnostic:', err && err.diagnostic ? err.diagnostic : null);
         var message = '底色生成失败，请重新选择底色或重新上传照片。';
         var failureKind = '';
         if (err && err.code === 'SERVICE_UNAVAILABLE') {
