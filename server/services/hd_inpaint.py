@@ -566,17 +566,17 @@ def _strict_local_residual_analysis(original, result, allowed_mask):
         & (result_value >= 24)
         & (hue_delta <= 18)
     )
-    luminance_seed = allowed & (np.abs(original_deviation) >= 6.0)
+    luminance_seed = allowed & (np.abs(original_deviation) >= 4.0)
     luminance_residual = (
         luminance_seed
-        & (np.abs(result_deviation) >= 3.0)
+        & (np.abs(result_deviation) >= 2.0)
         & (original_deviation * result_deviation > 0)
         & (np.abs(original_gray - result_gray) <= 48.0)
     )
-    edge_seed = allowed & (original_magnitude >= 24.0)
+    edge_seed = allowed & (original_magnitude >= 12.0)
     edge_residual = (
         edge_seed
-        & (result_magnitude >= 11.0)
+        & (result_magnitude >= 6.0)
         & (edge_alignment >= 0.30)
         & (np.abs(original_gray - result_gray) <= 58.0)
     )
@@ -1741,7 +1741,7 @@ def do_hd_inpaint(
                 # residual. Expand only the second-pass residual mask, clamp it
                 # back to the user's already allowed mask, and never touch the
                 # rest of the ROI.
-                retry_mask_expansion_px = 4
+                retry_mask_expansion_px = max(15, int(round(min(roi_image.shape[:2]) * 0.035)))
                 retry_mask = cv2.dilate(
                     residual_mask,
                     cv2.getStructuringElement(
