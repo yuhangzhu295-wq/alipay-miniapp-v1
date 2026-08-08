@@ -44,7 +44,7 @@ function getApiBaseUrl() {
     if (storedTarget === 'cloud') return CLOUD_API_BASE_URL;
     if (storedTarget === 'local') return LOCAL_API_BASE_URL;
   }
-  return LOCAL_API_BASE_URL;
+  return CLOUD_API_BASE_URL;
 }
 
 function getApiRuntimeInfo() {
