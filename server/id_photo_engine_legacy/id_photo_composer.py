@@ -1311,8 +1311,9 @@ def _solve_id_photo_layout(
     head_y2 = min(image_h, int(round(fy + fh * 0.30)))
     head_region = binary[:head_y2, head_x1:head_x2]
     head_rows = np.where(np.any(head_region, axis=1))[0]
-    estimated_head_top = float(head_rows.min()) if head_rows.size else max(0.0, fy - fh * 0.58)
-    estimated_head_height = max(fh * 1.50, (fy + fh) - estimated_head_top)
+    estimated_head_top = float(head_rows.min()) if head_rows.size else max(0.0, fy - fh * 0.45)
+    estimated_head_top = max(estimated_head_top, fy - fh * 0.65)
+    estimated_head_height = min(fh * 1.45, max(fh * 1.30, (fy + fh) - estimated_head_top))
 
     shoulder_y1 = max(0, int(round(fy + fh * 0.86)))
     shoulder_y2 = min(alpha_bottom, int(round(fy + fh * (1.62 if composition != "half_body" else 2.10))))
@@ -1544,7 +1545,7 @@ def _solve_id_photo_layout(
     )
     head_scale_max = target_h * solve_head_max / max(1.0, calibrated_head_height)
     source_observed_head_width = (
-        fw * 1.18
+        fw * 1.08
         if has_official_head_box
         else min(
             max(fw * 1.18, head_right - head_left),
@@ -1765,6 +1766,18 @@ def _solve_id_photo_layout(
     ))
     best = search(fine_scales, target_w * 0.02, target_h * 0.015, 11, 7, best)
     _, scale, preferred_x, preferred_y = best
+    
+    # --- STRICT PROFILE OVERRIDE FOR ONE-INCH ---
+    strict_head_ratio = profile.get('headHeightRatioTarget')
+    strict_top_gap = profile.get('topGapRatioTarget')
+    if strict_head_ratio is not None:
+        strict_head_height = target_h * float(strict_head_ratio)
+        scale = strict_head_height / max(1.0, float(calibrated_head_height))
+        preferred_x = target_w / 2.0 - head_center_crop * scale
+    if strict_top_gap is not None:
+        target_top_gap = target_h * float(strict_top_gap)
+        preferred_y = target_top_gap - head_box_top_crop * scale
+    # --------------------------------------------
     if shoulder_side_contact_required:
         cover_x_min = target_w + 0.5 - lower_body_right_crop * scale
         cover_x_max = -0.5 - lower_body_left_crop * scale
