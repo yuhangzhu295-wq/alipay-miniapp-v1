@@ -1,8 +1,15 @@
 // ====== 全局 App ======
 var authService = require('./utils/authService.js');
+var apiConfig = require('./utils/apiConfig.js');
 
 App({
   onLaunch() {
+    var apiRuntimeInfo = apiConfig.getApiRuntimeInfo ? apiConfig.getApiRuntimeInfo() : {};
+    console.log('[api-config] startup', {
+      envVersion: apiRuntimeInfo.envVersion || 'unknown',
+      storedApiTarget: apiRuntimeInfo.storedApiTarget || '',
+      actualApiBaseUrl: apiRuntimeInfo.actualApiBaseUrl || apiConfig.API_BASE_URL
+    });
     // 检查登录状态
     const myPhotos = authService.isLoggedIn() ? (wx.getStorageSync(authService.getPhotoStorageKey()) || []) : []
     this.globalData.photoCount = myPhotos.length
