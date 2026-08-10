@@ -10,10 +10,26 @@
  */
 
 var config = require('./apiConfig.js');
+var imageSafetyApi = require('./imageSafetyApi.js');
 var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
 var ID_PHOTO_UPLOAD_QUALITY = 88;
+
+function _safetyPurposeForEndpoint(url) {
+  var endpoint = String(url || '');
+  if (endpoint.indexOf('/api/id-photo/') >= 0) return 'id_photo';
+  if (endpoint.indexOf('/api/watermark/') >= 0 || endpoint.indexOf('/api/inpaint') >= 0) return 'watermark_removal';
+  if (endpoint.indexOf('/api/professional-photo') >= 0) return 'professional_photo';
+  if (endpoint.indexOf('/api/change-bg') >= 0 || endpoint.indexOf('/api/remove-bg') >= 0) return 'background_processing';
+  if (endpoint.indexOf('/api/compress') >= 0) return 'image_compress';
+  if (endpoint.indexOf('/api/verify-photo') >= 0 || endpoint.indexOf('/api/portrait/') >= 0) return 'portrait_inspection';
+  return 'image_processing';
+}
+
+function _safeUploadFile(options) {
+  return imageSafetyApi.uploadWithSafety(options, _safetyPurposeForEndpoint(options.url));
+}
 
 /**
  * 健康检查 — 判断后端是否启动
@@ -55,7 +71,7 @@ function removeBg(imagePath, model) {
       formData.model = model;
     }
 
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/remove-bg',
       filePath: imagePath,
       name: 'file',
@@ -100,7 +116,7 @@ function changeBg(imagePath, bgColor, model) {
       formData.model = model;
     }
 
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/change-bg',
       filePath: imagePath,
       name: 'file',
@@ -130,7 +146,7 @@ function changeBg(imagePath, bgColor, model) {
 function validatePortraitInput(imagePath, task) {
   return new Promise(function(resolve, reject) {
     if (!_checkConfig()) { reject(new Error('AI 服务未配置')); return; }
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/portrait/validate',
       filePath: imagePath,
       name: 'file',
@@ -159,7 +175,7 @@ function validatePortraitInput(imagePath, task) {
 function inspectPortrait(imagePath) {
   return new Promise(function(resolve, reject) {
     if (!_checkConfig()) { reject(new Error('生成服务暂不可用，请稍后重试。')); return; }
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/portrait/inspect',
       filePath: imagePath,
       name: 'image',
@@ -240,7 +256,7 @@ function generateIdPhotoV2(imagePath, options) {
       bgColor: formData.bgColor,
       bgColorName: formData.bgColorName
     });
-    wx.uploadFile({
+    _safeUploadFile({
       url: endpoint,
       filePath: imagePath,
       name: 'image',
@@ -504,7 +520,7 @@ function prepareIdPhotoV2(imagePath, options) {
     });
     _notifyIdPhotoStage(options, 'uploading', uploadMeta);
     var uploadStartedAt = Date.now();
-    var task = wx.uploadFile({
+    var task = _safeUploadFile({
       url: endpoint,
       filePath: uploadMeta.uploadPath,
       name: 'image',
@@ -809,7 +825,7 @@ function inpaint(imagePath, rect, maskPath) {
       height: String(rect ? Math.round(rect.h) : 100)
     };
 
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/inpaint',
       filePath: imagePath,
       name: 'file',
@@ -854,7 +870,7 @@ function compressByServer(imagePath, targetKB) {
 
     wx.showLoading({ title: '后端压缩中...' });
 
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/compress',
       filePath: imagePath,
       name: 'file',
@@ -973,7 +989,7 @@ function verifyPhoto(imagePath, modelName) {
 
     wx.showLoading({ title: 'AI 质检中...' });
 
-    wx.uploadFile({
+    _safeUploadFile({
       url: config.API_BASE_URL + '/api/verify-photo',
       filePath: imagePath,
       name: 'file',

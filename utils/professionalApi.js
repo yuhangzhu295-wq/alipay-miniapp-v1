@@ -1,4 +1,5 @@
 var config = require('./apiConfig.js');
+var imageSafetyApi = require('./imageSafetyApi.js');
 
 /**
  * AI 生成职业形象照 - 调用后端 FastAPI 服务
@@ -15,7 +16,7 @@ function generateProfessionalPhoto(imagePath, templateId) {
 
     wx.showLoading({ title: '形象照生成中...' });
 
-    wx.uploadFile({
+    imageSafetyApi.uploadWithSafety({
       url: config.API_BASE_URL + '/api/professional-photo',
       filePath: imagePath,
       name: 'file',
@@ -42,7 +43,7 @@ function generateProfessionalPhoto(imagePath, templateId) {
         console.error('[professional] upload failed:', err);
         reject(new Error('生成失败，请重新上传符合要求的照片。'));
       }
-    });
+    }, 'professional_photo');
   });
 }
 

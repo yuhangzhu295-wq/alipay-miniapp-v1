@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from services.remove_bg import do_remove_bg
@@ -48,6 +48,19 @@ from services.hd_progress import begin_request, finish_request, get_request, nor
 from services.face_detector import get_face_detector_status
 from services.portrait_matting import matting_status
 from services.portrait_quality import PortraitQualityError, classify_image_type, validate_portrait_input
+from services.wechat_security import (
+    STATUS_ERROR,
+    STATUS_PASS,
+    STATUS_PENDING,
+    STATUS_REJECT,
+    STATUS_TIMEOUT,
+    ContentSafetyGateError,
+    ContentSafetyStore,
+    WeChatSecurityConfigurationError,
+    WeChatSecurityError,
+    WeChatSecurityService,
+    evaluate_media_check_callback,
+)
 from id_photo_engines import get_engine_info, get_engine_runtime_tags
 
 # Ensure static dirs exist in system temporary directory to prevent WeChat Developer Tools hot reload
@@ -61,6 +74,11 @@ UPLOADS_DIR = os.path.join(BASE_RUNTIME_DIR, "uploads")
 ASSET_RETENTION_SECONDS = int(os.environ.get("ID_PHOTO_ASSET_RETENTION_SECONDS", "86400"))
 ASSET_REGISTRY_PATH = os.path.join(BASE_RUNTIME_DIR, "asset_registry.json")
 USER_PHOTO_REGISTRY_PATH = os.path.join(BASE_RUNTIME_DIR, "user_photo_registry.json")
+CONTENT_SECURITY_REGISTRY_PATH = os.path.join(BASE_RUNTIME_DIR, "content_security_registry.json")
+CONTENT_SECURITY_STAGING_DIR = os.path.join(UPLOADS_DIR, "content-security")
+CONTENT_SECURITY_RETENTION_SECONDS = int(os.environ.get("WECHAT_CONTENT_SECURITY_RETENTION_SECONDS", "1800"))
+CONTENT_SECURITY_PENDING_TIMEOUT_SECONDS = int(os.environ.get("WECHAT_CONTENT_SECURITY_PENDING_TIMEOUT_SECONDS", "1800"))
+CONTENT_SECURITY_MAX_IMAGE_BYTES = int(os.environ.get("WECHAT_CONTENT_SECURITY_MAX_IMAGE_BYTES", str(10 * 1024 * 1024)))
 AUTH_SECRET = os.environ.get("ID_PHOTO_AUTH_SECRET") or hashlib.sha256(
     ("id-photo-auth:" + os.path.abspath(BASE_RUNTIME_DIR)).encode("utf-8")
 ).hexdigest()
@@ -69,6 +87,7 @@ ID_PHOTO_PREPARE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_PREPARE_TIMEOUT_
 ID_PHOTO_COMPOSE_TIMEOUT_SECONDS = int(os.environ.get("ID_PHOTO_COMPOSE_TIMEOUT_SECONDS", "60"))
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(CONTENT_SECURITY_STAGING_DIR, exist_ok=True)
 _asset_registry_lock = threading.RLock()
 _user_photo_lock = threading.RLock()
 _detail_job_lock = threading.RLock()
@@ -76,6 +95,13 @@ _detail_jobs = {}
 _detail_job_futures = {}
 _detail_job_executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="id-photo-detail")
 ID_PHOTO_DETAIL_MAX_ACTIVE = max(1, int(os.environ.get("ID_PHOTO_DETAIL_MAX_ACTIVE", "3")))
+wechat_security_service = WeChatSecurityService.from_env()
+content_safety_store = ContentSafetyStore(
+    CONTENT_SECURITY_REGISTRY_PATH,
+    CONTENT_SECURITY_STAGING_DIR,
+    CONTENT_SECURITY_RETENTION_SECONDS,
+    CONTENT_SECURITY_PENDING_TIMEOUT_SECONDS,
+)
 
 app = FastAPI(title="Photo ID Generator API")
 
@@ -85,6 +111,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(ContentSafetyGateError)
+async def content_safety_gate_exception_handler(_: Request, exc: ContentSafetyGateError):
+    return JSONResponse(status_code=exc.status_code, content={
+        "success": False,
+        "code": exc.code,
+        "status": exc.status,
+        "message": exc.message,
+    })
 
 # Serve output files so the frontend can download them via URL
 app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
@@ -385,6 +421,122 @@ def _auth_error(status_code=401, message="请先登录后再访问我的电子�
     })
 
 
+CONTENT_SAFETY_REJECTED_MESSAGE = "图片内容不符合平台规范，请更换图片后重试。"
+CONTENT_SAFETY_UNAVAILABLE_MESSAGE = "图片安全检测暂时不可用，请稍后重试。"
+CONTENT_SAFETY_PENDING_MESSAGE = "图片安全检测暂未完成，请稍后重试。"
+
+
+def _require_content_safety_user(request):
+    user = _require_user(request)
+    if not user:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_AUTH_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            401,
+            STATUS_ERROR,
+        )
+    if not user.get("openid"):
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_OPENID_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    return user
+
+
+def _content_safety_public_base_url(request):
+    configured = (
+        os.environ.get("WECHAT_CONTENT_SECURITY_PUBLIC_BASE_URL")
+        or os.environ.get("PUBLIC_BASE_URL")
+        or ""
+    ).strip().rstrip("/")
+    base_url = configured or str(request.base_url).rstrip("/")
+    if not base_url.startswith("https://"):
+        raise WeChatSecurityConfigurationError(
+            "WECHAT_CONTENT_SECURITY_PUBLIC_BASE_URL must be a public HTTPS URL"
+        )
+    return base_url
+
+
+def _content_safety_suffix(upload):
+    filename = str(getattr(upload, "filename", "") or "").lower()
+    suffix = os.path.splitext(filename)[1]
+    if suffix in {".jpg", ".jpeg", ".png", ".bmp", ".gif"}:
+        return suffix
+    content_type = str(getattr(upload, "content_type", "") or "").lower()
+    mime_suffixes = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/bmp": ".bmp",
+        "image/gif": ".gif",
+    }
+    if content_type in mime_suffixes:
+        return mime_suffixes[content_type]
+    raise ContentSafetyGateError(
+        "CONTENT_SAFETY_UNSUPPORTED_IMAGE",
+        CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+        400,
+        STATUS_ERROR,
+    )
+
+
+def _assert_verified_content_safety(request, security_check_id, image_bytes):
+    user = _require_content_safety_user(request)
+    check_id = str(security_check_id or "").strip()
+    if not check_id:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            428,
+            STATUS_ERROR,
+        )
+    record = content_safety_store.get_owned(check_id, user["userId"])
+    if not record:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_NOT_FOUND",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    status = str(record.get("status") or STATUS_ERROR)
+    if status == STATUS_REJECT:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_REJECTED",
+            CONTENT_SAFETY_REJECTED_MESSAGE,
+            403,
+            status,
+        )
+    if status != STATUS_PASS:
+        code = "CONTENT_SAFETY_PENDING" if status == STATUS_PENDING else "CONTENT_SAFETY_UNAVAILABLE"
+        message = CONTENT_SAFETY_PENDING_MESSAGE if status == STATUS_PENDING else CONTENT_SAFETY_UNAVAILABLE_MESSAGE
+        raise ContentSafetyGateError(code, message, 503, status)
+    expected_hash = str(record.get("sha256") or "")
+    actual_hash = hashlib.sha256(image_bytes).hexdigest()
+    if not expected_hash or not hmac.compare_digest(expected_hash, actual_hash):
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_ASSET_MISMATCH",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    return record
+
+
+async def _read_verified_image(upload, request, security_check_id):
+    image_bytes = await upload.read()
+    if not image_bytes:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_EMPTY_IMAGE",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            400,
+            STATUS_ERROR,
+        )
+    _assert_verified_content_safety(request, security_check_id, image_bytes)
+    return image_bytes
+
+
 def _normalize_user_id(value):
     raw = str(value or "").strip()
     if not raw:
@@ -469,11 +621,13 @@ async def _asset_cleanup_loop():
     while True:
         await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
         await asyncio.to_thread(cleanup_expired_assets)
+        await asyncio.to_thread(content_safety_store.cleanup)
 
 
 @app.on_event("startup")
 async def _startup_asset_retention_cleanup():
     await asyncio.to_thread(cleanup_expired_assets)
+    await asyncio.to_thread(content_safety_store.cleanup)
     asyncio.create_task(_asset_cleanup_loop())
 
 
@@ -694,6 +848,171 @@ async def auth_me(request: Request):
     return {"success": True, "user": user}
 
 
+def _content_safety_response(record, reused=False):
+    payload = content_safety_store.public_record(record)
+    payload.update({"success": True, "reused": bool(reused)})
+    return payload
+
+
+@app.post("/api/content-security/images")
+async def submit_content_security_image(
+    request: Request,
+    image: UploadFile = File(None),
+    file: UploadFile = File(None),
+    purpose: str = Form("image_processing"),
+):
+    """Stage a user image, submit mediaCheckAsync, and return only a pending check id."""
+    user = _require_content_safety_user(request)
+    upload = image or file
+    if upload is None:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_EMPTY_IMAGE",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            400,
+            STATUS_ERROR,
+        )
+    image_bytes = await upload.read()
+    if not image_bytes or len(image_bytes) > CONTENT_SECURITY_MAX_IMAGE_BYTES:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_IMAGE_INVALID",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            400,
+            STATUS_ERROR,
+        )
+    image_sha256 = hashlib.sha256(image_bytes).hexdigest()
+    reusable = content_safety_store.find_reusable(user["userId"], image_sha256)
+    if reusable:
+        status_code = 200 if reusable.get("status") == STATUS_PASS else 202
+        return JSONResponse(status_code=status_code, content=_content_safety_response(reusable, reused=True))
+
+    suffix = _content_safety_suffix(upload)
+    public_base_url = _content_safety_public_base_url(request)
+    try:
+        wechat_security_service.ensure_configured(require_callback=True)
+    except WeChatSecurityConfigurationError as exc:
+        print("[content-security] configuration unavailable", {"reason": str(exc)}, flush=True)
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_UNAVAILABLE",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            503,
+            STATUS_ERROR,
+        )
+
+    image_id = "img_" + uuid.uuid4().hex
+    filename = image_id + suffix
+    staging_path = os.path.join(CONTENT_SECURITY_STAGING_DIR, filename)
+    with open(staging_path, "wb") as f:
+        f.write(image_bytes)
+    media_url = public_base_url + "/uploads/content-security/" + filename
+    record = content_safety_store.create_pending(
+        user_id=user["userId"],
+        user_openid=user["openid"],
+        image_sha256=image_sha256,
+        image_size=len(image_bytes),
+        image_id=image_id,
+        staging_path=staging_path,
+        media_url=media_url,
+        purpose=purpose,
+    )
+    try:
+        submitted = await asyncio.to_thread(
+            wechat_security_service.check_image,
+            media_url,
+            user["openid"],
+        )
+        record = content_safety_store.mark_submitted(record["securityCheckId"], submitted["traceId"]) or record
+        print(
+            "[content-security] mediaCheckAsync submitted",
+            {"checkId": record["securityCheckId"], "traceId": submitted["traceId"], "purpose": purpose},
+            flush=True,
+        )
+        return JSONResponse(status_code=202, content=_content_safety_response(record))
+    except (WeChatSecurityConfigurationError, WeChatSecurityError) as exc:
+        content_safety_store.mark_terminal(record["securityCheckId"], STATUS_ERROR, "SUBMIT_FAILED")
+        print(
+            "[content-security] mediaCheckAsync failed",
+            {"checkId": record["securityCheckId"], "reason": str(exc)},
+            flush=True,
+        )
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_UNAVAILABLE",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            503,
+            STATUS_ERROR,
+        )
+
+
+@app.get("/api/content-security/images/{security_check_id}")
+async def get_content_security_image_status(security_check_id: str, request: Request):
+    user = _require_content_safety_user(request)
+    record = content_safety_store.get_owned(security_check_id, user["userId"])
+    if not record:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_NOT_FOUND",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            404,
+            STATUS_ERROR,
+        )
+    return _content_safety_response(record)
+
+
+def _get_wechat_callback_signature(request, encrypted=""):
+    params = request.query_params
+    return (
+        params.get("msg_signature") or params.get("signature") or "",
+        params.get("timestamp") or "",
+        params.get("nonce") or "",
+        encrypted,
+    )
+
+
+@app.get("/api/content-security/callback")
+async def verify_content_security_callback(request: Request):
+    echo = str(request.query_params.get("echostr") or "")
+    encrypted_echo = echo if request.query_params.get("msg_signature") else ""
+    signature, timestamp, nonce, _ = _get_wechat_callback_signature(request, encrypted_echo)
+    if not wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted_echo):
+        return PlainTextResponse("forbidden", status_code=403)
+    if encrypted_echo and wechat_security_service.encoding_aes_key:
+        try:
+            return PlainTextResponse(wechat_security_service._decrypt_callback(echo).decode("utf-8"))
+        except WeChatSecurityError:
+            return PlainTextResponse("forbidden", status_code=403)
+    return PlainTextResponse(echo or "success")
+
+
+@app.post("/api/content-security/callback")
+async def receive_content_security_callback(request: Request):
+    raw_body = await request.body()
+    try:
+        envelope = wechat_security_service.parse_callback_envelope(raw_body)
+        encrypted = str(envelope.get("Encrypt") or envelope.get("encrypt") or "").strip()
+        signature, timestamp, nonce, encrypted = _get_wechat_callback_signature(request, encrypted)
+        if not wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted):
+            print("[content-security] callback signature rejected", flush=True)
+            return PlainTextResponse("forbidden", status_code=403)
+        payload = wechat_security_service.parse_callback_payload(raw_body)
+    except WeChatSecurityError as exc:
+        print("[content-security] callback parse rejected", {"reason": str(exc)}, flush=True)
+        return PlainTextResponse("fail", status_code=400)
+
+    callback_app_id = str(payload.get("appid") or payload.get("appId") or "").strip()
+    if callback_app_id and wechat_security_service.app_id and callback_app_id != wechat_security_service.app_id:
+        print("[content-security] callback appid rejected", flush=True)
+        return PlainTextResponse("forbidden", status_code=403)
+    trace_id = str(payload.get("trace_id") or payload.get("traceId") or "").strip()
+    if not trace_id:
+        return PlainTextResponse("success")
+    status, reason = evaluate_media_check_callback(payload)
+    record = content_safety_store.apply_callback(trace_id, status, reason, payload)
+    print(
+        "[content-security] mediaCheckAsync callback",
+        {"traceId": trace_id, "status": status, "matched": bool(record)},
+        flush=True,
+    )
+    return PlainTextResponse("success")
+
+
 @app.get("/api/user/photos/isolation-status")
 async def user_photo_isolation_status():
     return {
@@ -871,31 +1190,37 @@ def watermark_api_health():
 
 @app.post("/api/remove-bg")
 async def remove_bg(
+    request: Request,
     file: UploadFile = File(...),
-    model: str = Form("u2net_human_seg")
+    model: str = Form("u2net_human_seg"),
+    securityCheckId: str = Form(""),
 ):
     """AI 抠图 — 返回透明背景 PNG 的 URL"""
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         path = do_remove_bg(img_bytes, model)
         with open(path, "rb") as f:
             out_bytes = f.read()
         _remove_temp_file(path)
         image_url = save_output(out_bytes, ".png", asset_type="remove_bg_result", source_type="remove_bg")
         return {"success": True, "imageUrl": image_url}
+    except ContentSafetyGateError:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 
 @app.post("/api/change-bg")
 async def change_bg(
+    request: Request,
     file: UploadFile = File(...),
     bgColor: str = Form("blue"),
-    model: str = Form("u2net_human_seg")
+    model: str = Form("u2net_human_seg"),
+    securityCheckId: str = Form(""),
 ):
     """AI 抠图 + 换底色 — 返回 JPG 的 URL"""
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         result = do_change_bg(img_bytes, bgColor, model)
         with open(result["path"], "rb") as f:
             out_bytes = f.read()
@@ -915,6 +1240,8 @@ async def change_bg(
             "message": str(qe),
             "quality": qe.quality
         })
+    except ContentSafetyGateError:
+        raise
     except ImportError:
         return JSONResponse(status_code=503, content={
             "success": False,
@@ -926,11 +1253,13 @@ async def change_bg(
 
 @app.post("/api/inpaint")
 async def inpaint(
+    request: Request,
     file: UploadFile = File(...),
     x: int = Form(0),
     y: int = Form(0),
     width: int = Form(100),
     height: int = Form(100),
+    securityCheckId: str = Form(""),
 ):
     """去水印 / Inpainting — 根据 IOPaint 是否配置，选择高级 AI 去水印或 OpenCV 本地兜底"""
     iopaint_url = os.environ.get("IOPAINT_URL", "")
@@ -939,7 +1268,7 @@ async def inpaint(
     backend_mode = "OpenCV inpaint"
     message = "当前为 OpenCV 本地修复，复杂水印建议配置 IOPaint。"
     
-    img_bytes = await file.read()
+    img_bytes = await _read_verified_image(file, request, securityCheckId)
     out_bytes = None
     
     # Try calling IOPaint if configured
@@ -1007,28 +1336,37 @@ async def inpaint(
 
 
 @app.post("/api/compress")
-async def compress(file: UploadFile = File(...), targetKB: int = Form(100)):
+async def compress(
+    request: Request,
+    file: UploadFile = File(...),
+    targetKB: int = Form(100),
+    securityCheckId: str = Form(""),
+):
     """目标 KB 压缩 — 返回压缩后 JPG 的 URL"""
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         path, actual_kb = do_compress(img_bytes, targetKB)
         with open(path, "rb") as f:
             out_bytes = f.read()
         _remove_temp_file(path)
         image_url = save_output(out_bytes, ".jpg", asset_type="compress_result", source_type="compress")
         return {"success": True, "imageUrl": image_url, "targetKB": targetKB, "actualKB": actual_kb}
+    except ContentSafetyGateError:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
 
 
 @app.post("/api/professional-photo")
 async def professional_photo(
+    request: Request,
     file: UploadFile = File(...),
     templateId: str = Form("preserve_original"),
+    securityCheckId: str = Form(""),
 ):
     """职业形象照 — 返回 JPG 的 URL"""
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         result = generate_id_photo_v2(
             img_bytes,
             purpose="career_portrait",
@@ -1060,6 +1398,8 @@ async def professional_photo(
             "message": str(qe),
             "quality": qe.quality
         })
+    except ContentSafetyGateError:
+        raise
     except TemplateError as te:
         return JSONResponse(status_code=te.status_code, content={
             "success": False,
@@ -1078,6 +1418,7 @@ async def professional_photo(
 
 @app.post("/api/id-photo/generate-v2")
 async def id_photo_generate_v2(
+    request: Request,
     image: UploadFile = File(None),
     file: UploadFile = File(None),
     purpose: str = Form("official_id_photo"),
@@ -1095,6 +1436,7 @@ async def id_photo_generate_v2(
     enhanceLevel: str = Form("standard"),
     outputType: str = Form("jpg"),
     hairRetouch: bool = Form(False),
+    securityCheckId: str = Form(""),
 ):
     """证件照 / 职业形象照统一生成 v2。"""
     upload = image or file
@@ -1105,7 +1447,7 @@ async def id_photo_generate_v2(
             "message": "请先上传图片。"
         })
     try:
-        img_bytes = await upload.read()
+        img_bytes = await _read_verified_image(upload, request, securityCheckId)
         print(
             "[id-photo] generate-v2 request",
             {
@@ -1185,6 +1527,8 @@ async def id_photo_generate_v2(
                 "largestComponentRatio": qe.quality.get("largestComponentRatio", 0)
             }
         })
+    except ContentSafetyGateError:
+        raise
     except TemplateError as te:
         return JSONResponse(status_code=te.status_code, content={
             "success": False,
@@ -1204,6 +1548,7 @@ async def id_photo_generate_v2(
 
 @app.post("/api/id-photo/prepare")
 async def id_photo_prepare(
+    request: Request,
     image: UploadFile = File(None),
     file: UploadFile = File(None),
     purpose: str = Form("official_id_photo"),
@@ -1217,6 +1562,7 @@ async def id_photo_prepare(
     composition: str = Form(""),
     outfit: str = Form("preserve_original"),
     hairRetouch: bool = Form(False),
+    securityCheckId: str = Form(""),
 ):
     request_id = uuid.uuid4().hex[:10]
     started = time.perf_counter()
@@ -1231,7 +1577,7 @@ async def id_photo_prepare(
         })
     try:
         read_started = time.perf_counter()
-        img_bytes = await upload.read()
+        img_bytes = await _read_verified_image(upload, request, securityCheckId)
         save_upload_ms = int((time.perf_counter() - read_started) * 1000)
         upload_saved_epoch = time.time()
         print(f"[id-photo] requestId={request_id} step=load_image cost={save_upload_ms}ms")
@@ -1403,6 +1749,8 @@ async def id_photo_prepare(
             "prepareFinishedAt": _utc_iso(),
             "composeFinishedAt": None,
         })
+    except ContentSafetyGateError:
+        raise
     except TemplateError as te:
         return JSONResponse(status_code=te.status_code, content={
             "success": False,
@@ -1648,17 +1996,21 @@ def id_photo_capabilities():
 
 @app.post("/api/portrait/inspect")
 async def portrait_inspect(
+    request: Request,
     image: UploadFile = File(None),
     file: UploadFile = File(None),
+    securityCheckId: str = Form(""),
 ):
     """上传后识别图片类型：真人 / 二次元 / 插画 / 物体 / 风景。"""
     upload = image or file
     if upload is None:
         return JSONResponse(status_code=400, content={"success": False, "message": "请先上传图片。"})
     try:
-        img_bytes = await upload.read()
+        img_bytes = await _read_verified_image(upload, request, securityCheckId)
         quality = classify_image_type(img_bytes)
         return {"success": True, "imageType": quality.get("imageType", "unknown"), "quality": quality}
+    except ContentSafetyGateError:
+        raise
     except Exception:
         return JSONResponse(status_code=200, content={
             "success": True,
@@ -1669,12 +2021,14 @@ async def portrait_inspect(
 
 @app.post("/api/portrait/validate")
 async def portrait_validate(
+    request: Request,
     file: UploadFile = File(...),
-    task: str = Form("changeBg")
+    task: str = Form("changeBg"),
+    securityCheckId: str = Form(""),
 ):
     """证件照 / 职业形象照输入图片质量校验"""
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         normalized_task = "professional" if task == "professional" else "changeBg"
         quality = validate_portrait_input(img_bytes, task=normalized_task)
         return {"success": True, "message": "图片可用于生成", "quality": quality}
@@ -1685,6 +2039,8 @@ async def portrait_validate(
             "message": str(qe),
             "quality": qe.quality
         })
+    except ContentSafetyGateError:
+        raise
     except Exception:
         return JSONResponse(status_code=500, content={
             "success": False,
@@ -1696,8 +2052,10 @@ async def portrait_validate(
 
 @app.post("/api/verify-photo")
 async def verify_photo(
+    request: Request,
     file: UploadFile = File(...),
     model: str = Form("minicpm-v:latest"),
+    securityCheckId: str = Form(""),
 ):
     """AI 证件照质检 — 调用本地 Ollama 视觉模型返回结构化合规评估 JSON"""
     import base64
@@ -1706,7 +2064,7 @@ async def verify_photo(
     import re
 
     try:
-        img_bytes = await file.read()
+        img_bytes = await _read_verified_image(file, request, securityCheckId)
         img_b64 = base64.b64encode(img_bytes).decode("utf-8")
         
         prompt = """请分析这张图片是否适合作为证件照，并只返回 JSON，不要返回 Markdown，不要返回解释文字。
@@ -1905,6 +2263,8 @@ async def verify_photo(
             "raw": raw_response
         }
 
+    except ContentSafetyGateError:
+        raise
     except Exception as outer_err:
         # 绝对不崩溃，外层捕获返回规则兜底
         return {
@@ -1924,16 +2284,18 @@ async def verify_photo(
 
 @app.post("/api/watermark/manual-remove")
 async def watermark_manual_remove(
+    request: Request,
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
     mode: str = Form("manual"),
     quality: str = Form("manual"),
     engine: str = Form("opencv_manual"),
-    strength: str = Form("medium")
+    strength: str = Form("medium"),
+    securityCheckId: str = Form("")
 ):
     """手动擦除去水印"""
     try:
-        img_bytes = await image.read()
+        img_bytes = await _read_verified_image(image, request, securityCheckId)
         if mask:
             mask_bytes = await mask.read()
         else:
@@ -1964,22 +2326,26 @@ async def watermark_manual_remove(
             status_code=400,
             content={"success": False, "message": str(ve), "debug": getattr(ve, "debug", {})}
         )
+    except ContentSafetyGateError:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"手动去水印处理失败: {str(e)}"})
 
 
 @app.post("/api/watermark/quick-remove")
 async def watermark_quick_remove(
+    request: Request,
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
     mode: str = Form("quick"),
     quality: str = Form("quick"),
     engine: str = Form("opencv_quick"),
-    strength: str = Form("medium")
+    strength: str = Form("medium"),
+    securityCheckId: str = Form("")
 ):
     """快速扫描/轻量去水印"""
     try:
-        img_bytes = await image.read()
+        img_bytes = await _read_verified_image(image, request, securityCheckId)
         if mask:
             mask_bytes = await mask.read()
         else:
@@ -2010,12 +2376,15 @@ async def watermark_quick_remove(
             status_code=400,
             content={"success": False, "message": str(ve), "debug": getattr(ve, "debug", {})}
         )
+    except ContentSafetyGateError:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"快速去水印处理失败: {str(e)}"})
 
 
 @app.post("/api/watermark/hd-remove")
 async def watermark_hd_remove(
+    request: Request,
     image: UploadFile = File(...),
     mask: UploadFile = File(None),
     mode: str = Form("hd"),
@@ -2024,6 +2393,7 @@ async def watermark_hd_remove(
     requestId: str = Form(""),
     smartExpand: str = Form("false"),
     maskDilationPx: int = Form(5),
+    securityCheckId: str = Form(""),
 ):
     """高清修复去水印"""
     request_started = time.perf_counter()
@@ -2038,7 +2408,7 @@ async def watermark_hd_remove(
         })
     try:
         upload_started = time.perf_counter()
-        img_bytes = await image.read()
+        img_bytes = await _read_verified_image(image, request, securityCheckId)
         if mask:
             mask_bytes = await mask.read()
         else:
@@ -2118,6 +2488,9 @@ async def watermark_hd_remove(
             status_code=400,
             content={"success": False, "message": str(ve), "fallbackAvailable": True}
         )
+    except ContentSafetyGateError as exc:
+        finish_request(request_id, False, code=exc.code)
+        raise
     except Exception as e:
         finish_request(request_id, False, code="HD_INTERNAL_ERROR")
         return JSONResponse(
@@ -2140,6 +2513,7 @@ def watermark_hd_progress(request_id: str):
 
 @app.post("/api/watermark/remove-v2")
 async def watermark_remove_v2(
+    request: Request,
     image: UploadFile = File(...),
     strokesJson: str = Form(...),
     originalWidth: int = Form(...),
@@ -2152,6 +2526,7 @@ async def watermark_remove_v2(
     requestId: str = Form(""),
     smartExpand: str = Form("false"),
     maskDilationPx: int = Form(5),
+    securityCheckId: str = Form(""),
 ):
     """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
     request_started = time.perf_counter()
@@ -2179,7 +2554,7 @@ async def watermark_remove_v2(
         normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         stroke_request_parse_ms = int((time.perf_counter() - parse_started) * 1000)
         upload_started = time.perf_counter()
-        image_bytes = await image.read()
+        image_bytes = await _read_verified_image(image, request, securityCheckId)
         upload_save_ms = int((time.perf_counter() - upload_started) * 1000)
         if is_hd:
             update_request(request_id, "analyzing")
@@ -2260,6 +2635,10 @@ async def watermark_remove_v2(
             "message": str(exc),
             "debug": getattr(exc, "debug", {}),
         })
+    except ContentSafetyGateError as exc:
+        if is_hd:
+            finish_request(request_id, False, code=exc.code)
+        raise
     except Exception as exc:
         if is_hd:
             finish_request(request_id, False, code="HD_INTERNAL_ERROR")
@@ -2272,16 +2651,18 @@ async def watermark_remove_v2(
 
 @app.post("/api/watermark/scan-template")
 async def watermark_scan_template(
+    request: Request,
     image: UploadFile = File(...),
     x: int = Form(0),
     y: int = Form(0),
     w: int = Form(100),
     h: int = Form(100),
-    threshold: float = Form(0.7)
+    threshold: float = Form(0.7),
+    securityCheckId: str = Form(""),
 ):
     """扫描水印模版匹配"""
     try:
-        img_bytes = await image.read()
+        img_bytes = await _read_verified_image(image, request, securityCheckId)
         mask_bytes, rects = do_scan_template(img_bytes, x, y, w, h, threshold)
         mask_url = save_output(mask_bytes, ".png", asset_type="watermark_scan_mask", source_type="watermark_scan_template")
         return {
@@ -2291,6 +2672,8 @@ async def watermark_scan_template(
         }
     except ValueError as ve:
         return JSONResponse(status_code=400, content={"success": False, "message": str(ve)})
+    except ContentSafetyGateError:
+        raise
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"扫描水印模版失败: {str(e)}"})
 
