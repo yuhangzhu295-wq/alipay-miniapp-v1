@@ -49,6 +49,7 @@ const CLI_NODE_PATH = path.join(DEVTOOLS_HOME, 'node.exe')
 const CLI_JS_PATH = path.join(DEVTOOLS_HOME, 'cli.js')
 let AUTO_PORT = Number(process.env.WECHAT_AUTOMATOR_PORT || 9430)
 const BASE_URL = process.env.API_BASE_URL || 'https://tupzjianzhao.chat'
+const ID_FIXTURE_URL = String(process.env.DEVTOOLS_ID_FIXTURE_URL || '')
 
 fs.mkdirSync(FINAL, { recursive: true })
 fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
@@ -214,7 +215,13 @@ async function waitForStorageLength(miniProgram, key, minimum, ms = 15000) {
 }
 
 async function elementCount(page, selector) {
-  return (await timeout(`query ${selector}`, page.$$(selector), 10000)).length
+  try {
+    return (await timeout(`query ${selector}`, page.$$(selector), 10000)).length
+  } catch (error) {
+    // DevTools can leave a missing selector pending instead of resolving to [].
+    if (error && String(error.message || error).includes(`query ${selector} timed out`)) return 0
+    throw error
+  }
 }
 
 async function waitForElementCount(page, selector, minimum = 1, ms = 20000) {
@@ -287,98 +294,106 @@ async function route(miniProgram, url, method = 'reLaunch') {
   }
 }
 
-function loadIdSample() {
-  try {
-    const scriptPath = path.join(ROOT, 'server', 'scripts', 'get_fresh_id_sample.py')
-    const res = childProcess.execSync(`python "${scriptPath}" "${BASE_URL}"`, { encoding: 'utf8', timeout: 60000 })
-    const match = res.match(/FINAL RESULT:\s*(\{.*\})/)
-    if (match) {
-      const fresh = JSON.parse(match[1])
-      if (fresh.preparedId && fresh.blueUrl) {
-        return {
-          report: { status: 'PASS' },
-          sample: {
-            sample_id: 'fresh-devtools-sample',
-            prepared_id: fresh.preparedId,
-            input_path: fresh.inputPath || '',
-            compose_results: {
-              blue: { finalImageUrl: fresh.blueUrl },
-            },
-          },
-        }
-      }
-    }
-  } catch (ignored) {}
+function parseWxPayload(response) {
+  if (response && response.data && typeof response.data === 'object') return response.data
+  try { return JSON.parse((response && response.data) || '{}') } catch (error) { return {} }
+}
 
-  if (process.env.DEVTOOLS_PREPARED_ID && process.env.DEVTOOLS_BLUE_URL) {
-    return {
-      report: { status: 'PASS', source: 'current cloud repair run' },
-      sample: {
-        sample_id: process.env.DEVTOOLS_SAMPLE_ID || 'cloud-repair-S07',
-        prepared_id: process.env.DEVTOOLS_PREPARED_ID,
-        input_path: process.env.DEVTOOLS_INPUT_PATH || '',
-        compose_results: {
-          blue: { finalImageUrl: process.env.DEVTOOLS_BLUE_URL },
-        },
-      },
-    }
+async function loadIdSample(miniProgram) {
+  if (!ID_FIXTURE_URL) throw new Error('DEVTOOLS_ID_FIXTURE_URL must point to a temporary frontal portrait fixture')
+  const login = await miniProgram.callWxMethod('login', {})
+  if (!login || !login.code) throw new Error('Fresh ID-photo sample login failed')
+  const authResponse = await miniProgram.callWxMethod('request', {
+    url: `${BASE_URL}/api/auth/login`,
+    method: 'POST',
+    header: { 'content-type': 'application/json' },
+    data: {
+      code: login.code,
+      clientUserId: `devtools_business_${Date.now()}`,
+      userInfo: { nickName: 'business-validator', avatarUrl: '' },
+    },
+    timeout: 30000,
+  })
+  const authData = parseWxPayload(authResponse)
+  if (authResponse.statusCode !== 200 || !authData.token || authData.openidBound !== true) {
+    throw new Error('Fresh ID-photo sample OpenID binding failed')
   }
-  if (fs.existsSync(CURRENT_FIX_ID_REPORT)) {
-    const currentReport = JSON.parse(fs.readFileSync(CURRENT_FIX_ID_REPORT, 'utf8'))
-    const sample = currentReport && Array.isArray(currentReport.samples)
-      ? currentReport.samples.find((item) => item && item.prepare && item.prepare.preparedId && item.compose && item.compose.blue && item.compose.blue.response)
-      : null
-    const blue = sample && sample.compose && sample.compose.blue
-    const finalImageUrl = blue && blue.response && (blue.response.finalImageUrl || blue.response.resultUrl || blue.response.imageUrl)
-    if (currentReport && currentReport.passed === true && finalImageUrl) {
-      return {
-        report: Object.assign({ status: 'PASS' }, currentReport),
-        sample: {
-          sample_id: `current-fixes-${sample.filename || 'id-photo-sample'}`,
-          prepared_id: sample.prepare.preparedId,
-          input_path: sample.localSourceCopy || sample.sourcePath || '',
-          compose_results: {
-            blue: { finalImageUrl },
-          },
-        },
-      }
-    }
+  const authHeader = {
+    Authorization: `Bearer ${authData.token}`,
+    'X-User-Token': authData.token,
   }
+  const fixture = await miniProgram.callWxMethod('downloadFile', {
+    url: ID_FIXTURE_URL,
+    timeout: 60000,
+  })
+  if (!fixture || fixture.statusCode !== 200 || !fixture.tempFilePath) {
+    throw new Error('Fresh ID-photo fixture download failed')
+  }
+  const safetyResponse = await miniProgram.callWxMethod('uploadFile', {
+    url: `${BASE_URL}/api/content-security/images`,
+    filePath: fixture.tempFilePath,
+    name: 'image',
+    header: authHeader,
+    formData: { purpose: 'id_photo' },
+    timeout: 60000,
+  })
+  const safetyData = parseWxPayload(safetyResponse)
+  if (![200, 202].includes(Number(safetyResponse.statusCode)) || !safetyData.securityCheckId) {
+    throw new Error('Fresh ID-photo security submission failed')
+  }
+  let safetyStatus = String(safetyData.status || '').toUpperCase()
+  const safetyStarted = Date.now()
+  while (safetyStatus === 'PENDING' && Date.now() - safetyStarted < 120000) {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    const pollResponse = await miniProgram.callWxMethod('request', {
+      url: `${BASE_URL}/api/content-security/images/${encodeURIComponent(safetyData.securityCheckId)}`,
+      method: 'GET',
+      header: authHeader,
+      timeout: 15000,
+    })
+    safetyStatus = String(parseWxPayload(pollResponse).status || '').toUpperCase()
+  }
+  if (safetyStatus !== 'PASS') throw new Error(`Fresh ID-photo security status=${safetyStatus || 'UNKNOWN'}`)
 
-  if (fs.existsSync(CLOUD_FLOW_REPORT)) {
-    const cloudReport = JSON.parse(fs.readFileSync(CLOUD_FLOW_REPORT, 'utf8'))
-    const idPhoto = cloudReport && cloudReport.idPhoto
-    const compose = idPhoto && Array.isArray(idPhoto.compose)
-      ? idPhoto.compose.find((item) => item && item.color === 'blue')
-      : null
-    const finalImageUrl = compose && compose.request && compose.request.data && compose.request.data.finalImageUrl
-    if (
-      cloudReport.status === 'PASS' &&
-      cloudReport.baseUrl === BASE_URL &&
-      idPhoto &&
-      idPhoto.preparedId &&
-      finalImageUrl
-    ) {
-      return {
-        report: cloudReport,
-        sample: {
-          sample_id: `${cloudReport.runId || RUN_ID}-cloud-blue`,
-          prepared_id: idPhoto.preparedId,
-          input_path: (cloudReport.source && (cloudReport.source.path || cloudReport.source.sourceFile)) || '',
-          compose_results: {
-            blue: { finalImageUrl },
-          },
-        },
-      }
-    }
+  const prepareResponse = await miniProgram.callWxMethod('uploadFile', {
+    url: `${BASE_URL}/api/id-photo/prepare`,
+    filePath: fixture.tempFilePath,
+    name: 'image',
+    header: authHeader,
+    formData: {
+      securityCheckId: safetyData.securityCheckId,
+      specId: 'yicun',
+      widthPx: '295',
+      heightPx: '413',
+      composition: 'head_shoulder',
+      hairRetouch: 'false',
+    },
+    timeout: 120000,
+  })
+  const prepared = parseWxPayload(prepareResponse)
+  if (prepareResponse.statusCode !== 200 || !prepared.success || !prepared.preparedId) {
+    throw new Error(`Fresh ID-photo prepare failed: ${prepared.code || prepareResponse.statusCode}`)
   }
-
-  const report = JSON.parse(fs.readFileSync(ID_REPORT, 'utf8'))
-  const sample = report && report.real && report.real.samples && report.real.samples[0]
-  if (!sample || !sample.prepared_id || !sample.input_path) {
-    throw new Error('Fresh ID-photo validation sample is unavailable')
+  const composeResponse = await miniProgram.callWxMethod('request', {
+    url: `${BASE_URL}/api/id-photo/compose`,
+    method: 'POST',
+    header: Object.assign({ 'content-type': 'application/x-www-form-urlencoded' }, authHeader),
+    data: { preparedId: prepared.preparedId, bgColor: '#1A73E8', bgColorName: 'blue' },
+    timeout: 60000,
+  })
+  const composed = parseWxPayload(composeResponse)
+  if (composeResponse.statusCode !== 200 || !composed.success || !composed.finalImageUrl) {
+    throw new Error(`Fresh ID-photo blue compose failed: ${composed.code || composeResponse.statusCode}`)
   }
-  return { report, sample }
+  return {
+    report: { status: 'PASS', source: 'live WeChat security-gated flow' },
+    sample: {
+      sample_id: `fresh-devtools-sample-${Date.now()}`,
+      prepared_id: prepared.preparedId,
+      input_path: fixture.tempFilePath,
+      compose_results: { blue: { finalImageUrl: composed.finalImageUrl } },
+    },
+  }
 }
 
 function markdown(payload) {
@@ -521,7 +536,7 @@ async function main() {
       }
     }
 
-    const { report: idReport, sample } = loadIdSample()
+    const { report: idReport, sample } = await loadIdSample(miniProgram)
     // A fresh automation session isolates the generator flow from the official
     // DevTools' nested-route lock after entering the specifications page.
     miniProgram = await restartAutomationSession(miniProgram)
