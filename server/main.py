@@ -799,8 +799,10 @@ async def auth_login(request: Request):
     openid = ""
     provider = "local_profile"
 
-    appid = os.environ.get("WECHAT_APPID", "").strip()
-    secret = os.environ.get("WECHAT_SECRET", "").strip()
+    # Login and content-security requests must use the exact same server-only
+    # WeChat application identity resolved by WeChatSecurityService.from_env().
+    appid = wechat_security_service.app_id
+    secret = wechat_security_service.app_secret
     if appid and secret and code:
         try:
             import requests

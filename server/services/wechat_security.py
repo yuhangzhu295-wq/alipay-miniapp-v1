@@ -91,9 +91,33 @@ class WeChatSecurityService:
 
     @classmethod
     def from_env(cls) -> "WeChatSecurityService":
+        app_id = (os.environ.get("WECHAT_APP_ID") or "").strip()
+        app_secret = (os.environ.get("WECHAT_APP_SECRET") or "").strip()
+        if not app_id:
+            app_id = (os.environ.get("WECHAT_APPID") or "").strip()
+            if app_id:
+                print(
+                    "[wechat-config] deprecated WECHAT_APPID is in use; "
+                    "canonicalAppIdEnv=WECHAT_APP_ID",
+                    flush=True,
+                )
+        if not app_secret:
+            app_secret = (os.environ.get("WECHAT_SECRET") or "").strip()
+            if app_secret:
+                print(
+                    "[wechat-config] deprecated WECHAT_SECRET is in use; "
+                    "canonicalSecretEnv=WECHAT_APP_SECRET",
+                    flush=True,
+                )
+        print(
+            "[wechat-config] "
+            f"wechatAppIdConfigured={str(bool(app_id)).lower()} "
+            f"wechatSecretConfigured={str(bool(app_secret)).lower()}",
+            flush=True,
+        )
         return cls(
-            app_id=os.environ.get("WECHAT_APPID") or os.environ.get("WECHAT_APP_ID") or "",
-            app_secret=os.environ.get("WECHAT_APP_SECRET") or os.environ.get("WECHAT_SECRET") or "",
+            app_id=app_id,
+            app_secret=app_secret,
             callback_token=os.environ.get("WECHAT_CONTENT_SECURITY_CALLBACK_TOKEN") or "",
             encoding_aes_key=os.environ.get("WECHAT_CONTENT_SECURITY_ENCODING_AES_KEY") or "",
             scene=int(os.environ.get("WECHAT_CONTENT_SECURITY_SCENE", "4") or 4),
@@ -103,7 +127,7 @@ class WeChatSecurityService:
     def configuration_errors(self, require_callback: bool = True) -> list[str]:
         errors = []
         if not self.app_id:
-            errors.append("WECHAT_APPID")
+            errors.append("WECHAT_APP_ID")
         if not self.app_secret:
             errors.append("WECHAT_APP_SECRET")
         if require_callback and not self.callback_token:
