@@ -925,7 +925,11 @@ async def submit_content_security_image(
         record = content_safety_store.mark_submitted(record["securityCheckId"], submitted["traceId"]) or record
         print(
             "[content-security] mediaCheckAsync submitted",
-            {"checkId": record["securityCheckId"], "traceId": submitted["traceId"], "purpose": purpose},
+            {
+                "checkId": record["securityCheckId"],
+                "traceIdHash": _wechat_callback_trace_hash(submitted["traceId"]),
+                "purpose": purpose,
+            },
             flush=True,
         )
         return JSONResponse(status_code=202, content=_content_safety_response(record))
@@ -968,12 +972,52 @@ def _get_wechat_callback_signature(request, encrypted=""):
     )
 
 
+def _wechat_callback_trace_hash(trace_id):
+    value = str(trace_id or "").strip()
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16] if value else ""
+
+
+def _wechat_callback_message_format(raw_body):
+    stripped = bytes(raw_body or b"").lstrip()
+    if stripped.startswith(b"{"):
+        return "json"
+    if stripped.startswith(b"<"):
+        return "xml"
+    return "unknown"
+
+
+def _log_wechat_security_callback(**fields):
+    payload = {
+        "receivedAt": fields.get("receivedAt") or _utc_iso(time.time()),
+        "method": fields.get("method") or "",
+        "path": fields.get("path") or "/api/content-security/callback",
+        "signatureValid": bool(fields.get("signatureValid")),
+        "messageFormat": fields.get("messageFormat") or "unknown",
+        "encrypted": bool(fields.get("encrypted")),
+        "traceIdHash": fields.get("traceIdHash") or "",
+        "result": fields.get("result") or "",
+        "taskMatched": bool(fields.get("taskMatched")),
+        "statusBefore": fields.get("statusBefore") or "",
+        "statusAfter": fields.get("statusAfter") or "",
+    }
+    print("[wechat-security-callback]", payload, flush=True)
+
+
 @app.get("/api/content-security/callback")
 async def verify_content_security_callback(request: Request):
     echo = str(request.query_params.get("echostr") or "")
     encrypted_echo = echo if request.query_params.get("msg_signature") else ""
     signature, timestamp, nonce, _ = _get_wechat_callback_signature(request, encrypted_echo)
-    if not wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted_echo):
+    signature_valid = wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted_echo)
+    _log_wechat_security_callback(
+        method="GET",
+        path=request.url.path,
+        signatureValid=signature_valid,
+        messageFormat="query",
+        encrypted=bool(encrypted_echo),
+        result="HANDSHAKE" if signature_valid else "SIGNATURE_REJECTED",
+    )
+    if not signature_valid:
         return PlainTextResponse("forbidden", status_code=403)
     if encrypted_echo and wechat_security_service.encoding_aes_key:
         try:
@@ -986,31 +1030,78 @@ async def verify_content_security_callback(request: Request):
 @app.post("/api/content-security/callback")
 async def receive_content_security_callback(request: Request):
     raw_body = await request.body()
+    received_at = _utc_iso(time.time())
+    message_format = _wechat_callback_message_format(raw_body)
+    encrypted = ""
+    signature_valid = False
     try:
         envelope = wechat_security_service.parse_callback_envelope(raw_body)
         encrypted = str(envelope.get("Encrypt") or envelope.get("encrypt") or "").strip()
         signature, timestamp, nonce, encrypted = _get_wechat_callback_signature(request, encrypted)
-        if not wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted):
-            print("[content-security] callback signature rejected", flush=True)
+        signature_valid = wechat_security_service.verify_callback_signature(signature, timestamp, nonce, encrypted)
+        if not signature_valid:
+            _log_wechat_security_callback(
+                receivedAt=received_at,
+                method="POST",
+                path=request.url.path,
+                signatureValid=False,
+                messageFormat=message_format,
+                encrypted=bool(encrypted),
+                result="SIGNATURE_REJECTED",
+            )
             return PlainTextResponse("forbidden", status_code=403)
         payload = wechat_security_service.parse_callback_payload(raw_body)
     except WeChatSecurityError as exc:
-        print("[content-security] callback parse rejected", {"reason": str(exc)}, flush=True)
+        _log_wechat_security_callback(
+            receivedAt=received_at,
+            method="POST",
+            path=request.url.path,
+            signatureValid=signature_valid,
+            messageFormat=message_format,
+            encrypted=bool(encrypted),
+            result="PARSE_REJECTED",
+        )
         return PlainTextResponse("fail", status_code=400)
 
     callback_app_id = str(payload.get("appid") or payload.get("appId") or "").strip()
     if callback_app_id and wechat_security_service.app_id and callback_app_id != wechat_security_service.app_id:
-        print("[content-security] callback appid rejected", flush=True)
+        _log_wechat_security_callback(
+            receivedAt=received_at,
+            method="POST",
+            path=request.url.path,
+            signatureValid=True,
+            messageFormat=message_format,
+            encrypted=bool(encrypted),
+            result="APP_ID_REJECTED",
+        )
         return PlainTextResponse("forbidden", status_code=403)
     trace_id = str(payload.get("trace_id") or payload.get("traceId") or "").strip()
     if not trace_id:
+        _log_wechat_security_callback(
+            receivedAt=received_at,
+            method="POST",
+            path=request.url.path,
+            signatureValid=True,
+            messageFormat=message_format,
+            encrypted=bool(encrypted),
+            result="TRACE_ID_MISSING",
+        )
         return PlainTextResponse("success")
     status, reason = evaluate_media_check_callback(payload)
+    record_before = content_safety_store.get_by_trace_id(trace_id)
     record = content_safety_store.apply_callback(trace_id, status, reason, payload)
-    print(
-        "[content-security] mediaCheckAsync callback",
-        {"traceId": trace_id, "status": status, "matched": bool(record)},
-        flush=True,
+    _log_wechat_security_callback(
+        receivedAt=received_at,
+        method="POST",
+        path=request.url.path,
+        signatureValid=True,
+        messageFormat=message_format,
+        encrypted=bool(encrypted),
+        traceIdHash=_wechat_callback_trace_hash(trace_id),
+        result=reason,
+        taskMatched=bool(record),
+        statusBefore=(record_before or {}).get("status") or "",
+        statusAfter=(record or {}).get("status") or "",
     )
     return PlainTextResponse("success")
 

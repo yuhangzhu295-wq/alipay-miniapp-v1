@@ -445,6 +445,15 @@ class ContentSafetyStore:
                     return dict(record)
         return None
 
+    def get_by_trace_id(self, trace_id: str) -> Optional[Dict[str, Any]]:
+        if not trace_id:
+            return None
+        with self._lock:
+            for record in self._load_unlocked():
+                if record.get("traceId") == trace_id:
+                    return dict(record)
+        return None
+
     def apply_callback(self, trace_id: str, status: str, reason: str, payload: Dict[str, Any], now: Optional[float] = None) -> Optional[Dict[str, Any]]:
         current = time.time() if now is None else float(now)
         with self._lock:

@@ -351,6 +351,16 @@ def main() -> int:
         assert_true(status_response.status_code == 200 and pass_status.get("status") == "PASS", "callback PASS must be persisted")
         add_test("callback_pass_transitions_to_pass", True, status=pass_status.get("status"))
 
+        model_calls_before_duplicate = dict(model_calls)
+        deliver_callback("trace-1", "pass")
+        duplicate_status = client.get(
+            "/api/content-security/images/" + normal_submission["securityCheckId"],
+            headers=headers,
+        ).json()
+        assert_true(duplicate_status.get("status") == "PASS", "duplicate callback must preserve terminal status")
+        assert_true(model_calls == model_calls_before_duplicate, "duplicate callback must not invoke downstream models")
+        add_test("duplicate_callback_is_idempotent", True, status=duplicate_status.get("status"), downstreamCalls=0)
+
         prepare_response = client.post(
             "/api/id-photo/prepare",
             headers=headers,
