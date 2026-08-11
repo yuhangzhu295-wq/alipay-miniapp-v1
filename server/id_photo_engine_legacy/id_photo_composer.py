@@ -1264,6 +1264,56 @@ def _repair_lower_shoulder_gaps(result, layer, bg_rgb, face_box):
     }
 
 
+def _extend_small_lower_panel_gaps(result, layer, face_box, max_gap_ratio=0.05):
+    """Continue nearby clothing texture across a tiny lower panel-side gap."""
+    if result is None or layer is None or not face_box:
+        return result, layer, {
+            "lowerPanelContactExtendedPixels": 0,
+            "lowerPanelContactMaxGapPx": 0,
+        }
+
+    result_arr = np.asarray(result.convert("RGB")).copy()
+    layer_arr = np.asarray(layer.convert("RGBA")).copy()
+    alpha = layer_arr[:, :, 3]
+    h, w = alpha.shape[:2]
+    fy = float(face_box.get("y") or h * 0.16)
+    fh = max(1.0, float(face_box.get("height") or h * 0.28))
+    center_x = float(face_box.get("x") or w * 0.30) + float(face_box.get("width") or w * 0.40) * 0.5
+    lower_start = max(int(round(h * 0.72)), int(round(fy + fh * 1.20)))
+    max_gap_px = max(1, int(round(w * float(max_gap_ratio))))
+    min_body_span = max(1, int(round(w * 0.72)))
+    extended_pixels = 0
+    observed_max_gap = 0
+
+    binary = alpha > 48
+    for row in range(max(0, lower_start), h):
+        span = _alpha_row_span(binary, row, center_x)
+        if not span or span[1] - span[0] < min_body_span:
+            continue
+        left, right = span
+        left_gap = left
+        right_gap = w - right
+        if 0 < left_gap <= max_gap_px and left_gap <= right - left:
+            dst = np.arange(0, left, dtype=np.int32)
+            src = np.clip(2 * left - 1 - dst, left, right - 1)
+            result_arr[row, dst] = result_arr[row, src]
+            layer_arr[row, dst] = layer_arr[row, src]
+            extended_pixels += int(left_gap)
+            observed_max_gap = max(observed_max_gap, int(left_gap))
+        if 0 < right_gap <= max_gap_px and right_gap <= right - left:
+            dst = np.arange(right, w, dtype=np.int32)
+            src = np.clip(2 * right - 1 - dst, left, right - 1)
+            result_arr[row, dst] = result_arr[row, src]
+            layer_arr[row, dst] = layer_arr[row, src]
+            extended_pixels += int(right_gap)
+            observed_max_gap = max(observed_max_gap, int(right_gap))
+
+    return Image.fromarray(result_arr, "RGB"), Image.fromarray(layer_arr, "RGBA"), {
+        "lowerPanelContactExtendedPixels": int(extended_pixels),
+        "lowerPanelContactMaxGapPx": int(observed_max_gap),
+    }
+
+
 def _alpha_row_span(binary, row, center_x):
     xs = np.flatnonzero(binary[row])
     if xs.size == 0:
@@ -1470,11 +1520,8 @@ def _solve_id_photo_layout(
     if lower_body_rows:
         width_floor = float(np.percentile([item[3] for item in lower_body_rows], 70))
         widest_lower_rows = [item for item in lower_body_rows if item[3] >= width_floor]
-        # Side contact is solved against the visible outer shoulder silhouette.
-        # The former 8/92-percentile bounds discarded legitimate asymmetric
-        # shoulder edges and could leave a false panel gap after composition.
-        lower_body_left_crop = float(np.percentile([item[1] for item in widest_lower_rows], 2)) - crop_left
-        lower_body_right_crop = float(np.percentile([item[2] for item in widest_lower_rows], 98)) - crop_left
+        lower_body_left_crop = float(np.percentile([item[1] for item in widest_lower_rows], 8)) - crop_left
+        lower_body_right_crop = float(np.percentile([item[2] for item in widest_lower_rows], 92)) - crop_left
     else:
         lower_body_left_crop = subject_left
         lower_body_right_crop = subject_right
@@ -2107,6 +2154,17 @@ def compose_id_photo(
         + int(late_dark_line_cleanup.get("composedSideBoundaryLineRemovedPixels") or 0),
         "composedLateDarkLineRemovedPixels": int(late_dark_line_cleanup.get("composedDarkLineRemovedPixels") or 0),
     }
+    if solution["shoulderSideContactRequired"]:
+        result, layer, lower_panel_contact = _extend_small_lower_panel_gaps(
+            result,
+            layer,
+            cleanup_face_box,
+        )
+    else:
+        lower_panel_contact = {
+            "lowerPanelContactExtendedPixels": 0,
+            "lowerPanelContactMaxGapPx": 0,
+        }
 
     # Save the composed mask after all output repairs so quality checking uses
     # the exact alpha shape represented by the downloadable image.
@@ -2313,6 +2371,7 @@ def compose_id_photo(
             **hair_side_block_cleanup,
             **dark_line_cleanup,
             **lower_shoulder_gap_repair,
+            **lower_panel_contact,
         },
         "cropParams": {
             "cropX": crop_left,
