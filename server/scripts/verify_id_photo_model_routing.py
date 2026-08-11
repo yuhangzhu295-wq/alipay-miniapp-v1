@@ -47,6 +47,7 @@ def main() -> int:
 
     service_text = (SERVER_ROOT / "services" / "id_photo_v2.py").read_text(encoding="utf-8")
     cloud_service_text = (PROJECT_ROOT / "deploy" / "cloud" / "photo-generator.service").read_text(encoding="utf-8")
+    runner_text = (SERVER_ROOT / "id_photo_engines" / "hivision" / "runner.py").read_text(encoding="utf-8")
     worker_text = (SERVER_ROOT / "id_photo_engines" / "hivision" / "worker.py").read_text(encoding="utf-8")
     legacy_path = SERVER_ROOT / "id_photo_engine_legacy" / "id_photo_v2.py"
     checks = {
@@ -59,6 +60,12 @@ def main() -> int:
         "detailFallbacksRemain": detail_order[:3] == ["birefnet-v1-lite", "hivision_modnet", "rmbg-1.4"],
         "inferenceIsSerialized": hasattr(runner, "_INFERENCE_LOCK"),
         "residentWorkerConfigured": "HIVISION_WORKER_URL" in cloud_service_text,
+        "detailReusesReleasedWorker": (
+            '"released_resident_detail_worker"' in runner_text
+            and 'worker = _call_worker(input_path, model, remaining)' in runner_text
+            and 'worker_attempt["detailWorkerRelease"]' in runner_text
+        ),
+        "detailKeepsFullWorkingCopy": "else 1600" in worker_text,
         "cloudDetailIsolationConfigured": "ID_PHOTO_HIVISION_DETAIL_ISOLATED=true" in cloud_service_text,
         "workerReleaseAndRestoreConfigured": '@app.post("/release")' in worker_text and '@app.post("/warmup")' in worker_text,
         "prepareAcceptsHairRetouch": "hair_retouch" in _function_args(legacy_path, "prepare_id_photo_v2"),

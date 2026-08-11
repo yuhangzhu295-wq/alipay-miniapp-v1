@@ -144,7 +144,7 @@ def _ensure_session(model: str) -> int:
 def _resize_for_model(image: np.ndarray, model: str) -> tuple[np.ndarray, tuple[int, int], dict[str, object]]:
     height, width = image.shape[:2]
     original_size = (width, height)
-    max_side = 768 if model in FAST_RESIDENT_MODELS else 960
+    max_side = 768 if model in FAST_RESIDENT_MODELS else 1600
     if max(width, height) <= max_side:
         return image, original_size, {
             "inputOriginalSize": f"{width}x{height}",

@@ -338,20 +338,14 @@ def run_human_matting(
             output_path.unlink()
         isolated_detail = _isolated_detail_enabled(model)
         release_debug = _call_worker_control("/release") if isolated_detail else None
-        worker = (
-            {
-                "success": False,
-                "returncode": -2,
-                "seconds": 0,
-                "outputTail": "DETAIL uses isolated on-demand transport on this host",
-                "workerMetrics": {},
-            }
-            if isolated_detail
-            else _call_worker(input_path, model, remaining)
-        )
+        # Reuse the already-imported worker after releasing its fast sessions. This
+        # avoids the expensive BiRefNet subprocess import while keeping one model
+        # resident at a time on memory-constrained hosts.
+        worker = _call_worker(input_path, model, remaining)
+        detail_release_debug = _call_worker_control("/release") if isolated_detail else None
         worker_attempt = {
             "model": model,
-            "transport": "isolated_detail_bypass" if isolated_detail else "resident_worker_http",
+            "transport": "released_resident_detail_worker" if isolated_detail else "resident_worker_http",
             "returncode": worker["returncode"],
             "seconds": worker["seconds"],
             "queueWaitSeconds": round(float((worker.get("workerMetrics") or {}).get("queueWaitMs") or 0) / 1000, 3),
@@ -362,6 +356,8 @@ def run_human_matting(
         }
         if release_debug is not None:
             worker_attempt["fastWorkerRelease"] = release_debug
+        if detail_release_debug is not None:
+            worker_attempt["detailWorkerRelease"] = detail_release_debug
         debug["attempts"].append(worker_attempt)
         if worker.get("success"):
             rgba = worker["rgba"]
@@ -371,6 +367,10 @@ def run_human_matting(
             if alpha_metrics["alphaExtrema"][1] > 4 and not (
                 alpha_metrics["transparentRatio"] < 0.005 or alpha_metrics["foregroundRatio"] > 0.96
             ):
+                if isolated_detail:
+                    worker_attempt["fastWorkerRestore"] = _restore_fast_worker_async(
+                        get_model_routing().get("standard") or "hivision_modnet"
+                    )
                 route = "detail" if model == get_model_routing().get("detail") else (
                     "balanced" if model == get_model_routing().get("balanced") else "fast"
                 )
