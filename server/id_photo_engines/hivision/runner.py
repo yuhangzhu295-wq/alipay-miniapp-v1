@@ -129,10 +129,6 @@ def _worker_url() -> str:
     return os.environ.get("HIVISION_WORKER_URL", "http://127.0.0.1:8091").rstrip("/")
 
 
-def _detail_worker_url() -> str:
-    return os.environ.get("HIVISION_DETAIL_WORKER_URL", "").strip().rstrip("/")
-
-
 def _decode_worker_metrics(value: str) -> dict[str, Any]:
     if not value:
         return {}
@@ -143,13 +139,13 @@ def _decode_worker_metrics(value: str) -> dict[str, Any]:
         return {}
 
 
-def _call_worker(image_path: Path, model: str, timeout: int, worker_url: str = "") -> dict[str, Any]:
+def _call_worker(image_path: Path, model: str, timeout: int) -> dict[str, Any]:
     started = time.perf_counter()
     try:
         import requests
 
         response = requests.post(
-            (worker_url or _worker_url()) + "/matting",
+            _worker_url() + "/matting",
             params={"model": model},
             data=image_path.read_bytes(),
             headers={"Content-Type": "image/png"},
@@ -340,37 +336,16 @@ def run_human_matting(
         output_path = ASCII_RUNTIME_DIR / f"{safe_token}-{model}.png"
         if output_path.exists():
             output_path.unlink()
-        isolated_detail_configured = _isolated_detail_enabled(model)
-        dedicated_detail_url = (
-            _detail_worker_url()
-            if model == get_model_routing().get("detail")
-            else ""
-        )
-        isolated_detail = bool(isolated_detail_configured and not dedicated_detail_url)
+        isolated_detail = _isolated_detail_enabled(model)
         release_debug = _call_worker_control("/release") if isolated_detail else None
-        worker = (
-            {
-                "success": False,
-                "returncode": -2,
-                "seconds": 0,
-                "outputTail": "DETAIL uses isolated on-demand transport on this host",
-                "workerMetrics": {},
-            }
-            if isolated_detail
-            else _call_worker(
-                input_path,
-                model,
-                remaining,
-                worker_url=dedicated_detail_url,
-            )
-        )
+        # Reuse the already-imported worker after releasing its fast sessions. This
+        # avoids the expensive BiRefNet subprocess import while keeping one model
+        # resident at a time on memory-constrained hosts.
+        worker = _call_worker(input_path, model, remaining)
+        detail_release_debug = _call_worker_control("/release") if isolated_detail else None
         worker_attempt = {
             "model": model,
-            "transport": (
-                "dedicated_detail_worker_http"
-                if dedicated_detail_url
-                else ("isolated_detail_bypass" if isolated_detail else "resident_worker_http")
-            ),
+            "transport": "released_resident_detail_worker" if isolated_detail else "resident_worker_http",
             "returncode": worker["returncode"],
             "seconds": worker["seconds"],
             "queueWaitSeconds": round(float((worker.get("workerMetrics") or {}).get("queueWaitMs") or 0) / 1000, 3),
@@ -381,8 +356,8 @@ def run_human_matting(
         }
         if release_debug is not None:
             worker_attempt["fastWorkerRelease"] = release_debug
-        if dedicated_detail_url:
-            worker_attempt["detailWorkerUrl"] = dedicated_detail_url
+        if detail_release_debug is not None:
+            worker_attempt["detailWorkerRelease"] = detail_release_debug
         debug["attempts"].append(worker_attempt)
         if worker.get("success"):
             rgba = worker["rgba"]
@@ -392,6 +367,10 @@ def run_human_matting(
             if alpha_metrics["alphaExtrema"][1] > 4 and not (
                 alpha_metrics["transparentRatio"] < 0.005 or alpha_metrics["foregroundRatio"] > 0.96
             ):
+                if isolated_detail:
+                    worker_attempt["fastWorkerRestore"] = _restore_fast_worker_async(
+                        get_model_routing().get("standard") or "hivision_modnet"
+                    )
                 route = "detail" if model == get_model_routing().get("detail") else (
                     "balanced" if model == get_model_routing().get("balanced") else "fast"
                 )
@@ -412,12 +391,6 @@ def run_human_matting(
                     },
                 }
             worker_attempt["rejected"] = "worker output alpha is unusable"
-
-        if dedicated_detail_url and not worker.get("success") and isolated_detail_configured:
-            isolated_detail = True
-            release_debug = _call_worker_control("/release")
-            worker_attempt["dedicatedDetailFallback"] = True
-            worker_attempt["fastWorkerRelease"] = release_debug
 
         cmd = [
             str(VENV_PYTHON),
