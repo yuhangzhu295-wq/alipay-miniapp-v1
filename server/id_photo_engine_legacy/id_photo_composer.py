@@ -1470,8 +1470,11 @@ def _solve_id_photo_layout(
     if lower_body_rows:
         width_floor = float(np.percentile([item[3] for item in lower_body_rows], 70))
         widest_lower_rows = [item for item in lower_body_rows if item[3] >= width_floor]
-        lower_body_left_crop = float(np.percentile([item[1] for item in widest_lower_rows], 8)) - crop_left
-        lower_body_right_crop = float(np.percentile([item[2] for item in widest_lower_rows], 92)) - crop_left
+        # Side contact is solved against the visible outer shoulder silhouette.
+        # The former 8/92-percentile bounds discarded legitimate asymmetric
+        # shoulder edges and could leave a false panel gap after composition.
+        lower_body_left_crop = float(np.percentile([item[1] for item in widest_lower_rows], 2)) - crop_left
+        lower_body_right_crop = float(np.percentile([item[2] for item in widest_lower_rows], 98)) - crop_left
     else:
         lower_body_left_crop = subject_left
         lower_body_right_crop = subject_right
