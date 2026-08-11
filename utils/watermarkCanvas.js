@@ -52,6 +52,7 @@ function initCanvases(params) {
     displayCanvasNode = params.displayCanvas;
     originalImagePath = params.imagePath;
     var containerWidth = params.containerWidth || 320;
+    var containerHeight = params.containerHeight || 0;
     dpr = params.dpr || 1;
     strokeTransportOnly = params.strokeTransportOnly === true;
 
@@ -67,10 +68,10 @@ function initCanvases(params) {
         imgW = imgInfo.width;
         imgH = imgInfo.height;
 
-        // 计算展示尺寸，保持宽高比
-        var ratio = imgW / imgH;
-        displayW = containerWidth;
-        displayH = containerWidth / ratio;
+        // Fit long images inside the usable viewport while preserving aspect ratio.
+        var fitted = calculateDisplaySize(imgW, imgH, containerWidth, containerHeight);
+        displayW = fitted.width;
+        displayH = fitted.height;
         displayedImageWidth = displayW;
         displayedImageHeight = displayH;
         imageOffsetX = 0;
@@ -147,6 +148,18 @@ function initCanvases(params) {
       }
     });
   });
+}
+
+function calculateDisplaySize(width, height, maxWidth, maxHeight) {
+  var safeWidth = Math.max(1, Number(width) || 1);
+  var safeHeight = Math.max(1, Number(height) || 1);
+  var widthScale = Math.max(1, Number(maxWidth) || 320) / safeWidth;
+  var heightScale = Number(maxHeight) > 0 ? Number(maxHeight) / safeHeight : widthScale;
+  var scale = Math.min(widthScale, heightScale);
+  return {
+    width: Math.max(1, Math.round(safeWidth * scale)),
+    height: Math.max(1, Math.round(safeHeight * scale))
+  };
 }
 
 /**
@@ -784,6 +797,7 @@ function exportResult() {
 }
 
 module.exports = {
+  calculateDisplaySize: calculateDisplaySize,
   initCanvases: initCanvases,
   pushStroke: pushStroke,
   undo: undo,
