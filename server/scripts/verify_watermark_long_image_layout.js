@@ -4,6 +4,7 @@ const path = require('path')
 const ROOT = path.resolve(__dirname, '..', '..')
 const canvas = require(path.join(ROOT, 'utils', 'watermarkCanvas.js'))
 const pageSource = fs.readFileSync(path.join(ROOT, 'pages', 'tool-detail', 'tool-detail.js'), 'utf8')
+const templateSource = fs.readFileSync(path.join(ROOT, 'pages', 'tool-detail', 'tool-detail.wxml'), 'utf8')
 const OUT = path.join(ROOT, 'reports', 'diagnostics', 'watermark-long-image-layout.json')
 
 const maxWidth = 320
@@ -35,9 +36,13 @@ const report = {
   cases: rows,
   pagePassesViewportHeight: /containerHeight:\s*displayContainerH/.test(pageSource),
   viewportHeightIsResponsive: /windowHeight/.test(pageSource) && /0\.52/.test(pageSource),
+  processActionFollowsCanvas: templateSource.indexOf('class="wm-canvas-action"') >
+    templateSource.indexOf('class="upload-section"'),
+  singleWatermarkProcessAction: (templateSource.match(/bindtap="doManualRemoveWatermark"/g) || []).length === 1,
   passed: rows.every((row) => row.passed) &&
     /containerHeight:\s*displayContainerH/.test(pageSource) &&
-    /windowHeight/.test(pageSource)
+    /windowHeight/.test(pageSource) &&
+    (templateSource.match(/bindtap="doManualRemoveWatermark"/g) || []).length === 1
 }
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true })

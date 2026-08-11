@@ -32,6 +32,10 @@
     </view>
   </view>
 
+  <view class="wm-canvas-action" wx:if="{{toolType === 'removeWatermark' && photoSrc && !processing && wmHasMask}}">
+    <button class="btn-primary" bindtap="doManualRemoveWatermark">{{wmQuality === 'hd' ? '开始高清修复' : '开始擦除去水印'}}</button>
+  </view>
+
   <!-- Loading -->
   <view class="loading-area" wx:if="{{processing}}"><text>{{processingText || '处理中...'}}</text></view>
 
@@ -332,7 +336,6 @@
       </view>
       <view class="rect-info" wx:if="{{wmHasMask}}"><text>已涂抹去水印区域，点击下方按钮开始处理</text></view>
       <view class="rect-info-warn" wx:else><text>💡 提示：在上方图片的水印位置上进行涂抹</text></view>
-      <button class="btn-primary" bindtap="doManualRemoveWatermark" wx:if="{{photoSrc && !processing && wmHasMask}}">✨ {{wmQuality === 'hd' ? '开始高清修复' : '开始擦除去水印'}}</button>
     </block>
     <!-- Clone Stamp Mode -->
     <block wx:if="{{wmMode === 'stamp'}}">
