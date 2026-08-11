@@ -1360,9 +1360,11 @@ Page({
     var sysInfo = wx.getSystemInfoSync();
     var dpr = sysInfo.pixelRatio || 1;
     var winW = sysInfo.windowWidth;
+    var winH = sysInfo.windowHeight || 667;
     
     // 小程序内展示宽度，设计为 640rpx
     var displayContainerW = Math.floor(winW * 640 / 750);
+    var displayContainerH = Math.max(280, Math.floor(winH * 0.52));
     
     // 重置异常状态并开启 loading
     that.setData({
@@ -1413,6 +1415,7 @@ Page({
             displayCanvas: displayCanvas,
             imagePath: that.data.photoSrc,
             containerWidth: displayContainerW,
+            containerHeight: displayContainerH,
             dpr: dpr,
             strokeTransportOnly: true
           }).then(function(canvasInfo) {

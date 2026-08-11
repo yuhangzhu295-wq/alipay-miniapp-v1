@@ -40,6 +40,22 @@ OUTFIT_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "outfits"
 OUTFIT_ASSET_CACHE = {}
 
 
+def _resolve_official_input_type(detected_type, explicit_image_type, face, illustration_like):
+    """Fuse the lightweight classifier with the stronger real-face detector."""
+    if explicit_image_type:
+        return explicit_image_type, ""
+    face_reliable = (
+        bool(face.get("success"))
+        and face.get("engine") == "mediapipe"
+        and float(face.get("confidence") or 0) >= 0.65
+    )
+    if illustration_like:
+        return "illustration", ""
+    if face_reliable and detected_type != "real_person":
+        return "real_person", "mediapipe_face"
+    return detected_type, ""
+
+
 class TemplateError(ValueError):
     def __init__(self, code, message, template_id="", status_code=400):
         super().__init__(message)
@@ -1332,28 +1348,21 @@ def _prepare_cutout(
         flush=True,
     )
 
-    detected_type = detected.get("imageType") or "unknown"
-    if image_type:
-        detected_type = image_type
-    # The lightweight illustration heuristic can misclassify compressed real
-    # screenshots. A confident MediaPipe real-face detection is stronger
-    # evidence for the official ID-photo path, so allow it to override only
-    # the heuristic image type. Images without a reliable real face are still
-    # rejected below.
-    face_reliable = (
-        face.get("success")
-        and face.get("engine") == "mediapipe"
-        and float(face.get("confidence") or 0) >= 0.82
+    classified_type = detected.get("imageType") or "unknown"
+    illustration_like = is_illustration_like(img_bytes, face.get("faceBox")) if not image_type else False
+    detected_type, override_reason = _resolve_official_input_type(
+        classified_type,
+        image_type,
+        face,
+        illustration_like,
     )
-    creative_override_allowed = face_reliable and not is_illustration_like(img_bytes, face.get("faceBox"))
-    if detected_type in CREATIVE_TYPES and creative_override_allowed and not image_type:
-        detected_type = "real_person"
+    if override_reason:
         detected["imageType"] = "real_person"
         detected["inputType"] = "real_person"
         detected["realPerson"] = True
-        detected["classificationOverride"] = "mediapipe_face"
-    if not image_type and is_illustration_like(img_bytes, face.get("faceBox")):
-        detected_type = "illustration"
+        detected["classificationOverride"] = override_reason
+        detected["classifierImageType"] = classified_type
+    elif detected_type == "illustration" and not image_type:
         detected["imageType"] = "illustration"
         detected["inputType"] = "illustration"
         detected["realPerson"] = False

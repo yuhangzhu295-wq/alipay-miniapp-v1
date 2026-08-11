@@ -37,6 +37,7 @@ MODEL_ORDER = [
     "rmbg-1.4",
 ]
 _INFERENCE_LOCK = threading.Lock()
+_FAST_RESTORE_LOCK = threading.Lock()
 
 
 def _ready_marker() -> Path:
@@ -204,6 +205,25 @@ def _call_worker_control(endpoint: str, timeout: int = 30, **params: str) -> dic
             "durationMs": int((time.perf_counter() - started) * 1000),
             "error": repr(exc),
         }
+
+
+def _restore_fast_worker_async(model: str) -> dict[str, Any]:
+    """Restore the resident fast model without delaying a completed detail result."""
+    def restore() -> None:
+        with _FAST_RESTORE_LOCK:
+            result = _call_worker_control("/warmup", timeout=90, model=model)
+            print(
+                f"[id-photo-detail] fast-worker-restore model={model} "
+                f"success={result.get('success')} durationMs={result.get('durationMs')}",
+                flush=True,
+            )
+
+    threading.Thread(
+        target=restore,
+        name="id-photo-fast-worker-restore",
+        daemon=True,
+    ).start()
+    return {"scheduled": True, "model": model}
 
 
 def _isolated_detail_enabled(model: str) -> bool:
@@ -438,10 +458,8 @@ def run_human_matting(
         finally:
             _INFERENCE_LOCK.release()
         if isolated_detail:
-            attempt["fastWorkerRestore"] = _call_worker_control(
-                "/warmup",
-                timeout=60,
-                model=get_model_routing().get("standard") or "hivision_modnet",
+            attempt["fastWorkerRestore"] = _restore_fast_worker_async(
+                get_model_routing().get("standard") or "hivision_modnet"
             )
             attempt["isolatedDetail"] = True
         debug["attempts"].append(attempt)
