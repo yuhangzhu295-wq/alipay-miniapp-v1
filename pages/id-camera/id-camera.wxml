@@ -9,6 +9,8 @@
       bindinitdone="onCameraReady"
     ></camera>
 
+    <view wx:if="{{!cameraReady}}" class="camera-init-hint">{{cameraStatusText}}</view>
+
     <view class="camera-copy">
       <view class="camera-title">站在纯色背景前，拍摄效果最佳</view>
       <view class="camera-subtitle">请将头部和肩膀放入轮廓内</view>
@@ -49,4 +51,3 @@
     <view class="error-button secondary-error-button" bindtap="chooseFromAlbum">返回选择相册</view>
   </view>
 </view>
-

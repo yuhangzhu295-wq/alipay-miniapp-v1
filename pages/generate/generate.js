@@ -664,7 +664,13 @@ Page({
         console.error('[id-photo-generate] diagnostic:', err && err.diagnostic ? err.diagnostic : null);
         var message = '底色生成失败，请重新选择底色或重新上传照片。';
         var failureKind = '';
-        if (err && err.code === 'SERVICE_UNAVAILABLE') {
+        if (err && err.code === 'CONTENT_SAFETY_REJECTED') {
+          message = '图片内容不符合平台规范，请更换图片后重试。';
+        } else if (err && err.code === 'CONTENT_SAFETY_PENDING') {
+          message = '图片安全检测暂未完成，请稍后重试。';
+        } else if (err && (err.code === 'CONTENT_SAFETY_UNAVAILABLE' || err.code === 'CONTENT_SAFETY_AUTH_REQUIRED' || err.code === 'CONTENT_SAFETY_OPENID_REQUIRED')) {
+          message = '图片安全检测暂时不可用，请稍后重试。';
+        } else if (err && err.code === 'SERVICE_UNAVAILABLE') {
           message = '生成服务暂不可用，请稍后重试。';
         } else if (err && err.code === 'ENDPOINT_NOT_FOUND') {
           message = '生成接口不可用，请检查本地服务。';

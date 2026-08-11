@@ -64,6 +64,18 @@ function computeGuideLayout(guideWidthVw, windowWidth, windowHeight, safeAreaBot
   };
 }
 
+function isoNow() {
+  return new Date().toISOString();
+}
+
+function afterViewCommit(callback) {
+  if (wx.nextTick) {
+    wx.nextTick(callback);
+    return;
+  }
+  setTimeout(callback, 0);
+}
+
 Page({
   data: {
     specId: 'yicun',
@@ -74,6 +86,9 @@ Page({
     cameraPosition: 'back',
     flashMode: 'off',
     cameraReady: false,
+    cameraInitState: 'idle',
+    cameraStatusText: '相机正在初始化',
+    cameraInitAttempt: 0,
     cameraError: false,
     cameraErrorText: '',
     permissionDenied: false,
@@ -93,6 +108,9 @@ Page({
   },
 
   onLoad: function(options) {
+    this._cameraInitTimer = null;
+    this._cameraRestartTimer = null;
+    this._cameraNeedsRestart = false;
     options = options || {};
     var specId = options.specId || 'yicun';
     var isCustom = options.custom === 'true';
@@ -114,27 +132,33 @@ Page({
       guideTopPx: layout.guideTopPx,
       eyeLabelTopPx: layout.eyeLabelTopPx
     });
+    this.debugCamera('page load', { specId: specId, returnMode: options.returnMode || 'initial' });
   },
 
   onReady: function() {
-    this.cameraContext = wx.createCameraContext();
+    this.debugCamera('page ready');
+    this.checkCameraPermission('page ready');
+    this.beginCameraInit('page ready');
   },
 
   onShow: function() {
     var that = this;
     this.setData({ pageActive: true, submitting: false });
-    if (!wx.getSetting) return;
-    wx.getSetting({
-      success: function(res) {
-        if (res.authSetting && res.authSetting['scope.camera'] === true && that.data.permissionDenied) {
-          that.restartCamera();
-        }
+    this.debugCamera('page show');
+    this.checkCameraPermission('page show', function(permission) {
+      if (permission === false) return;
+      if (that._cameraNeedsRestart && that.data.cameraMode === 'live') {
+        that._cameraNeedsRestart = false;
+        that.restartCamera('page show');
       }
     });
   },
 
   onHide: function() {
+    this.clearCameraInitTimer();
+    this._cameraNeedsRestart = true;
     this.setData({ pageActive: false, capturing: false });
+    this.debugCamera('page hide');
   },
 
   onResize: function(res) {
@@ -143,13 +167,114 @@ Page({
     this.setData(layout);
   },
 
+  debugCamera: function(eventName, detail) {
+    var snapshot = {
+      at: isoNow(),
+      cameraReady: this.data.cameraReady,
+      cameraVisible: this.data.cameraVisible,
+      cameraMode: this.data.cameraMode,
+      cameraPosition: this.data.cameraPosition,
+      initAttempt: this.data.cameraInitAttempt,
+      contextExists: !!this.cameraContext
+    };
+    console.log('[id-camera] ' + eventName, Object.assign(snapshot, detail || {}));
+  },
+
+  clearCameraInitTimer: function() {
+    if (this._cameraInitTimer) {
+      clearTimeout(this._cameraInitTimer);
+      this._cameraInitTimer = null;
+    }
+  },
+
+  checkCameraPermission: function(reason, callback) {
+    var that = this;
+    if (!wx.getSetting) {
+      this.debugCamera('permission', { reason: reason, supported: false });
+      if (callback) callback(null);
+      return;
+    }
+    wx.getSetting({
+      success: function(res) {
+        var setting = res.authSetting || {};
+        var permission = setting['scope.camera'];
+        that.debugCamera('permission', { reason: reason, permission: permission });
+        if (permission === false) {
+          that.failCameraInit('相机权限被拒绝，请在设置中开启后重新初始化。', true, 'permission denied');
+        }
+        if (callback) callback(permission);
+      },
+      fail: function(err) {
+        that.debugCamera('permission', { reason: reason, queryFailed: true, error: err || {} });
+        if (callback) callback(null);
+      }
+    });
+  },
+
+  beginCameraInit: function(reason) {
+    var that = this;
+    if (!this.data.pageActive || this.data.cameraMode !== 'live' || !this.data.cameraVisible || this.data.cameraError) return;
+    this.clearCameraInitTimer();
+    this.cameraContext = null;
+    var attempt = Number(this.data.cameraInitAttempt || 0) + 1;
+    this.setData({
+      cameraReady: false,
+      cameraError: false,
+      cameraErrorText: '',
+      permissionDenied: false,
+      cameraInitState: 'initializing',
+      cameraStatusText: '相机正在初始化',
+      cameraInitAttempt: attempt
+    });
+    this.debugCamera('restart', { reason: reason, attempt: attempt });
+    afterViewCommit(function() {
+      if (!that.data.pageActive || that.data.cameraMode !== 'live' || !that.data.cameraVisible) return;
+      try {
+        that.cameraContext = wx.createCameraContext();
+        that.debugCamera('context created', { reason: reason, attempt: attempt });
+      } catch (err) {
+        that.failCameraInit('无法创建相机上下文，请重新初始化或改用相册。', false, err);
+        return;
+      }
+      that._cameraInitTimer = setTimeout(function() {
+        if (!that.data.cameraReady && that.data.pageActive && that.data.cameraVisible) {
+          that.failCameraInit('5秒内未收到相机就绪事件，请重新初始化或改用相册。', false, 'initdone timeout');
+        }
+      }, 5000);
+    });
+  },
+
+  failCameraInit: function(message, permissionDenied, cause) {
+    this.clearCameraInitTimer();
+    this.cameraContext = null;
+    this.debugCamera('ready state', { state: 'failed', cause: cause || message });
+    this.setData({
+      cameraReady: false,
+      cameraError: true,
+      permissionDenied: !!permissionDenied,
+      cameraErrorText: message,
+      cameraInitState: 'failed',
+      cameraStatusText: message,
+      capturing: false
+    });
+  },
+
   onCameraReady: function() {
+    if (!this.data.cameraVisible || this.data.cameraError || this.data.cameraMode !== 'live') {
+      this.debugCamera('initdone', { ignored: true });
+      return;
+    }
+    this.clearCameraInitTimer();
+    this.debugCamera('initdone');
     this.setData({
       cameraReady: true,
       cameraError: false,
       cameraErrorText: '',
-      permissionDenied: false
+      permissionDenied: false,
+      cameraInitState: 'ready',
+      cameraStatusText: '相机已就绪'
     });
+    this.debugCamera('ready state', { state: 'ready' });
   },
 
   onCameraError: function(event) {
@@ -157,20 +282,20 @@ Page({
     var errMsg = detail.errMsg || '相机初始化失败';
     var errCode = detail.errCode === undefined ? '' : detail.errCode;
     var denied = /auth|permission|deny|authorize/i.test(errMsg) || errCode === 10001;
+    this.clearCameraInitTimer();
     console.error('[id-camera] error', {
+      at: isoNow(),
       errMsg: errMsg,
       errCode: errCode,
       cameraPosition: this.data.cameraPosition,
       route: 'pages/id-camera/id-camera',
       specId: this.data.specId
     });
-    this.setData({
-      cameraReady: false,
-      cameraError: true,
-      permissionDenied: denied,
-      cameraErrorText: denied ? '需要相机权限才能直接拍摄证件照。' : '相机暂时无法使用，请重试或选择相册。',
-      capturing: false
-    });
+    this.failCameraInit(
+      denied ? '需要相机权限才能直接拍摄证件照。' : ('相机初始化失败：' + errMsg),
+      denied,
+      detail
+    );
   },
 
   openCameraSettings: function() {
@@ -178,8 +303,10 @@ Page({
     wx.openSetting({
       success: function(res) {
         if (res.authSetting && res.authSetting['scope.camera']) {
-          that.restartCamera();
+          that.debugCamera('permission', { reason: 'settings returned', permission: true });
+          that.restartCamera('settings returned');
         } else {
+          that.failCameraInit('相机权限仍未开启，请允许后重新初始化或使用相册。', true, 'settings denied');
           wx.showToast({ title: '相机权限仍未开启', icon: 'none' });
         }
       },
@@ -193,26 +320,47 @@ Page({
     this.restartCamera();
   },
 
-  restartCamera: function() {
-    this.setData({
+  restartCamera: function(reason, overrides) {
+    var that = this;
+    this.clearCameraInitTimer();
+    if (this._cameraRestartTimer) clearTimeout(this._cameraRestartTimer);
+    this.cameraContext = null;
+    var nextData = Object.assign({
       cameraError: false,
       cameraErrorText: '',
       cameraReady: false,
       permissionDenied: false,
-      cameraVisible: true
+      cameraInitState: 'restarting',
+      cameraStatusText: '正在重新初始化相机',
+      cameraVisible: false
+    }, overrides || {});
+    this.debugCamera('restart', { reason: reason || 'manual', phase: 'unmount' });
+    this.setData(nextData, function() {
+      afterViewCommit(function() {
+        afterViewCommit(function() {
+          if (!that.data.pageActive || that.data.cameraMode !== 'live') return;
+          that.setData({ cameraVisible: true }, function() {
+            afterViewCommit(function() {
+              that.beginCameraInit(reason || 'manual');
+            });
+          });
+        });
+      });
     });
   },
 
   switchCamera: function() {
     if (this.data.capturing || this.data.submitting || this.data.cameraMode !== 'live') return;
     var next = this.data.cameraPosition === 'back' ? 'front' : 'back';
-    this.setData({ cameraPosition: next, cameraReady: false });
+    this.debugCamera('switch', { from: this.data.cameraPosition, to: next });
+    this.restartCamera('switch camera', { cameraPosition: next });
   },
 
   takePhoto: function() {
     if (this.data.capturing || this.data.submitting || this.data.cameraMode !== 'live') return;
+    this.debugCamera('ready state', { action: 'takePhoto' });
     if (!this.data.cameraReady || !this.cameraContext) {
-      wx.showToast({ title: '相机正在准备，请稍后', icon: 'none' });
+      wx.showToast({ title: this.data.cameraErrorText || '相机初始化中，请稍后', icon: 'none' });
       return;
     }
     var that = this;
@@ -231,6 +379,7 @@ Page({
           capturing: false,
           cameraReady: false
         });
+        that.clearCameraInitTimer();
       },
       fail: function(err) {
         console.error('[id-camera] takePhoto failed', err || {});
@@ -242,11 +391,10 @@ Page({
 
   retakePhoto: function() {
     if (this.data.submitting) return;
-    this.setData({
+    this.restartCamera('retake photo', {
       cameraMode: 'live',
       capturedImage: '',
-      capturing: false,
-      cameraReady: false
+      capturing: false
     });
   },
 

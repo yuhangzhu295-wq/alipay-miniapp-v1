@@ -328,6 +328,16 @@ Page({
 
   getWatermarkUserError: function(err, fallback) {
     var msg = (err && err.message) || String(err || '');
+    var code = (err && err.code) || '';
+    if (code === 'CONTENT_SAFETY_REJECTED' || msg.indexOf('图片内容不符合平台规范') >= 0) {
+      return '图片内容不符合平台规范，请更换图片后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_PENDING' || msg.indexOf('图片安全检测暂未完成') >= 0) {
+      return '图片安全检测暂未完成，请稍后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_UNAVAILABLE' || code === 'CONTENT_SAFETY_AUTH_REQUIRED' || code === 'CONTENT_SAFETY_OPENID_REQUIRED' || msg.indexOf('图片安全检测暂时不可用') >= 0) {
+      return '图片安全检测暂时不可用，请稍后重试。';
+    }
     var lowerMsg = msg.toLowerCase();
     if (msg.indexOf('遮罩为空') >= 0 || msg.indexOf('全黑') >= 0 || msg.indexOf('涂抹') >= 0 || msg.indexOf('mask empty') >= 0 || msg.indexOf('nonZero') >= 0) {
       return '请先涂抹需要去除的水印区域。';
@@ -891,6 +901,15 @@ Page({
   getPortraitUserError: function(err, fallback) {
     var msg = (err && err.message) || '';
     var code = (err && err.code) || '';
+    if (code === 'CONTENT_SAFETY_REJECTED' || msg.indexOf('图片内容不符合平台规范') >= 0) {
+      return '图片内容不符合平台规范，请更换图片后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_PENDING' || msg.indexOf('图片安全检测暂未完成') >= 0) {
+      return '图片安全检测暂未完成，请稍后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_UNAVAILABLE' || code === 'CONTENT_SAFETY_AUTH_REQUIRED' || code === 'CONTENT_SAFETY_OPENID_REQUIRED' || msg.indexOf('图片安全检测暂时不可用') >= 0) {
+      return '图片安全检测暂时不可用，请稍后重试。';
+    }
     if (code === 'INVALID_INPUT_ANIME_OR_CARTOON' || code === 'INVALID_INPUT_NOT_REAL_PERSON') {
       return '当前为二次元/插画图片，可生成创意证件照效果，但不适合作为官方证件照提交。';
     }
