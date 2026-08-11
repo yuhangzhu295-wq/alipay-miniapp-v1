@@ -481,7 +481,65 @@ def get_portrait_crop_box(image_size, face_box, composition="head_shoulder"):
     return get_headshot_crop_box(image_size, face_box)
 
 
-def compose_headshot(cutout, quality, background, target_size=(413, 579), face_height_ratio=0.36, composition="head_shoulder"):
+def verify_document_standard_compliance(metrics, spec, composition):
+    """Verify headshot alignment against standard document profile.
+    Returns (True, None) if valid, or (False, reason) if invalid.
+    """
+    profile = spec.get("compositionProfile") if spec else None
+    
+    if not profile:
+        # Default fallback bounds
+        min_head_ratio = 0.36 if composition == "half_body" else 0.42
+        if metrics.get("headRatio", 1) < min_head_ratio:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if metrics.get("topPaddingRatio", 0) > 0.16:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if metrics.get("faceCenterOffset", 0) > 0.12:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        if composition != "half_body" and metrics.get("bodyHeightBelowShoulder", 0) > 0.30:
+            return False, "HEADSHOT_LAYOUT_INVALID"
+        return True, None
+        
+    # Standard document profile checks
+    head_ratio = metrics.get("headRatio", 0)
+    face_h_ratio = metrics.get("faceHeightRatio", 0)
+    top_padding = metrics.get("topPaddingRatio", 0)
+    face_offset = metrics.get("faceCenterOffset", 0)
+    
+    if face_offset > 0.15:
+        return False, "FACE_OFF_CENTER"
+        
+    head_h_min = profile.get("headHeightRatioMin")
+    head_h_max = profile.get("headHeightRatioMax")
+    op_head_max = profile.get("operationalHeadHeightRatioMax")
+    
+    if head_h_min and head_ratio < head_h_min * 0.95:  # 5% tolerance
+        return False, "HEAD_TOO_SMALL"
+    
+    if op_head_max and head_ratio > op_head_max:
+        return False, "HEAD_TOO_LARGE"
+    elif head_h_max and head_ratio > head_h_max * 1.05:
+        return False, "HEAD_TOO_LARGE"
+        
+    chin_min = profile.get("chinBottomRatioMin")
+    if chin_min:
+        # Distance from chin to bottom = 1.0 - (top_padding + face_h_ratio)
+        chin_to_bottom = max(0, 1.0 - (top_padding + face_h_ratio))
+        if chin_to_bottom < chin_min * 0.9:
+            return False, "CHIN_TOO_LOW"
+            
+    return True, None
+
+
+def compose_headshot(
+    cutout: Image.Image,
+    quality: dict,
+    background: Image.Image,
+    target_size=(413, 579),
+    face_height_ratio=0.36,
+    composition="head_shoulder",
+    spec=None,
+):
     """
     将 RGBA 人像合成为标准头肩证件照/职业头像照。
 
@@ -508,13 +566,24 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     person = cutout.crop(crop_box)
     crop_w, crop_h = person.size
 
-    target_face_h = target_h * face_height_ratio
-    scale_by_face = target_face_h / max(1, fh)
-    # 头肩照允许肩线自然贴近画布边缘，宽度不再把人像压得过小。
-    width_factor = 1.12 if composition == "half_body" else (1.34 if composition == "square_avatar" else 1.45)
-    scale_by_width = target_w * width_factor / max(1, crop_w)
-    scale_by_height = target_h * 1.06 / max(1, crop_h)
-    scale = min(scale_by_face, scale_by_width, scale_by_height)
+    person_bbox = person.getbbox()
+    hairTopY_in_crop = person_bbox[1] if person_bbox else 0
+    chinY_in_crop = (fy + fh) - crop_top
+    detectedHeadHeight = max(1, chinY_in_crop - hairTopY_in_crop)
+
+    profile = spec.get("compositionProfile") if spec else None
+    
+    if profile and profile.get("headHeightRatioTarget"):
+        targetHeadHeight = target_h * profile.get("headHeightRatioTarget")
+        scale = targetHeadHeight / float(detectedHeadHeight)
+    else:
+        target_face_h = target_h * face_height_ratio
+        scale_by_face = target_face_h / max(1, fh)
+        # 头肩照允许肩线自然贴近画布边缘，宽度不再把人像压得过小。
+        width_factor = 1.12 if composition == "half_body" else (1.34 if composition == "square_avatar" else 1.45)
+        scale_by_width = target_w * width_factor / max(1, crop_w)
+        scale_by_height = target_h * 1.06 / max(1, crop_h)
+        scale = min(scale_by_face, scale_by_width, scale_by_height)
 
     new_w = max(1, int(crop_w * scale))
     new_h = max(1, int(crop_h * scale))
@@ -523,12 +592,28 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     face_center_x_in_crop = (fx + fw / 2.0 - crop_left) * scale
     face_top_in_crop = (fy - crop_top) * scale
     face_h_out = fh * scale
-    person_bbox = person.getbbox()
-    foreground_top_in_crop = ((person_bbox[1] if person_bbox else 0) * scale)
-    target_top_padding = target_h * (0.07 if composition == "half_body" else 0.09)
+    foreground_top_in_crop = hairTopY_in_crop * scale
 
-    px = int(target_w / 2.0 - face_center_x_in_crop)
-    py = int(target_top_padding - foreground_top_in_crop)
+    if profile and profile.get("topGapRatioTarget"):
+        targetTopGap = target_h * profile.get("topGapRatioTarget")
+        py = int(targetTopGap - foreground_top_in_crop)
+    else:
+        target_top_padding = target_h * (0.07 if composition == "half_body" else 0.09)
+        py = int(target_top_padding - foreground_top_in_crop)
+
+    face_px = int(target_w / 2.0 - face_center_x_in_crop)
+    
+    if person_bbox:
+        person_left = person_bbox[0] * scale
+        person_right = person_bbox[2] * scale
+        person_w = person_right - person_left
+        if person_w >= target_w:
+            px = _clamp_int(face_px, int(target_w - person_right), int(-person_left))
+        else:
+            body_px = int(target_w / 2.0 - (person_left + person_right) / 2.0)
+            px = int(face_px * 0.6 + body_px * 0.4)
+    else:
+        px = face_px
     px = _clamp_int(px, target_w - new_w, 0)
     py = _clamp_int(py, int(target_h * 0.02) - new_h, int(target_h * 0.10))
 
@@ -555,6 +640,11 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     face_center_out = px + face_center_x_in_crop
     face_left_out = px + (fx - crop_left) * scale
     face_top_out = py + face_top_in_crop
+    
+    head_height_actual = max(1, (chinY_in_crop - hairTopY_in_crop) * scale)
+    top_gap_actual = py + hairTopY_in_crop * scale
+    chin_y_actual = py + chinY_in_crop * scale
+
     metrics = {
         "headRatio": round((face_h_out * 1.55) / float(target_h), 6),
         "faceHeightRatio": round(face_h_out / float(target_h), 6),
@@ -562,6 +652,10 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
         "bodyHeightBelowShoulder": round(body_height_below_shoulder, 6),
         "topPaddingRatio": round(top_padding_ratio, 6),
         "faceCenterOffset": round(abs(face_center_out - target_w / 2.0) / float(target_w), 6),
+        "headHeightRatioActual": round(head_height_actual / float(target_h), 6),
+        "topGapRatioActual": round(top_gap_actual / float(target_h), 6),
+        "chinYRatioActual": round(chin_y_actual / float(target_h), 6),
+        "shoulderSpanRatioActual": round(shoulder_width_ratio, 6),
         "outputFaceBox": {
             "x": round(face_left_out, 3),
             "y": round(face_top_out, 3),
@@ -583,14 +677,9 @@ def compose_headshot(cutout, quality, background, target_size=(413, 579), face_h
     }
 
     quality.update(metrics)
-    min_head_ratio = 0.36 if composition == "half_body" else 0.42
-    if (
-        metrics["headRatio"] < min_head_ratio
-        or metrics["topPaddingRatio"] > 0.16
-        or metrics["faceCenterOffset"] > 0.12
-        or (composition != "half_body" and metrics["bodyHeightBelowShoulder"] > 0.30)
-    ):
-        quality["code"] = "HEADSHOT_LAYOUT_INVALID"
-        raise PortraitQualityError("HEADSHOT_LAYOUT_INVALID", quality)
+    is_compliant, fail_reason = verify_document_standard_compliance(metrics, spec, composition)
+    if not is_compliant:
+        quality["code"] = fail_reason
+        raise PortraitQualityError(fail_reason, quality)
 
     return result.convert("RGB"), quality

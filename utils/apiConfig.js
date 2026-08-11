@@ -125,6 +125,7 @@ function getApiRuntimeInfo() {
     legacyLocalTargetCleared: routeState.legacyLocalTargetCleared
   }
 }
+
 var ENABLE_AI = true;                          // 启用 AI 功能
 
 module.exports = {

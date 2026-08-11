@@ -24,6 +24,22 @@ def _composition_profile(**values):
         "chinBottomRatioMax": None,
         "shoulderWidthRatioMin": None,
         "shoulderWidthRatioMax": None,
+        "headHeightRatioTarget": None,
+        "operationalHeadHeightRatioMax": None,
+        "topMarginRatioTarget": None,
+        "chinBottomRatioTarget": None,
+        "shoulderWidthRatioTarget": None,
+        "topGapRatioMin": None,
+        "topGapRatioMax": None,
+        "topGapRatioTarget": None,
+        "chinYRatioMin": None,
+        "chinYRatioMax": None,
+        "chinYRatioTarget": None,
+        "horizontalCenterErrorMax": None,
+        "shoulderSpanRatioSoftMin": None,
+        "shoulderSpanRatioSoftMax": None,
+        "foregroundBottomContact": True,
+        "shoulderSideContact": True,
         "backgroundPolicy": "",
         "headwearPolicy": "",
     }
@@ -33,16 +49,19 @@ def _composition_profile(**values):
 
 PROJECT_COMMON_PROFILE = _composition_profile(
     sourceType="project_common_profile",
-    headWidthRatioMin=0.42,
-    headWidthRatioMax=0.84,
-    headHeightRatioMin=0.58,
-    headHeightRatioMax=0.70,
-    topMarginRatioMin=0.066,
-    topMarginRatioMax=0.123,
-    chinBottomRatioMin=0.0,
-    chinBottomRatioMax=0.33,
-    shoulderWidthRatioMin=0.75,
-    shoulderWidthRatioMax=1.0,
+    headHeightRatioMin=0.60,
+    headHeightRatioMax=0.67,
+    headHeightRatioTarget=0.63,
+    topGapRatioMin=0.04,
+    topGapRatioMax=0.08,
+    topGapRatioTarget=0.055,
+    chinYRatioMin=0.65,
+    chinYRatioMax=0.74,
+    chinYRatioTarget=0.685,
+    shoulderSpanRatioSoftMin=0.82,
+    shoulderSpanRatioSoftMax=1.00,
+    shoulderWidthRatioTarget=0.90,
+    horizontalCenterErrorMax=0.015,
 )
 
 PHOTO_SPECS = {
@@ -134,6 +153,7 @@ PHOTO_SPECS = {
         "compositionProfile": _composition_profile(
             standardRef="GA/T 461-2019",
             sourceType="official",
+            operationalHeadHeightRatioMax=0.75,
             backgroundPolicy="white_only",
             headwearPolicy="no_headwear",
         ),
@@ -348,11 +368,68 @@ PHOTO_SPECS = {
 # Every existing entry exposes the same stable profile shape. Entries without
 # a cited standard keep null ratios and continue using the historical project
 # composition envelope.
-for _spec in PHOTO_SPECS.values():
-    _spec.setdefault(
-        "compositionProfile",
-        _composition_profile(sourceType="project_profile"),
+def _build_traceable_fields(spec_id, spec):
+    prof = spec.get("compositionProfile") or {}
+    standard_ref = prof.get("standardRef") or spec.get("standardRef") or ""
+    src = standard_ref if standard_ref else "项目通用规格定义"
+    eff = (
+        "2014-12-01" if "1180" in standard_ref
+        else ("2019-01-01" if "461" in standard_ref
+        else ("2022-04-01" if "驾驶证" in standard_ref or "162" in standard_ref
+        else "2024-01-01"))
     )
+    verified = bool(standard_ref and prof.get("sourceType") == "official")
+    fields = []
+    
+    if spec.get("widthMm") and spec.get("heightMm"):
+        fields.append({"field": "width", "value": spec["widthMm"], "unit": "mm", "source": src, "verified": verified, "effectiveDate": eff})
+        fields.append({"field": "height", "value": spec["heightMm"], "unit": "mm", "source": src, "verified": verified, "effectiveDate": eff})
+    else:
+        fields.append({"field": "width", "value": spec["width"], "unit": "px", "source": src, "verified": verified, "effectiveDate": eff})
+        fields.append({"field": "height", "value": spec["height"], "unit": "px", "source": src, "verified": verified, "effectiveDate": eff})
+
+    if prof.get("headWidthRatioMin") is not None:
+        val = spec["widthMm"] * prof["headWidthRatioMin"] if spec.get("widthMm") else prof["headWidthRatioMin"]
+        unit = "mm" if spec.get("widthMm") else "ratio"
+        fields.append({"field": "headWidthMin", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("headWidthRatioMax") is not None:
+        val = spec["widthMm"] * prof["headWidthRatioMax"] if spec.get("widthMm") else prof["headWidthRatioMax"]
+        unit = "mm" if spec.get("widthMm") else "ratio"
+        fields.append({"field": "headWidthMax", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("headHeightRatioMin") is not None:
+        val = spec["heightMm"] * prof["headHeightRatioMin"] if spec.get("heightMm") else prof["headHeightRatioMin"]
+        unit = "mm" if spec.get("heightMm") else "ratio"
+        fields.append({"field": "headHeightMin", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("headHeightRatioMax") is not None:
+        val = spec["heightMm"] * prof["headHeightRatioMax"] if spec.get("heightMm") else prof["headHeightRatioMax"]
+        unit = "mm" if spec.get("heightMm") else "ratio"
+        fields.append({"field": "headHeightMax", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("topMarginRatioMin") is not None:
+        val = spec["heightMm"] * prof["topMarginRatioMin"] if spec.get("heightMm") else prof["topMarginRatioMin"]
+        unit = "mm" if spec.get("heightMm") else "ratio"
+        fields.append({"field": "topMarginMin", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("topMarginRatioMax") is not None:
+        val = spec["heightMm"] * prof["topMarginRatioMax"] if spec.get("heightMm") else prof["topMarginRatioMax"]
+        unit = "mm" if spec.get("heightMm") else "ratio"
+        fields.append({"field": "topMarginMax", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("chinBottomRatioMin") is not None:
+        val = spec["heightMm"] * prof["chinBottomRatioMin"] if spec.get("heightMm") else prof["chinBottomRatioMin"]
+        unit = "mm" if spec.get("heightMm") else "ratio"
+        fields.append({"field": "chinBottomMin", "value": round(val, 2), "unit": unit, "source": src, "verified": verified, "effectiveDate": eff})
+    if prof.get("backgroundPolicy"):
+        fields.append({"field": "backgroundPolicy", "value": prof["backgroundPolicy"], "unit": "enum", "source": src, "verified": verified, "effectiveDate": eff})
+
+    return fields
+
+
+for _spec_id, _spec in PHOTO_SPECS.items():
+    if "compositionProfile" not in _spec:
+        _spec["compositionProfile"] = (
+            dict(PROJECT_COMMON_PROFILE)
+            if _spec.get("category") == "common" and _spec.get("composition") == "head_shoulder"
+            else _composition_profile(sourceType="project_profile")
+        )
+    _spec["traceableFields"] = _build_traceable_fields(_spec_id, _spec)
 
 DEFAULT_SPEC_BY_PURPOSE = {
     "official_id_photo": "one-inch",
@@ -374,3 +451,4 @@ def get_spec(spec_id=None, purpose=None):
     if spec is None:
         spec = PHOTO_SPECS[DEFAULT_SPEC_BY_PURPOSE.get(purpose or "", "one-inch")]
     return dict(spec)
+

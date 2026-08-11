@@ -275,7 +275,8 @@
 
   <!-- ====== removeWatermark ====== -->
   <view class="config-section" wx:if="{{toolType === 'removeWatermark'}}">
-    <view class="section-title" bindtap="onWatermarkTitleTap">图片去水印</view>
+    <view class="section-title" wx:if="{{isDevelopEnv}}" bindtap="onWatermarkTitleTap">图片去水印</view>
+    <view class="section-title" wx:else>图片去水印</view>
     <text class="disclaimer">⚠️ 仅用于处理本人图片，请勿侵犯他人版权或权益。</text>
 
     <view class="section-title">处理模式</view>
@@ -316,7 +317,7 @@
           <button class="btn-secondary" bindtap="onWmClear">🗑️ 清空</button>
         </view>
       </view>
-      <view class="wm-debug-card" wx:if="{{showDebugPanel && wmMaskPreview}}">
+      <view class="wm-debug-card" wx:if="{{isDevelopEnv && showDebugPanel && wmMaskPreview}}">
         <view class="section-title">Mask 调试预览</view>
         <image class="wm-mask-preview" src="{{wmMaskPreview}}" mode="aspectFit" />
         <view class="info-row">mask 尺寸: {{wmMaskWidth}}x{{wmMaskHeight}}</view>
@@ -354,7 +355,7 @@
       <button class="btn-primary" bindtap="doStampSave" wx:if="{{photoSrc && !processing && wmStampSampleSet}}">✨ 确认克隆修复</button>
     </block>
 
-    <view class="wm-debug-card" wx:if="{{showDebugPanel && wmBackendDebug && wmBackendDebug.imageSize}}">
+    <view class="wm-debug-card" wx:if="{{isDevelopEnv && showDebugPanel && wmBackendDebug && wmBackendDebug.imageSize}}">
       <view class="section-title">OpenCV 调试信息</view>
       <view class="info-row">imageSize: {{wmBackendDebug.imageSize}}</view>
       <view class="info-row">maskSize: {{wmBackendDebug.maskSize}}</view>
@@ -366,7 +367,7 @@
       <view class="info-row">diffMax: {{wmBackendDebug.diffMax}}</view>
     </view>
 
-    <view class="wm-debug-card" wx:if="{{showDebugPanel}}">
+    <view class="wm-debug-card" wx:if="{{isDevelopEnv && showDebugPanel}}">
       <view class="section-title">图片去水印服务诊断</view>
       <view class="info-row">当前 API 地址: {{wmApiBaseUrl}}</view>
       <view class="info-row">健康检查状态: {{wmHealthStatus}}</view>
@@ -476,7 +477,7 @@
   <view class="spacer"></view>
 
   <!-- ====== 开发诊断面板 ====== -->
-  <view class="diag-panel" wx:if="{{showDebugPanel}}">
+  <view class="diag-panel" wx:if="{{isDevelopEnv && showDebugPanel}}">
     <view class="diag-header">🔧 证件照开发诊断面板</view>
     
     <view class="diag-section-title">🔌 服务基本配置</view>

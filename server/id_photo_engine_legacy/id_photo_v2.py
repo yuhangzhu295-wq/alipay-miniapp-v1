@@ -22,7 +22,12 @@ from services.portrait_quality import (
 )
 from services.face_detector import detect_face
 from services.id_photo_composer import compose_id_photo
-from services.id_photo_quality import build_quality_report, validate_composition_metrics, validate_final_output
+from services.id_photo_quality import (
+    build_quality_report,
+    validate_composition_metrics,
+    validate_final_id_photo,
+    validate_final_output,
+)
 from services.portrait_matting import matte_person, matting_status
 
 
@@ -591,6 +596,8 @@ def _fast_alpha_structure_metrics(foreground_path, face_box):
             "foregroundOldBgRatio": 1.0,
             "boundaryComplexity": 99.0,
             "fragmentedRowRatio": 1.0,
+            "rectangularBackgroundRatio": 1.0,
+            "embeddedRectangleRisk": True,
         }
 
     binary = alpha > 12
@@ -652,6 +659,47 @@ def _fast_alpha_structure_metrics(foreground_path, face_box):
         transitions = np.diff(np.pad(row, (1, 1)))
         row_runs.append(int(np.count_nonzero(transitions == 1)))
     fragmented_row_ratio = _safe_ratio(sum(runs > 2 for runs in row_runs), len(row_runs))
+    foreground_rows = np.where(np.any(binary, axis=1))[0]
+    rectangular_background_ratio = 0.0
+    embedded_rectangle_risk = False
+    if foreground_rows.size:
+        bbox_top = int(foreground_rows[0])
+        bbox_bottom = int(foreground_rows[-1])
+        lower_start = max(bbox_top, int(round(fy + fh * 0.40)))
+        lower_end = min(bbox_bottom, int(round(fy + fh * 2.30)))
+        longest_flat_run = 0
+        current_flat_run = 0
+        previous_span = None
+        for row_index in range(lower_start, lower_end + 1):
+            columns = np.where(binary[row_index])[0]
+            span = None
+            if columns.size and columns[-1] - columns[0] + 1 >= fw * 1.50:
+                span = (int(columns[0]), int(columns[-1]))
+            if (
+                span is not None
+                and previous_span is not None
+                and abs(span[0] - previous_span[0]) <= 2
+                and abs(span[1] - previous_span[1]) <= 2
+            ):
+                current_flat_run += 1
+            else:
+                current_flat_run = 1 if span is not None else 0
+            longest_flat_run = max(longest_flat_run, current_flat_run)
+            previous_span = span
+        rectangular_background_ratio = min(1.0, longest_flat_run / float(max(1.0, fh)))
+        foreground_columns = np.where(np.any(binary, axis=0))[0]
+        inset_horizontally = bool(
+            foreground_columns.size
+            and foreground_columns[0] >= width * 0.01
+            and foreground_columns[-1] <= width - 1 - width * 0.01
+        )
+        bottom_gap = height - 1 - bbox_bottom
+        embedded_rectangle_risk = bool(
+            inset_horizontally
+            and bottom_gap >= height * 0.015
+            and rectangular_background_ratio >= 0.45
+            and fragmented_row_ratio >= 0.015
+        )
     structural_old_bg_risk = max(
         0.0,
         (boundary_complexity - 1.65) / 8.0,
@@ -666,6 +714,8 @@ def _fast_alpha_structure_metrics(foreground_path, face_box):
         "foregroundOldBgRatio": round(structural_old_bg_risk, 6),
         "boundaryComplexity": round(boundary_complexity, 6),
         "fragmentedRowRatio": fragmented_row_ratio,
+        "rectangularBackgroundRatio": round(rectangular_background_ratio, 6),
+        "embeddedRectangleRisk": embedded_rectangle_risk,
     }
 
 
@@ -677,6 +727,8 @@ def _fast_selection_score(metrics):
         + float(metrics.get("hairCutoffRatio") or 0) * 1.2
         + float(metrics.get("edgeHaloRatio") or 0) * 0.2
         + float(metrics.get("foregroundOldBgRatio") or 0) * 3.0
+        + float(metrics.get("rectangularBackgroundRatio") or 0) * 2.0
+        + (8.0 if metrics.get("embeddedRectangleRisk") else 0.0)
     )
     return round(100.0 / (1.0 + risk * 4.0), 3)
 
@@ -755,6 +807,7 @@ def _classify_fast_probe(matting_success, fast_passed, fail_reasons, probe):
         or float(metrics.get("boundaryComplexity") or 0) >= 2.20
         or float(metrics.get("fragmentedRowRatio") or 0) >= 0.02
         or float(metrics.get("subjectHoleRatio") or 0) >= 0.02
+        or bool(metrics.get("embeddedRectangleRisk"))
     ):
         return "FAST_RISK"
     if fast_passed and bool(probe.get("cropPass")):
@@ -844,6 +897,9 @@ def _probe_fast_matting(matting, face_box, spec, composition):
             float(quality.get("remainingBackgroundSheetRatio") or 0),
             float(quality.get("remainingHeadSideBackgroundRatio") or 0),
         ), 6)
+        if selection_metrics.get("embeddedRectangleRisk"):
+            reasons = list(dict.fromkeys([*reasons, "backgroundSheetRetained"]))
+            matting_pass = False
         repair_pixels = int(quality.get("fastLightweightRepairPixels") or 0) + sum(int(compose_quality.get(key) or 0) for key in (
             "composedBodyHoleRepairedPixels",
             "composedHairHoleRepairedPixels",
@@ -1320,6 +1376,16 @@ def _prepare_cutout(
                 "faceDetector": face,
             },
         )
+    if mode != "creative" and face.get("frontalPoseMeasured") and not face.get("frontalPosePass"):
+        raise PortraitQualityError(
+            "FACE_POSE_NOT_FRONTAL",
+            {
+                **detected,
+                "code": "ID_PHOTO_POSE_NOT_FRONTAL",
+                "message": "请上传面向镜头、头部端正的真人正面照片。",
+                "faceDetector": face,
+            },
+        )
 
     actual_image_type = "real_person"
     final_mode = "official" if mode != "creative" else "creative"
@@ -1389,7 +1455,18 @@ def _prepare_cutout(
         )
         fast_b = None
         fast_b_duration_ms = 0
-        if fast_a.get("status") == "FAST_RISK":
+        fast_a_reasons = set(fast_a.get("failReasons") or [])
+        run_fast_b = fast_a.get("status") == "FAST_RISK" or bool(
+            fast_a.get("status") == "FAST_WARNING"
+            and fast_a_reasons
+            & {
+                "backgroundSheetRetained",
+                "headSideBackgroundRetained",
+                "foregroundIncomplete",
+                "abnormalAlpha",
+            }
+        )
+        if run_fast_b:
             try:
                 from id_photo_engines.hivision.runner import get_model_routing
 
@@ -1434,6 +1511,9 @@ def _prepare_cutout(
                 and bool((item.get("probe") or {}).get("fastResultUsable"))
                 and bool((item.get("probe") or {}).get("mattingPass"))
                 and bool((item.get("probe") or {}).get("cropPass"))
+                and not bool(
+                    ((item.get("probe") or {}).get("selectionMetrics") or {}).get("embeddedRectangleRisk")
+                )
             ]
         if not acceptable:
             severe_fast_reasons = {
@@ -1461,6 +1541,9 @@ def _prepare_cutout(
                     ((item.get("probe") or {}).get("selectionMetrics") or {}).get("subjectHoleRatio")
                     or 0
                 ) < 0.02
+                and not bool(
+                    ((item.get("probe") or {}).get("selectionMetrics") or {}).get("embeddedRectangleRisk")
+                )
             ]
         if acceptable:
             selected = max(
@@ -1617,6 +1700,12 @@ def _prepare_cutout(
         "faceBox": face["faceBox"],
         "landmarks": face.get("landmarks", {}),
         "faceConfidence": face.get("confidence", 0),
+        "frontalPoseMeasured": face.get("frontalPoseMeasured", False),
+        "frontalPosePass": face.get("frontalPosePass"),
+        "poseScore": face.get("poseScore", 0),
+        "poseYawRatio": face.get("poseYawRatio"),
+        "poseRollRatio": face.get("poseRollRatio"),
+        "poseEarBalanceRatio": face.get("poseEarBalanceRatio"),
         "faceDetector": face.get("engine", "unknown"),
         "mattingEngine": matting.get("engine"),
         "mattingModel": matting.get("model"),
@@ -1680,6 +1769,120 @@ def _prepare_cutout(
     return PREPARE_CACHE[prepared_id], times
 
 
+def _probe_final_composition(result, compose_quality, spec, expected_bg):
+    probe = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    probe_path = probe.name
+    probe.close()
+    try:
+        result.save(probe_path, format="PNG")
+        return validate_final_id_photo(
+            probe_path,
+            spec.get("id") or "",
+            {**spec, "bgColor": expected_bg},
+            metrics=compose_quality,
+            expected_bg=expected_bg,
+        )
+    finally:
+        try:
+            Path(probe_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def _compose_with_final_geometry_calibration(
+    item,
+    spec,
+    target_size,
+    expected_bg,
+    source_background_rgb,
+):
+    profile = dict(spec.get("compositionProfile") or {})
+    has_head_geometry = any(
+        profile.get(key) is not None
+        for key in (
+            "headWidthRatioMin",
+            "headWidthRatioMax",
+            "headHeightRatioMin",
+            "headHeightRatioMax",
+        )
+    )
+    calibration = {"headHeightFactor": 1.0, "headWidthFactor": 1.0}
+    attempts = []
+    result = None
+    compose_quality = {}
+
+    for attempt in range(3):
+        result, compose_quality = compose_id_photo(
+            item["foregroundPngPath"],
+            item.get("faceBox") or (item.get("quality") or {}).get("faceBox"),
+            target_size,
+            expected_bg,
+            composition=item["composition"],
+            source_background_rgb=source_background_rgb,
+            preserve_detail=bool((item.get("quality") or {}).get("trustedAlpha")),
+            composition_profile=profile,
+            measurement_calibration=calibration,
+        )
+        validation = _probe_final_composition(result, compose_quality, spec, expected_bg)
+        checks = validation["composition"]["checks"]
+        actual_height = float(validation["headGeometry"].get("heightRatio") or 0.0)
+        actual_width = float(validation["headGeometry"].get("widthRatio") or 0.0)
+        predicted_height = float(compose_quality.get("headHeightRatio") or 0.0)
+        predicted_width = float(compose_quality.get("profileHeadWidthRatio") or 0.0)
+        compatible = bool(
+            (compose_quality.get("compositionSolver") or {}).get(
+                "geometryConstraintsCompatible",
+                True,
+            )
+        )
+        attempts.append({
+            "attempt": attempt + 1,
+            "headHeightFactor": round(calibration["headHeightFactor"], 6),
+            "headWidthFactor": round(calibration["headWidthFactor"], 6),
+            "predictedHeadHeightRatio": round(predicted_height, 6),
+            "predictedHeadWidthRatio": round(predicted_width, 6),
+            "finalHeadHeightRatio": round(actual_height, 6),
+            "finalHeadWidthRatio": round(actual_width, 6),
+            "headHeightPass": bool(checks.get("headHeight")),
+            "headWidthPass": bool(checks.get("headWidth")),
+            "geometryConstraintsCompatible": compatible,
+        })
+        geometry_passed = bool(checks.get("headHeight")) and bool(checks.get("headWidth"))
+        if not has_head_geometry or geometry_passed or attempt >= 2:
+            break
+        if min(actual_height, actual_width, predicted_height, predicted_width) <= 0:
+            break
+
+        updated = {
+            "headHeightFactor": min(
+                1.35,
+                max(0.75, calibration["headHeightFactor"] * actual_height / predicted_height),
+            ),
+            "headWidthFactor": min(
+                1.35,
+                max(0.75, calibration["headWidthFactor"] * actual_width / predicted_width),
+            ),
+        }
+        change = max(abs(updated[key] - calibration[key]) for key in updated)
+        if change < 0.002:
+            break
+        old_mask_path = compose_quality.get("composedMaskPath")
+        try:
+            if old_mask_path:
+                Path(old_mask_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+        calibration = updated
+
+    compose_quality["compositionRetryCount"] = max(0, len(attempts) - 1)
+    compose_quality["compositionCalibrationAttempts"] = attempts
+    compose_quality["finalMeasurementCalibration"] = {
+        "headHeightFactor": round(calibration["headHeightFactor"], 6),
+        "headWidthFactor": round(calibration["headWidthFactor"], 6),
+    }
+    return result, compose_quality
+
+
 def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output_type="jpg", request_id=""):
     item = PREPARE_CACHE.get(prepared_id)
     if not item:
@@ -1703,15 +1906,13 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         (item_quality.get("mattingRefine") or {}).get("sourceBackgroundRgb")
         or item_quality.get("sourceBackgroundRgb")
     )
-    result, quality = compose_id_photo(
-        item["foregroundPngPath"],
-        item.get("faceBox") or item_quality.get("faceBox"),
+    expected_bg = BG_COLORS.get(bg_color, bg_color)
+    result, quality = _compose_with_final_geometry_calibration(
+        item,
+        spec,
         target_size,
-        BG_COLORS.get(bg_color, bg_color),
-        composition=item["composition"],
-        source_background_rgb=source_background_rgb,
-        preserve_detail=bool(item_quality.get("trustedAlpha")),
-        composition_profile=spec.get("compositionProfile"),
+        expected_bg,
+        source_background_rgb,
     )
     quality = {
         **item_quality,
@@ -1733,7 +1934,10 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
             and crop_reasons
             and crop_reasons <= {"ID_PHOTO_BOTTOM_PADDING_BAD"}
         ):
-            raise PortraitQualityError(metrics_check["code"], metrics_check)
+            raise PortraitQualityError(
+                metrics_check["code"],
+                {**quality, **metrics_check},
+            )
         quality["fastWarningCompositionAccepted"] = True
     result, outfit_payload = _apply_outfit_template(
         result,
@@ -1746,7 +1950,7 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     result.save(tmp, format="JPEG" if suffix == ".jpg" else "PNG", quality=95)
     tmp.flush()
-    spec["bgColor"] = BG_COLORS.get(bg_color, bg_color)
+    spec["bgColor"] = expected_bg
     debug = {
         "bgColor": spec["bgColor"],
         "outputSize": f"{target_size[0]}x{target_size[1]}",
@@ -1761,6 +1965,49 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
     final_check = validate_final_output(tmp.name, target_size[0], target_size[1], spec["bgColor"])
     if not final_check.get("success"):
         raise PortraitQualityError(final_check["code"], final_check)
+    quality["previewDownloadEqual"] = True
+    final_id_validation = validate_final_id_photo(
+        tmp.name,
+        spec.get("id") or "",
+        spec,
+        metrics=quality,
+        expected_bg=spec["bgColor"],
+    )
+    alignment = final_id_validation["personPanelAlignment"]
+    head_geometry = final_id_validation["headGeometry"]
+    shoulder_geometry = final_id_validation["shoulderGeometry"]
+    final_foreground = alignment["foreground"]
+    quality.update({
+        "finalIdPhotoValidation": final_id_validation,
+        "personToPanelAlignment": alignment,
+        "chinaMainlandCompliance": final_id_validation["documentStandard"],
+        "outputCanvasPass": bool(final_id_validation["canvas"]["pass"]),
+        "backgroundPass": bool(final_id_validation["background"]["pass"]),
+        "personToPanelAlignmentPass": bool(alignment["pass"]),
+        "compositionPass": bool(final_id_validation["composition"]["pass"]),
+        "documentStandardPass": bool(final_id_validation["documentStandard"]["pass"]),
+        "previewDownloadPass": bool(final_id_validation["previewDownload"]["pass"]),
+        "finalIdPhotoPass": bool(final_id_validation["finalPass"]),
+        "outputForegroundBox": {
+            "x": final_foreground["left"],
+            "y": final_foreground["top"],
+            "width": final_foreground["right"] - final_foreground["left"],
+            "height": final_foreground["bottom"] - final_foreground["top"],
+        },
+        "headBBox": head_geometry["box"],
+        "shoulderBBox": shoulder_geometry["box"],
+        "topPaddingRatio": head_geometry["topMarginRatio"],
+        "headHeightRatio": head_geometry["heightRatio"],
+        "headRatio": head_geometry["heightRatio"],
+        "profileHeadWidthRatio": head_geometry["widthRatio"],
+        "chinBottomRatio": head_geometry["chinBottomRatio"],
+        "shoulderWidthRatio": shoulder_geometry["widthRatio"],
+        "shoulderObserved": bool(shoulder_geometry["observed"]),
+        "foregroundBottomGapPx": int(alignment["foregroundBottomGapPx"]),
+        "foregroundBottomContact": int(alignment["foregroundBottomGapPx"]) == 0,
+        "leftShoulderPanelGapPx": int(alignment["leftShoulderPanelGapPx"]),
+        "rightShoulderPanelGapPx": int(alignment["rightShoulderPanelGapPx"]),
+    })
     quality_report = build_quality_report(
         tmp.name,
         target_size[0],
@@ -1786,6 +2033,20 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         *(quality_report.get("cropFailReasons") or []),
         *(quality_report.get("outputFailReasons") or []),
     ]
+    if not alignment["pass"]:
+        final_blocking_reasons.append("ID_PHOTO_PERSON_PANEL_ALIGNMENT_FAILED")
+    composition_checks = final_id_validation["composition"]["checks"]
+    if not composition_checks.get("shouldersObserved"):
+        final_blocking_reasons.append("ID_PHOTO_SHOULDERS_NOT_OBSERVED")
+    if not composition_checks.get("foregroundBottomContact"):
+        final_blocking_reasons.append("ID_PHOTO_FOREGROUND_DETACHED_FROM_PANEL_BOTTOM")
+    if not composition_checks.get("shoulderSideContact"):
+        final_blocking_reasons.append("ID_PHOTO_SHOULDERS_DETACHED_FROM_PANEL_SIDES")
+    if not final_id_validation["composition"]["pass"]:
+        final_blocking_reasons.append("ID_PHOTO_FINAL_COMPOSITION_FAILED")
+    if not final_id_validation["documentStandard"]["pass"]:
+        final_blocking_reasons.append("ID_PHOTO_DOCUMENT_STANDARD_FAILED")
+    final_blocking_reasons = list(dict.fromkeys(final_blocking_reasons))
     if allow_fast_warning and final_blocking_reasons:
         warning_reasons = {
             "ID_PHOTO_HAIR_BACKGROUND_HOLE",
@@ -1983,6 +2244,7 @@ def generate_id_photo_v2(
             bg,
             target_size=target_size,
             composition=composition,
+            spec=spec,
         )
         if final_mode == "official":
             warnings.append("已按所选规格裁切，请以提交平台最终审核为准。")

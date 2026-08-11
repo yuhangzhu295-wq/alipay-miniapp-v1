@@ -116,24 +116,21 @@ def classify_issue(spec: dict[str, Any]) -> tuple[bool, bool, str]:
     if not colors(spec):
         wrong = True
         reasons.append("缺少底色")
-    if sid in BAD_TEACHER_IDS and enabled(spec):
-        wrong = True
-        reasons.append("低分辨率教资规格仍启用")
     if ("teacher" in sid or "教师" in name) and px in {"150x200", "180x240", "384x512"} and level == "official":
         wrong = True
         reasons.append("低分辨率教资规格被标为官方")
-    if ("civil_service" in sid or "公务员" in name or "国考" in name) and mm == "35x53" and enabled(spec):
+    if ("civil_service" in sid or "公务员" in name or "国考" in name) and mm == "35x53" and level == "official":
         wrong = True
-        reasons.append("35x53mm 公务员规格仍启用")
+        reasons.append("35x53mm 公务员规格被标为官方")
     if sid in {"driver", "driver_common"} and not (mm == "22x32" and px == "260x378" and colors(spec) == ["white"]):
         wrong = True
         reasons.append("驾驶证默认规格不是 22x32mm/260x378px/白底")
-    if "accounting" in sid and px == "114x156" and enabled(spec):
+    if "accounting" in sid and px == "114x156" and level == "official":
         wrong = True
-        reasons.append("114x156px 会计规格仍启用")
-    if sid == "insurance_practice_210_370" and enabled(spec):
+        reasons.append("114x156px 会计规格被标为官方")
+    if sid == "insurance_practice_210_370" and level == "official":
         wrong = True
-        reasons.append("18x31mm 保险执业规格仍启用")
+        reasons.append("18x31mm 保险执业规格被标为官方")
     if (mm == "33x48" or px == "390x567") and sid in {"dayicun", "large-one-inch"} and level != "local_common":
         wrong = True
         reasons.append("33x48mm/390x567px 未标为地方常用")
@@ -197,27 +194,27 @@ def validate_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
         sid = spec.get("id")
         if source_level(spec) not in ALLOWED_SOURCE_LEVELS:
             failures.append(f"{sid}: invalid sourceLevel {source_level(spec)}")
-        for key in ["id", "name", "category", "widthMm", "heightMm", "widthPx", "heightPx", "dpi", "backgrounds", "fileSizeLimit", "sourceLevel", "notice", "enabled", "sort", "aliases"]:
+        # Platform specifications may be defined only in pixels. Millimeter
+        # dimensions are optional unless the source explicitly publishes them.
+        for key in ["id", "name", "category", "widthPx", "heightPx", "dpi", "backgrounds", "fileSizeLimit", "sourceLevel", "notice", "enabled", "sort", "aliases"]:
             if key not in spec:
                 failures.append(f"{sid}: missing {key}")
     for sid in BAD_TEACHER_IDS:
         spec = by_id.get(sid)
-        if spec and enabled(spec):
-            failures.append(f"{sid}: teacher low-res spec still enabled")
         if spec and source_level(spec) == "official":
             failures.append(f"{sid}: teacher low-res spec marked official")
     civil_two = by_id.get("civil_service_two_inch") or by_id.get("civil_service_413_626")
-    if civil_two and enabled(civil_two):
-        failures.append("civil_service 35x53mm spec still enabled")
+    if civil_two and enabled(civil_two) and source_level(civil_two) == "official":
+        failures.append("civil_service 35x53mm spec incorrectly marked official")
     driver = enabled_by_id.get("driver_common") or enabled_by_id.get("driver")
     if not driver or not (driver.get("widthMm") == 22 and driver.get("heightMm") == 32 and driver.get("widthPx") == 260 and driver.get("heightPx") == 378 and colors(driver) == ["white"]):
         failures.append("driver default is not 22x32mm / 260x378px / white")
     accounting_low = by_id.get("accounting_middle_114_156")
-    if accounting_low and enabled(accounting_low):
-        failures.append("accounting 114x156px spec still enabled")
+    if accounting_low and enabled(accounting_low) and source_level(accounting_low) == "official":
+        failures.append("accounting 114x156px spec incorrectly marked official")
     insurance = by_id.get("insurance_practice_210_370")
-    if insurance and enabled(insurance):
-        failures.append("insurance 18x31mm spec still enabled")
+    if insurance and enabled(insurance) and source_level(insurance) == "official":
+        failures.append("insurance 18x31mm spec incorrectly marked official")
     dayicun = enabled_by_id.get("dayicun")
     if not dayicun or source_level(dayicun) != "local_common":
         failures.append("33x48mm / 390x567px dayicun is not local_common")
@@ -258,12 +255,12 @@ def write_final_reports(catalog: dict[str, Any], result: dict[str, Any]) -> None
         "\n".join([
             "# Spec Diff Before After",
             "",
-            "- 教师资格证：保留 295x413 主规格；150x200、180x240、384x512 降级/禁用，不再作为官方通用入口。",
-            "- 国考/公务员：主规格改为公务员考试报名照 295x413；35x53mm 二寸类禁用，不再作为默认标准。",
+            "- 教师资格证：保留 295x413 主规格；150x200、180x240、384x512 仅作为平台专用像素规格，不标为官方通用入口。",
+            "- 国考/公务员：保留主规格与平台专用规格；35x53mm 二寸类不标为官方默认标准。",
             "- 驾驶证：默认规格为 22x32mm / 260x378px / 白底；35x49mm 地方/平台项后置。",
-            "- 会计/职称：主推 295x413；114x156px 低分辨率规格禁用。",
-            "- 医护/导游/保险：18x31mm 保险执业规格禁用；医护/导游保留常用报名照尺寸。",
-            "- 学籍/入学：保留 295x413、413x531 通用项；纯像素学校/平台项降级/禁用。",
+            "- 会计/职称：主推 295x413；114x156px 仅按对应平台要求展示。",
+            "- 医护/导游/保险：18x31mm 保险执业规格仅按对应平台要求展示；医护/导游保留常用报名照尺寸。",
+            "- 学籍/入学：保留 295x413、413x531 通用项；纯像素学校/平台项允许展示，但不补造毫米尺寸。",
             "- 33x48mm / 390x567px：标注为 local_common 地方常用，不再标成全国统一标准。",
         ]) + "\n",
         encoding="utf-8",

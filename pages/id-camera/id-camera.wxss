@@ -33,6 +33,19 @@ page {
   text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.85);
 }
 
+.camera-init-hint {
+  position: absolute;
+  z-index: 8;
+  top: 148rpx;
+  right: 36rpx;
+  left: 36rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
+  line-height: 36rpx;
+  text-align: center;
+  text-shadow: 0 2rpx 7rpx rgba(0, 0, 0, 0.8);
+}
+
 .camera-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -48,20 +61,12 @@ page {
 .portrait-guide {
   position: absolute;
   z-index: 4;
-  top: 54%;
-  left: 50%;
-  width: 70vw;
-  height: 100vw;
-  max-width: 560rpx;
-  max-height: 805rpx;
-  transform: translate(-50%, -50%);
   opacity: 0.98;
 }
 
 .eye-label {
   position: absolute;
   z-index: 5;
-  top: 52%;
   right: 0;
   left: 0;
   color: rgba(255, 255, 255, 0.78);
@@ -137,6 +142,10 @@ page {
 .shutter-active {
   transform: scale(0.92);
   opacity: 0.68;
+}
+
+.shutter-disabled {
+  opacity: 0.4;
 }
 
 .confirm-view {
@@ -259,4 +268,3 @@ page {
   border: 2rpx solid rgba(255, 255, 255, 0.65);
   color: #ffffff;
 }
-

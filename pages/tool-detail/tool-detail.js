@@ -182,6 +182,7 @@ Page({
     diagResultPath: '-',
     diagIsEqual: '-',
     diagResultDiffer: true,
+    isDevelopEnv: false,
     showDebugPanel: false,
     debugTitleTapCount: 0
   },
@@ -190,22 +191,39 @@ Page({
     var type = options.type || 'changeBg';
     var config = TOOL_CONFIGS[type];
     if (!config) { config = TOOL_CONFIGS.changeBg; type = 'changeBg'; }
+    var isDevelopEnv = this.isDebugPanelAllowed();
     var showDebugPanel = false;
     try {
       var storedDebugPanel = wx.getStorageSync('showDebugPanel');
-      showDebugPanel = this.isDebugPanelAllowed() && (storedDebugPanel === true || storedDebugPanel === 'true');
+      showDebugPanel = isDevelopEnv && (storedDebugPanel === true || storedDebugPanel === 'true');
+      if (!isDevelopEnv && storedDebugPanel) {
+        wx.removeStorageSync('showDebugPanel');
+      }
     } catch (err) {
       console.error('[debug] failed to read debug panel setting:', err);
     }
     wx.setNavigationBarTitle({ title: config.title });
-    this.setData({ toolType: type, toolTitle: config.title, toolIcon: config.icon, showDebugPanel: showDebugPanel });
+    this.setData({
+      toolType: type,
+      toolTitle: config.title,
+      toolIcon: config.icon,
+      isDevelopEnv: isDevelopEnv,
+      showDebugPanel: showDebugPanel,
+      debugTitleTapCount: 0
+    });
     if (type === 'changeBg' || type === 'professional') { this.initIdPhotoOptions(type); }
     if (type === 'customSize' || type === 'collect') { this.loadSpecsForCollect(); }
     if (type === 'removeWatermark') { this.checkWatermarkHealth(); }
   },
 
   onShow: function() {
-    if (this.data.showDebugPanel) {
+    var isDevelopEnv = this.isDebugPanelAllowed();
+    if (!isDevelopEnv) {
+      this.setData({ isDevelopEnv: false, showDebugPanel: false, debugTitleTapCount: 0 });
+    } else if (!this.data.isDevelopEnv) {
+      this.setData({ isDevelopEnv: true });
+    }
+    if (isDevelopEnv && this.data.showDebugPanel) {
       // 自动检测后端健康状态
       this.runDiagHealthCheck();
     }
@@ -216,6 +234,7 @@ Page({
 
   // ========== 诊断面板 ==========
   runDiagHealthCheck: function() {
+    if (!this.isDebugPanelAllowed()) { return; }
     var that = this;
     that.setData({ diagHealthStatus: '检测中...' });
     aiImageApi.checkApiAvailable().then(function() {
@@ -279,16 +298,21 @@ Page({
       if (wx.getAccountInfoSync) {
         var accountInfo = wx.getAccountInfoSync();
         var envVersion = accountInfo && accountInfo.miniProgram && accountInfo.miniProgram.envVersion;
-        return envVersion !== 'release';
+        return envVersion === 'develop';
       }
     } catch (err) {
       console.error('[debug] failed to read mini program env:', err);
     }
-    return true;
+    return false;
   },
 
   onWatermarkTitleTap: function() {
-    if (!this.isDebugPanelAllowed()) { return; }
+    if (!this.isDebugPanelAllowed()) {
+      if (this.data.showDebugPanel || this.data.debugTitleTapCount || this.data.isDevelopEnv) {
+        this.setData({ isDevelopEnv: false, showDebugPanel: false, debugTitleTapCount: 0 });
+      }
+      return;
+    }
 
     var that = this;
     var count = (that.data.debugTitleTapCount || 0) + 1;
@@ -328,6 +352,16 @@ Page({
 
   getWatermarkUserError: function(err, fallback) {
     var msg = (err && err.message) || String(err || '');
+    var code = (err && err.code) || '';
+    if (code === 'CONTENT_SAFETY_REJECTED' || msg.indexOf('图片内容不符合平台规范') >= 0) {
+      return '图片内容不符合平台规范，请更换图片后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_PENDING' || msg.indexOf('图片安全检测暂未完成') >= 0) {
+      return '图片安全检测暂未完成，请稍后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_UNAVAILABLE' || code === 'CONTENT_SAFETY_AUTH_REQUIRED' || code === 'CONTENT_SAFETY_OPENID_REQUIRED' || msg.indexOf('图片安全检测暂时不可用') >= 0) {
+      return '图片安全检测暂时不可用，请稍后重试。';
+    }
     var lowerMsg = msg.toLowerCase();
     if (msg.indexOf('遮罩为空') >= 0 || msg.indexOf('全黑') >= 0 || msg.indexOf('涂抹') >= 0 || msg.indexOf('mask empty') >= 0 || msg.indexOf('nonZero') >= 0) {
       return '请先涂抹需要去除的水印区域。';
@@ -357,6 +391,7 @@ Page({
   },
 
   diagTestRemoveBg: function() {
+    if (!this.isDebugPanelAllowed()) { return; }
     var that = this;
     if (!that.data.photoSrc) { wx.showToast({ title: '请先上传图片', icon: 'none' }); return; }
     that.setData({ diagLastApi: 'POST /api/remove-bg', diagLastSuccess: '请求中...' });
@@ -377,6 +412,7 @@ Page({
   },
 
   diagTestChangeBg: function() {
+    if (!this.isDebugPanelAllowed()) { return; }
     var that = this;
     if (!that.data.photoSrc) { wx.showToast({ title: '请先上传图片', icon: 'none' }); return; }
     that.setData({ diagLastApi: 'POST /api/change-bg', diagLastSuccess: '请求中...' });
@@ -397,6 +433,7 @@ Page({
   },
 
   diagTestInpaint: function() {
+    if (!this.isDebugPanelAllowed()) { return; }
     var that = this;
     if (!that.data.photoSrc) { wx.showToast({ title: '请先上传图片', icon: 'none' }); return; }
     if (!that.data.selectRect) { wx.showToast({ title: '请先框选水印区域', icon: 'none' }); return; }
@@ -452,6 +489,7 @@ Page({
   },
 
   diagTestVerifyPhoto: function() {
+    if (!this.isDebugPanelAllowed()) { return; }
     var that = this;
     if (!that.data.photoSrc) { wx.showToast({ title: '请先上传图片', icon: 'none' }); return; }
     that.setData({ diagLastApi: 'POST /api/verify-photo', diagLastSuccess: '请求中...' });
@@ -891,6 +929,15 @@ Page({
   getPortraitUserError: function(err, fallback) {
     var msg = (err && err.message) || '';
     var code = (err && err.code) || '';
+    if (code === 'CONTENT_SAFETY_REJECTED' || msg.indexOf('图片内容不符合平台规范') >= 0) {
+      return '图片内容不符合平台规范，请更换图片后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_PENDING' || msg.indexOf('图片安全检测暂未完成') >= 0) {
+      return '图片安全检测暂未完成，请稍后重试。';
+    }
+    if (code === 'CONTENT_SAFETY_UNAVAILABLE' || code === 'CONTENT_SAFETY_AUTH_REQUIRED' || code === 'CONTENT_SAFETY_OPENID_REQUIRED' || msg.indexOf('图片安全检测暂时不可用') >= 0) {
+      return '图片安全检测暂时不可用，请稍后重试。';
+    }
     if (code === 'INVALID_INPUT_ANIME_OR_CARTOON' || code === 'INVALID_INPUT_NOT_REAL_PERSON') {
       return '当前为二次元/插画图片，可生成创意证件照效果，但不适合作为官方证件照提交。';
     }

@@ -1,5 +1,8 @@
-/** Watermark API using compact normalized brush-stroke transport. */
+/** Watermark API using compact normalized brush-stroke transport.
+ * Mapped endpoints: /api/watermark/manual-remove, /api/watermark/quick-remove, /api/watermark/hd-remove -> /api/watermark/remove-v2
+ */
 var watermarkConfig = require('./watermarkConfig.js');
+var imageSafetyApi = require('./imageSafetyApi.js');
 var activeHdRequests = {};
 
 function getBaseUrl() {
@@ -187,7 +190,7 @@ function removeV2(params) {
         throw unavailable;
       }
       uploadStartedAt = Date.now();
-      var uploadTask = wx.uploadFile({
+      var uploadTask = imageSafetyApi.uploadWithSafety({
         url: joinApiUrl(getBaseUrl(), '/api/watermark/remove-v2'),
         filePath: params.imagePath,
         name: 'image',
@@ -200,6 +203,8 @@ function removeV2(params) {
           quality: quality,
           strength: String(params.strength || 'medium'),
           preserveDetail: params.preserveDetail === false ? 'false' : 'true',
+          smartExpand: params.smartExpand === true ? 'true' : 'false',
+          maskDilationPx: String(Math.max(3, Math.min(12, Number(params.maskDilationPx || 5)))),
           requestId: requestId
         },
         timeout: quality === 'hd' ? 360000 : 180000,
@@ -268,7 +273,7 @@ function removeV2(params) {
           cleanupHdProgress();
           reject(new Error(_formatNetworkError(err)));
         }
-      });
+      }, 'watermark_removal');
       if (quality === 'hd' && uploadTask && uploadTask.onProgressUpdate) {
         uploadTask.onProgressUpdate(function(progress) {
           if (progress && Number(progress.progress) >= 100 && !uploadCompletedAt) {

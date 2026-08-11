@@ -119,6 +119,8 @@ def process_stroke_inpaint(
     preserve_detail: bool = True,
     request_id: str = "",
     progress_callback=None,
+    smart_expand: bool = False,
+    mask_dilation_px: int = 5,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     decode_started = time.perf_counter()
@@ -154,6 +156,8 @@ def process_stroke_inpaint(
             preserve_detail=preserve_detail,
             request_id=request_id,
             progress_callback=progress_callback,
+            smart_expand=smart_expand,
+            mask_dilation_px=mask_dilation_px,
         )
         engine_debug = dict(result.get("debug") or {})
         total_ms = int((time.perf_counter() - started) * 1000)
@@ -241,8 +245,20 @@ def process_stroke_inpaint(
         border_left:border_left + roi_image.shape[1],
     ]
 
+    dilation_px = max(3, min(12, int(mask_dilation_px or 5)))
+    roi_allowed_mask = cv2.dilate(
+        roi_mask,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation_px * 2 + 1, dilation_px * 2 + 1)),
+        iterations=1,
+    )
     output = image.copy()
-    output[y1:y2, x1:x2] = repaired_roi
+    output[y1:y2, x1:x2] = np.where(
+        roi_allowed_mask[:, :, None] > 0,
+        repaired_roi,
+        roi_image,
+    )
+    allowed_mask = np.zeros_like(mask)
+    allowed_mask[y1:y2, x1:x2] = roi_allowed_mask
     unchanged_outside_roi = output.copy()
     unchanged_outside_roi[y1:y2, x1:x2] = image[y1:y2, x1:x2]
     outside_changed = int(np.count_nonzero(np.any(unchanged_outside_roi != image, axis=2)))
@@ -265,6 +281,12 @@ def process_stroke_inpaint(
         },
         "roiPixelRatio": round(((x2 - x1) * (y2 - y1)) / float(image_width * image_height), 6),
         "outsideRoiChangedPixels": outside_changed,
+        "outsideAllowedMaskChangedPixels": int(
+            np.count_nonzero(np.any(output[allowed_mask == 0] != image[allowed_mask == 0], axis=1))
+        ),
+        "maskPolicy": "strict_local",
+        "smartExpand": False,
+        "maskDilationPx": dilation_px,
         "outputSize": f"{image_width}x{image_height}",
         "outputBytes": len(output_bytes),
         "durationMs": int((time.perf_counter() - started) * 1000),

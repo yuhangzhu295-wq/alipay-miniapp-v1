@@ -46,7 +46,7 @@
     "swc": true,
     "disableSWC": false
   },
-  "appid": "wx8026aeed4929d381",
+  "appid": "wx4bd1a46868d6e3a2",
   "projectname": "证件照生成器",
   "libVersion": "3.7.9",
   "srcMiniprogramRoot": "",
@@ -93,8 +93,48 @@
         "type": "folder"
       },
       {
+        "value": " .agents",
+        "type": "folder"
+      },
+      {
+        "value": ".agent-cache",
+        "type": "folder"
+      },
+      {
+        "value": ".tmp",
+        "type": "folder"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": ".vscode",
+        "type": "folder"
+      },
+      {
+        "value": "teamwork_preview_*",
+        "type": "folder"
+      },
+      {
+        "value": "sub_orch_test",
+        "type": "folder"
+      },
+      {
+        "value": "sub_orch_impl",
+        "type": "folder"
+      },
+      {
         "value": ".openclaw",
         "type": "folder"
+      },
+      {
+        "value": "server.zip",
+        "type": "file"
+      },
+      {
+        "value": "test_dark_residual_output.png",
+        "type": "file"
       },
       {
         "value": "*.py",

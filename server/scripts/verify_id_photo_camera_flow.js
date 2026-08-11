@@ -99,26 +99,31 @@ function verifyGuide() {
       '../../utils/idPhotoEntry.js': helper
     }
   })
-  const ids = [
-    'yicun',
-    'ercun',
-    'id_card_cn_358_441',
-    'passport_cn_390_567',
-    'driver_common',
-    'teacher_cert_295_413',
-    'civil_service_common'
-  ]
-  ids.forEach((id) => {
-    page.onLoad({ specId: id })
-    check('guide preserves ' + id, page.data.specId === id)
-    check('guide resolves dimensions for ' + id, /px$/.test(page.data.pixelSizeText))
-    check('guide resolves colors for ' + id, page.data.colors.length > 0)
+  const visibleSpecs = specs.getSpecsByCategory('all').filter((spec, index, list) => {
+    return spec.enabled !== false && spec.active !== false && list.findIndex((item) => item.id === spec.id) === index
+  })
+  check('all visible specifications are included in guide verification', visibleSpecs.length >= 90, 'count=' + visibleSpecs.length)
+  visibleSpecs.forEach((spec) => {
+    page.onLoad({ specId: spec.id })
+    check('guide preserves ' + spec.id, page.data.specId === spec.id)
+    check(
+      'guide resolves exact dimensions for ' + spec.id,
+      page.data.pixelSizeText === spec.widthPx + ' × ' + spec.heightPx + 'px',
+      page.data.pixelSizeText
+    )
+    check('guide resolves colors for ' + spec.id, page.data.colors.length > 0)
+    page.chooseFromAlbum()
+    check('guide album preserves ' + spec.id, navigation.specId === spec.id && navigation.source === 'album')
+    page.openCamera()
+    check('guide camera preserves ' + spec.id, navigation.cameraSpecId === spec.id)
+    page.onShow()
   })
   page.onLoad({ specId: 'yicun' })
   page.chooseFromAlbum()
   check('guide album opens album only', JSON.stringify(mediaOptions.sourceType) === JSON.stringify(['album']))
   check('guide album transfers a real temp path', navigation.photo === 'wxfile://guide-album.jpg')
   check('guide album preserves selected spec', navigation.specId === 'yicun')
+  check('guide exposes exactly two source actions', (read('pages/capture-guide/capture-guide.wxml').match(/class="action-button/g) || []).length === 2)
   check('guide has purpose-sensitive advice', /护照|身份证|passport|id\.card/.test(read('pages/capture-guide/capture-guide.js')))
   check('guide reads shared specification module', /utils\/specs\.js/.test(read('pages/capture-guide/capture-guide.js')))
 }
