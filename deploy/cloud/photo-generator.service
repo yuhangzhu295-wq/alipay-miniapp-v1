@@ -1,7 +1,7 @@
 [Unit]
 Description=Photo Generator FastAPI backend
-After=network-online.target iopaint.service hivision-worker.service
-Wants=network-online.target iopaint.service hivision-worker.service
+After=network-online.target iopaint.service hivision-worker.service hivision-detail-worker.service
+Wants=network-online.target iopaint.service hivision-worker.service hivision-detail-worker.service
 
 [Service]
 Type=simple
@@ -11,6 +11,7 @@ Environment=IOPAINT_URL=http://127.0.0.1:8081
 Environment=ENABLE_HD_REPAIR=true
 Environment=HD_REPAIR_ENGINE=lama
 Environment=HIVISION_WORKER_URL=http://127.0.0.1:8091
+Environment=HIVISION_DETAIL_WORKER_URL=http://127.0.0.1:8092
 Environment=ID_PHOTO_HIVISION_STANDARD_MODEL=hivision_modnet
 Environment=ID_PHOTO_HIVISION_FAST_B_MODEL=modnet_photographic_portrait_matting
 Environment=ID_PHOTO_HIVISION_DETAIL_MODEL=birefnet-v1-lite

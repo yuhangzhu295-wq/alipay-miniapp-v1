@@ -49,7 +49,7 @@ FAST_B_MODEL = os.environ.get(
     "ID_PHOTO_HIVISION_FAST_B_MODEL",
     "modnet_photographic_portrait_matting",
 ).strip()
-FAST_RESIDENT_MODELS = (FAST_MODEL, FAST_B_MODEL)
+FAST_RESIDENT_MODELS = tuple(dict.fromkeys((FAST_MODEL, FAST_B_MODEL)))
 SUPPORTED_MODELS = {
     "hivision_modnet",
     "modnet_photographic_portrait_matting",
