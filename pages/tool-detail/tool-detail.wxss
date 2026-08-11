@@ -544,6 +544,10 @@
 }
 
 /* ====== New Watermark Canvas Styles ====== */
+.wm-canvas-action {
+  margin: 0 30rpx 24rpx;
+}
+
 .wm-canvas-container {
   display: flex;
   align-items: center;
