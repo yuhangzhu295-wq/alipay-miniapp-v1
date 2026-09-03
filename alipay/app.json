@@ -1,0 +1,58 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/tools/tools",
+    "pages/photos/photos",
+    "pages/profile/profile",
+    "pages/login/login",
+    "pages/specs/specs",
+    "pages/capture-guide/capture-guide",
+    "pages/id-camera/id-camera",
+    "pages/generate/generate",
+    "pages/preview/preview",
+    "pages/tool-detail/tool-detail"
+  ],
+  "window": {
+    "defaultTitle": "证件照生成器",
+    "titleBarColor": "#ffffff",
+    "backgroundColor": "#f5f7fa"
+  },
+  "tabBar": {
+    "selectedColor": "#667eea",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "textColor": "#999",
+    "items": [
+      {
+        "pagePath": "pages/index/index",
+        "name": "首页",
+        "icon": "images/tab_home.png",
+        "activeIcon": "images/tab_home_active.png"
+      },
+      {
+        "pagePath": "pages/tools/tools",
+        "name": "小工具",
+        "icon": "images/tab_tools.png",
+        "activeIcon": "images/tab_tools_active.png"
+      },
+      {
+        "pagePath": "pages/photos/photos",
+        "name": "电子照",
+        "icon": "images/tab_photos.png",
+        "activeIcon": "images/tab_photos_active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "name": "我的",
+        "icon": "images/tab_profile.png",
+        "activeIcon": "images/tab_profile_active.png"
+      }
+    ]
+  },
+  "networkTimeout": {
+    "request": 360000,
+    "connectSocket": 60000,
+    "uploadFile": 360000,
+    "downloadFile": 120000
+  }
+}

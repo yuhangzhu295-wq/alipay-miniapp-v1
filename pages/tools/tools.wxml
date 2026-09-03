@@ -1,0 +1,28 @@
+<!-- ========== 实用工具（效果图2）========== -->
+<view class="page">
+
+  <!-- 工具网格 - 3列 -->
+  <view class="tool-grid">
+    <view 
+      wx:for="{{tools}}" 
+      wx:key="id" 
+      class="tool-card" 
+      bindtap="openTool" 
+      data-id="{{item.id}}"
+    >
+      <view class="tool-icon-wrap" style="background-color: {{item.bg}};">
+        <text class="tool-icon">{{item.icon}}</text>
+        <view wx:if="{{item.badge}}" class="tool-badge">{{item.badge}}</view>
+      </view>
+      <text class="tool-name">{{item.name}}</text>
+      <text class="tool-desc">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <!-- 悬浮分享按钮 -->
+  <view class="float-share" bindtap="shareApp">
+    <text class="share-icon">↗️</text>
+    <text class="share-label">分享</text>
+  </view>
+
+</view>

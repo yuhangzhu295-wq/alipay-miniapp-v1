@@ -1,0 +1,160 @@
+{
+  "description": "证件照生成器 - 快速制作标准电子证件照",
+  "miniprogramRoot": "",
+  "compileType": "miniprogram",
+  "setting": {
+    "bundle": false,
+    "userConfirmedBundleSwitch": false,
+    "urlCheck": false,
+    "scopeDataCheck": false,
+    "coverView": true,
+    "es6": true,
+    "postcss": true,
+    "compileHotReLoad": false,
+    "lazyloadPlaceholderEnable": false,
+    "preloadBackgroundData": false,
+    "minified": true,
+    "autoAudits": false,
+    "newFeature": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "useIsolateContext": true,
+    "nodeModules": false,
+    "enhance": true,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "showShadowRootInWxmlPanel": true,
+    "packNpmManually": false,
+    "enableEngp": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "useStaticServer": true,
+    "showES6CompileOption": false,
+    "checkInvalidKey": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "condition": true,
+    "compileWorklet": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "swc": true,
+    "disableSWC": false
+  },
+  "appid": "wx4bd1a46868d6e3a2",
+  "projectname": "证件照生成器",
+  "libVersion": "3.7.9",
+  "srcMiniprogramRoot": "",
+  "packOptions": {
+    "ignore": [
+      {
+        "value": "server",
+        "type": "folder"
+      },
+      {
+        "value": "third_party",
+        "type": "folder"
+      },
+      {
+        "value": "logs",
+        "type": "folder"
+      },
+      {
+        "value": "backups",
+        "type": "folder"
+      },
+      {
+        "value": "reports",
+        "type": "folder"
+      },
+      {
+        "value": "mockups",
+        "type": "folder"
+      },
+      {
+        "value": "deploy",
+        "type": "folder"
+      },
+      {
+        "value": "scratch",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
+      {
+        "value": ".agents",
+        "type": "folder"
+      },
+      {
+        "value": " .agents",
+        "type": "folder"
+      },
+      {
+        "value": ".agent-cache",
+        "type": "folder"
+      },
+      {
+        "value": ".tmp",
+        "type": "folder"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      },
+      {
+        "value": ".vscode",
+        "type": "folder"
+      },
+      {
+        "value": "teamwork_preview_*",
+        "type": "folder"
+      },
+      {
+        "value": "sub_orch_test",
+        "type": "folder"
+      },
+      {
+        "value": "sub_orch_impl",
+        "type": "folder"
+      },
+      {
+        "value": ".openclaw",
+        "type": "folder"
+      },
+      {
+        "value": "server.zip",
+        "type": "file"
+      },
+      {
+        "value": "test_dark_residual_output.png",
+        "type": "file"
+      },
+      {
+        "value": "*.py",
+        "type": "suffix"
+      },
+      {
+        "value": "*.bat",
+        "type": "suffix"
+      },
+      {
+        "value": "*.md",
+        "type": "suffix"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "simulatorPluginLibVersion": {}
+}

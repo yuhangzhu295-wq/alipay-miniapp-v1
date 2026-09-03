@@ -1,0 +1,47 @@
+<view class="guide-page">
+  <view class="content">
+    <text class="section-title">最佳拍摄姿势</text>
+
+    <view class="pose-card">
+      <image class="pose-image" src="/images/id-photo-pose.svg" mode="aspectFit" />
+      <view class="pose-list">
+        <view class="pose-item"><text class="step">1</text><text>优先使用后置摄像头拍摄</text></view>
+        <view class="pose-item"><text class="step">2</text><text>站在纯色墙面前，光线充足均匀</text></view>
+        <view class="pose-item"><text class="step">3</text><text>头部居中，正对镜头</text></view>
+        <view class="pose-item"><text class="step">4</text><text>露出眉毛和耳朵，面部无遮挡</text></view>
+      </view>
+      <view class="pose-note">
+        <text class="note-icon">i</text>
+        <text>请保持自然表情，双眼睁开，避免强烈阴影和逆光。</text>
+      </view>
+      <view class="purpose-note">{{purposeAdvice}}</view>
+    </view>
+
+    <view class="spec-card">
+      <text class="spec-name">{{specName}}</text>
+      <view class="spec-row" wx:if="{{hasPrintSize}}"><text class="label">打印尺寸</text><text>{{printSizeText}}</text></view>
+      <view class="spec-row"><text class="label">像素尺寸</text><text>{{pixelSizeText}}</text></view>
+      <view class="spec-row"><text class="label">文件大小</text><text>{{fileSizeText}}</text></view>
+      <view class="spec-row"><text class="label">分辨率</text><text>{{dpiText}}</text></view>
+      <view class="spec-row color-row">
+        <text class="label">背景色</text>
+        <view class="color-list">
+          <view wx:for="{{colors}}" wx:key="id" class="color-option">
+            <view class="color-dot" style="background-color: {{item.hex}}; {{item.id === 'white' ? 'border-color:#d8dee9;' : ''}}"></view>
+            <text class="color-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-actions">
+    <view class="action-button album-button" bindtap="chooseFromAlbum">
+      <text class="button-icon">▣</text><text>{{choosingAlbum ? '正在打开' : '相册选择'}}</text>
+    </view>
+    <view class="action-button camera-button" bindtap="openCamera">
+      <text class="button-icon">●</text><text>{{openingCamera ? '正在打开' : '直接拍摄'}}</text>
+    </view>
+  </view>
+</view>
+

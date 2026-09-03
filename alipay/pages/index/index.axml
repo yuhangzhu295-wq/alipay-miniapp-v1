@@ -1,0 +1,101 @@
+<!-- ========== 首页 ========== -->
+<view class="page">
+  <view class="search-row search-bar">
+    <view class="search-box" onTap="goSearch">
+      <text class="search-icon">⌕</text>
+      <text class="search-placeholder">搜索规格名称、尺寸或用途</text>
+    </view>
+    <view class="custom-size-btn" onTap="goCustomSize">
+      <text class="custom-size-icon">□</text>
+      <text class="custom-size-text">自定义</text>
+    </view>
+  </view>
+
+  <view class="section-header core-header">
+    <view class="section-title-left">
+      <view class="section-dot section-dot-core"></view>
+      <text class="section-title-text">核心功能</text>
+    </view>
+  </view>
+
+  <view class="core-grid">
+    <view
+      a:for="{{coreFeatures}}"
+      key="id"
+      class="core-card {{item.className}} {{index === 2 ? 'core-card-wide' : ''}}"
+      onTap="goCoreFeature"
+      data-route="{{item.route}}"
+    >
+      <view class="core-copy">
+        <view class="core-title-line"><text class="core-title">{{item.title}}</text></view>
+        <view class="core-desc-line"><text class="core-desc">{{item.desc}}</text></view>
+      </view>
+      <view class="core-visual">
+        <view class="core-visual-inner core-visual-{{item.icon}}">
+          <view a:if="{{item.icon === 'id'}}" class="core-id-head"></view>
+          <view a:if="{{item.icon === 'id'}}" class="core-id-body"></view>
+          <view a:if="{{item.icon === 'wm'}}" class="core-wm-paper"></view>
+          <view a:if="{{item.icon === 'wm'}}" class="core-wm-brush"></view>
+          <view a:if="{{item.icon === 'zip'}}" class="core-zip-box"></view>
+          <view a:if="{{item.icon === 'zip'}}" class="core-zip-badge"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel hot-panel">
+    <view class="section-header">
+      <view class="section-title-left">
+        <text class="section-mark">热</text>
+        <text class="section-title-text">热门证件照</text>
+      </view>
+      <view class="section-more" onTap="goSpecs">
+        <text class="more-text">更多规格</text>
+        <text class="more-arrow">›</text>
+      </view>
+    </view>
+
+    <scroll-view class="hot-scroll" scroll-x enable-flex>
+      <view
+        a:for="{{hotSpecs}}"
+        key="id"
+        class="hot-card"
+        onTap="selectHotSpec"
+        data-id="{{item.id}}"
+      >
+        <view class="hot-thumb" style="background-color: {{item.thumbBg}};">
+          <view class="hot-thumb-icon hot-thumb-{{item.icon}}">
+          <view a:if="{{item.icon !== 'doc'}}" class="hot-icon-head" style="background: {{item.iconColor}};"></view>
+          <view a:if="{{item.icon !== 'doc'}}" class="hot-icon-body" style="background: {{item.iconColor}};"></view>
+          <view a:if="{{item.icon === 'doc'}}" class="hot-doc-paper"></view>
+          <view a:if="{{item.icon === 'doc'}}" class="hot-doc-line"></view>
+        </view>
+        </view>
+        <view class="hot-name-line"><text class="hot-name">{{item.name}}</text></view>
+        <view class="hot-size-line"><text class="hot-size">{{item.size}}</text></view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="panel tools-panel">
+    <view class="section-header">
+      <view class="section-title-left">
+        <view class="section-dot section-dot-tools"></view>
+        <text class="section-title-text">更多工具</text>
+      </view>
+    </view>
+
+    <view class="tools-grid">
+      <view
+        a:for="{{moreTools}}"
+        key="id"
+        class="tool-card"
+        onTap="goTool"
+        data-route="{{item.route}}"
+      >
+        <view class="tool-icon tool-icon-{{item.icon}}"><view class="tool-glyph-{{item.icon}}"></view></view>
+        <view class="tool-name-line"><text class="tool-name">{{item.name}}</text></view>
+      </view>
+    </view>
+  </view>
+</view>

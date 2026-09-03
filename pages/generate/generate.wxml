@@ -1,0 +1,91 @@
+<!-- ========== 选择底色 / 下载证件照 ========== -->
+<view class="page">
+  <canvas type="2d" id="idCanvas" class="hidden-canvas" style="width:1px;height:1px;"></canvas>
+
+  <view class="top-tabs">
+    <view class="tab-item {{outputTab === 'photo' ? 'tab-active' : ''}}" bindtap="setOutputTab" data-tab="photo">电子照片</view>
+    <view class="tab-item {{outputTab === 'layout' ? 'tab-active' : ''}}" bindtap="setOutputTab" data-tab="layout">排版电子照</view>
+  </view>
+
+  <view class="preview-card">
+    <view class="preview-title-row">
+      <view>
+        <text class="preview-title">{{specName}}</text>
+        <text class="preview-subtitle">{{specSize}}</text>
+        <text wx:if="{{fileText}}" class="preview-file">{{fileText}}</text>
+      </view>
+      <view class="change-spec" bindtap="goSpecs">换规格</view>
+    </view>
+
+    <view class="photo-measure">
+      <text class="measure-top">{{widthPxLabel}}</text>
+      <text class="measure-left">{{heightPxLabel}}</text>
+      <view class="photo-bg {{(!resultImage && (generating || processState === 'failed' || processState === 'timeout')) ? 'photo-bg-failed' : ''}}" style="background-color: {{(!resultImage && (generating || processState === 'failed' || processState === 'timeout')) ? '#f8fafc' : (bgColorHex || '#1a73e8')}}; width: {{previewWidthRpx}}rpx; height: {{previewHeightRpx}}rpx;" bindtap="choosePhoto">
+        <view wx:if="{{generating}}" class="photo-loading">
+          <text class="photo-loading-text">{{statusText}}</text>
+        </view>
+        <image wx:elif="{{outputTab === 'photo' && resultImage}}" class="photo-img" src="{{resultImage || resultPreviewSrc}}" mode="aspectFit" />
+        <image wx:elif="{{outputTab === 'layout' && layoutImage}}" class="layout-img" src="{{layoutImage}}" mode="aspectFit" />
+        <image wx:elif="{{outputTab === 'layout' && resultImage}}" class="photo-img" src="{{resultImage || resultPreviewSrc}}" mode="aspectFit" />
+        <image wx:elif="{{photoSrc && processState === 'idle'}}" class="photo-img" src="{{photoSrc}}" mode="aspectFit" />
+        <view wx:else class="photo-placeholder">
+          <text class="placeholder-icon">📸</text>
+          <text class="placeholder-text">上传/拍摄照片</text>
+        </view>
+      </view>
+      <text class="measure-bottom">{{widthMmLabel}}</text>
+      <text class="measure-right">{{heightMmLabel}}</text>
+    </view>
+
+    <view class="status-line">
+      <text>{{statusText}}</text>
+    </view>
+    <view wx:if="{{detailProcessing}}" class="detail-status">
+      <text>{{detailJobStatus === 'queued' ? '精细处理中' : '发丝精修中'}}</text>
+    </view>
+    <view wx:if="{{failureKind}}" class="failure-panel">
+      <text class="failure-title">{{failureKind === 'fastBlocked' ? '这张照片需要进一步优化' : '本次精细处理暂未完成'}}</text>
+      <text class="failure-copy">{{failureMessage}}</text>
+      <view class="failure-actions">
+        <view class="failure-button failure-secondary" bindtap="choosePhoto">重新上传</view>
+        <view wx:if="{{failureKind === 'fastBlocked'}}" class="failure-button failure-primary" bindtap="useHairRetouch">使用发丝精修</view>
+        <view wx:else class="failure-button failure-primary" bindtap="retryDetailRetouch">再次精修</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="config-card">
+    <view class="section-title">选择底色</view>
+    <view class="color-grid">
+      <view
+        wx:for="{{availableColors}}"
+        wx:key="id"
+        class="color-item {{bgColorId === item.id ? 'color-active' : ''}}"
+        bindtap="selectBg"
+        data-id="{{item.id}}"
+      >
+        <view class="color-swatch" style="background-color: {{item.hex}}; {{item.id === 'white' ? 'border: 2rpx solid #d0d5dd;' : ''}}"></view>
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+    <view class="section-title" style="margin-top: 16px;">边缘处理</view>
+    <view style="display:flex; align-items:center; margin-bottom:12px; margin-left: 2px;" bindtap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchtap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
+    </view>
+  </view>
+
+  <view class="action-card">
+    <view class="action-row">
+      <view class="btn-secondary" bindtap="takePhoto">重新拍摄</view>
+      <view class="btn-secondary" bindtap="choosePhoto">重新上传</view>
+    </view>
+    <view class="btn-primary {{(generating || !canDownload) ? 'btn-disabled' : ''}}" bindtap="primaryAction">
+      <text wx:if="{{generating && processState === 'composing'}}">换底中...</text>
+      <text wx:elif="{{generating}}">制作中...</text>
+      <text wx:elif="{{!resultImage || !canDownload}}">生成证件照</text>
+      <text wx:elif="{{outputTab === 'layout'}}">下载排版电子照</text>
+      <text wx:else>下载证件照</text>
+    </view>
+  </view>
+</view>

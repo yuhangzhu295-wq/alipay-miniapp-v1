@@ -1,0 +1,129 @@
+/* ====== 实用工具样式（效果图2）====== */
+
+.page {
+  padding: 36rpx 30rpx calc(140rpx + env(safe-area-inset-bottom, 20rpx));
+  min-height: 100vh;
+  background: radial-gradient(circle at 100% 0%, rgba(118, 75, 162, 0.08) 0%, rgba(102, 126, 234, 0.05) 50%, #f4f6fc 100%);
+  box-sizing: border-box;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tool-card {
+  background: #ffffff;
+  border: 1rpx solid var(--border-light);
+  border-radius: 32rpx;
+  padding: 32rpx 20rpx 28rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tool-card:active {
+  transform: translateY(-8rpx) scale(1.02);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(102, 126, 234, 0.25);
+}
+
+.tool-icon-wrap {
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.tool-card:active .tool-icon-wrap {
+  transform: rotate(5deg) scale(1.05);
+}
+
+.tool-icon { 
+  font-size: 52rpx; 
+  filter: drop-shadow(0 6rpx 10rpx rgba(0, 0, 0, 0.1));
+}
+
+/* 霓虹发光徽章 */
+.tool-badge {
+  position: absolute;
+  top: -12rpx;
+  right: -20rpx;
+  background: linear-gradient(135deg, #ff4757, #ff6b81);
+  color: #ffffff;
+  font-size: 16rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 71, 87, 0.4);
+  z-index: 10;
+  animation: floatAnim 2s ease-in-out infinite;
+}
+
+.tool-name { 
+  font-size: 28rpx; 
+  font-weight: 700; 
+  color: var(--text-primary); 
+  text-align: center; 
+}
+
+.tool-desc { 
+  font-size: 22rpx; 
+  color: var(--text-secondary); 
+  text-align: center; 
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 0 8rpx;
+}
+
+/* 悬浮分享按钮 - 极致现代的毛玻璃圆形卡片 */
+.float-share {
+  position: fixed;
+  right: 40rpx;
+  bottom: 180rpx;
+  width: 110rpx;
+  height: 110rpx;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rpx;
+  box-shadow: 0 12rpx 36rpx rgba(102, 126, 234, 0.25);
+  z-index: 999;
+  transition: all 0.3s ease;
+  animation: floatAnim 4s ease-in-out infinite;
+}
+
+.float-share:active {
+  transform: scale(0.9) translateY(4rpx);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.15);
+  background: #ffffff;
+}
+
+.share-icon { 
+  font-size: 34rpx; 
+}
+
+.share-label { 
+  font-size: 18rpx; 
+  color: var(--primary); 
+  font-weight: 700; 
+  letter-spacing: 1rpx;
+}
+

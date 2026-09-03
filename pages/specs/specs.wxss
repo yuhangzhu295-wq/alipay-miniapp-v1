@@ -1,0 +1,331 @@
+/* ====== 搜索规格样式（效果图3）====== */
+
+.page {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  padding: 24rpx 24rpx calc(140rpx + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0f4ff 0%, #f5f7fa 100%);
+}
+
+/* 搜索工具栏 */
+.spec-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112rpx;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.spec-search {
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 72rpx;
+  background: #ffffff;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+.spec-search-icon { font-size: 28rpx; margin-right: 12rpx; }
+
+.spec-search-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  height: 72rpx;
+}
+
+.spec-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  width: 112rpx;
+  height: 72rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 0;
+  box-sizing: border-box;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+.filter-icon { font-size: 24rpx; }
+.filter-text { font-size: 24rpx; color: #667eea; font-weight: 500; }
+
+.spec-page-head {
+  margin: 4rpx 0 22rpx;
+}
+
+.spec-page-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 8rpx;
+}
+
+.spec-page-desc {
+  display: block;
+  font-size: 23rpx;
+  color: #7a8194;
+  line-height: 1.5;
+}
+
+.spec-page-notice {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #9a6a00;
+  line-height: 1.45;
+}
+
+/* 规格网格 - 2列 */
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.spec-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 22rpx 16rpx;
+  display: flex;
+  gap: 12rpx;
+  align-items: stretch;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.05);
+  position: relative;
+  min-width: 0;
+  min-height: 174rpx;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.spec-card:active {
+  transform: scale(0.98);
+  opacity: 0.92;
+}
+
+.spec-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: #ffffff;
+  font-size: 18rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 0 20rpx 0 16rpx;
+  font-weight: 600;
+}
+
+.spec-card-left {
+  width: 68rpx;
+  flex: 0 0 68rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spec-thumb {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 68rpx;
+}
+
+.spec-thumb-icon { font-size: 36rpx; }
+
+.spec-card-right {
+  display: flex;
+  flex-direction: column;
+  gap: 7rpx;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.spec-card-name { 
+  font-size: 26rpx; 
+  font-weight: 600; 
+  color: #1a1a2e;
+  overflow: hidden;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+}
+
+.spec-card-size { 
+  font-size: 21rpx; 
+  color: #999;
+  overflow: hidden;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.spec-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6rpx;
+  align-items: center;
+  min-width: 0;
+}
+
+.spec-file-text {
+  font-size: 18rpx;
+  color: #667085;
+  background: #f2f4f7;
+  border-radius: 12rpx;
+  padding: 2rpx 10rpx;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-badge {
+  font-size: 18rpx;
+  border-radius: 12rpx;
+  padding: 2rpx 10rpx;
+  font-weight: 700;
+}
+
+.source-official,
+.source-official_notice {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.source-platform_rule {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.source-platform {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.source-local_common {
+  color: #0f766e;
+  background: #ccfbf1;
+}
+
+.source-deprecated {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.source-unknown {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.source-custom {
+  color: #5b21b6;
+  background: #ede9fe;
+}
+
+.source-third_party_pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.source-user_custom {
+  color: #5b21b6;
+  background: #ede9fe;
+}
+
+.spec-card-apply {
+  font-size: 20rpx;
+  color: #667085;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spec-card-note {
+  font-size: 19rpx;
+  color: #9a6a00;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spec-colors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6rpx;
+  margin-top: 4rpx;
+  min-height: 22rpx;
+}
+
+.color-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.show-more {
+  margin: 28rpx auto 0;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: #ffffff;
+  color: #667eea;
+  font-size: 26rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+.empty-state {
+  margin-top: 120rpx;
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+}
+
+@media (max-width: 360px) {
+  .page {
+    padding-left: 20rpx;
+    padding-right: 20rpx;
+  }
+
+  .spec-grid {
+    gap: 14rpx;
+  }
+
+  .spec-card {
+    padding: 20rpx 14rpx;
+    gap: 12rpx;
+  }
+
+  .spec-card-name {
+    font-size: 25rpx;
+  }
+}

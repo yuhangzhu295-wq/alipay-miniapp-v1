@@ -1,0 +1,22 @@
+[Unit]
+Description=Photo Generator isolated Alipay staging backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/photo-generator-alipay-staging/server
+EnvironmentFile=/etc/photo-generator/alipay-staging.env
+Environment=PORT=18001
+Environment=IOPAINT_URL=http://127.0.0.1:8081
+Environment=ALIPAY_STAGING_PYTHON=/root/photo-generator/server/.venv/bin/python3
+ExecStart=/usr/bin/env bash /opt/photo-generator-alipay-staging/current/deploy/staging/alipay/start-staging.sh
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

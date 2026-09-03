@@ -1,0 +1,120 @@
+/* ====== 全局极简现代美学样式系统 ====== */
+
+page {
+  /* 现代高级配色 HSL 变量 */
+  --primary-hue: 228;
+  --secondary-hue: 269;
+  
+  --primary: hsl(var(--primary-hue), 76%, 66%);
+  --secondary: hsl(var(--secondary-hue), 44%, 46%);
+  --primary-light: hsl(var(--primary-hue), 100%, 96%);
+  
+  /* 现代渐变色组合 */
+  --gradient-main: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  
+  /* 精致底色与文字颜色 */
+  --bg-main: #f4f6fc;
+  --text-primary: #1a1a2e;
+  --text-secondary: #7e7e9a;
+  --text-light: #b5b5c9;
+  --border-light: rgba(224, 229, 242, 0.8);
+  
+  /* 高级多层投影 */
+  --shadow-sm: 0 4rpx 10rpx rgba(102, 126, 234, 0.05);
+  --shadow-md: 0 10rpx 30rpx rgba(102, 126, 234, 0.08);
+  --shadow-lg: 0 20rpx 50rpx rgba(26, 26, 46, 0.06);
+  --shadow-glass: 0 8rpx 32rpx 0 rgba(102, 126, 234, 0.05);
+  
+  font-family: -apple-system, BlinkMacSystemFont, 'Outfit', 'Inter', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 28rpx;
+  color: var(--text-primary);
+  background-color: var(--bg-main);
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+}
+
+/* 滚动条隐藏 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  color: transparent;
+}
+
+/* 微动效 keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+  70% { transform: scale(1.02); box-shadow: 0 0 20rpx 10rpx rgba(102, 126, 234, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+}
+
+@keyframes floatAnim {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8rpx); }
+  100% { transform: translateY(0); }
+}
+
+/* 通用高级动效类 */
+.fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.float-active {
+  animation: floatAnim 3s ease-in-out infinite;
+}
+
+/* 现代玻璃态毛玻璃卡片 */
+.glass-card {
+  background: var(--gradient-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-glass);
+  box-sizing: border-box;
+}
+
+/* 通用高级渐变按钮 */
+.gradient-btn {
+  background: var(--gradient-main);
+  color: #ffffff;
+  border-radius: 50rpx;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  box-shadow: 0 10rpx 24rpx rgba(102, 126, 234, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.gradient-btn-hover {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.2);
+  opacity: 0.95;
+}
+
+/* 卡片通用 */
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-md);
+  border: 1rpx solid var(--border-light);
+  box-sizing: border-box;
+}
+
+/* 安全区域底部间距 */
+.safe-bottom {
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom, 30rpx));
+}
+

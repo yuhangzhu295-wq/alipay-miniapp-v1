@@ -1,0 +1,27 @@
+[Unit]
+Description=Photo Generator FastAPI backend
+After=network-online.target iopaint.service hivision-worker.service
+Wants=network-online.target iopaint.service hivision-worker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/photo-generator/server
+Environment=PYTHONUNBUFFERED=1
+Environment=IOPAINT_URL=http://127.0.0.1:8081
+Environment=ENABLE_HD_REPAIR=true
+Environment=HD_REPAIR_ENGINE=lama
+Environment=HIVISION_WORKER_URL=http://127.0.0.1:8091
+Environment=ID_PHOTO_HIVISION_STANDARD_MODEL=hivision_modnet
+Environment=ID_PHOTO_HIVISION_FAST_B_MODEL=modnet_photographic_portrait_matting
+Environment=ID_PHOTO_HIVISION_DETAIL_MODEL=birefnet-v1-lite
+Environment=ID_PHOTO_HIVISION_DETAIL_ISOLATED=true
+Environment=ID_PHOTO_ONNX_INTRA_OP_THREADS=2
+Environment=ID_PHOTO_ONNX_INTER_OP_THREADS=1
+Environment=HD_INPAINT_MAX_EDGE=1536
+ExecStart=/root/photo-generator/server/.venv/bin/python3 /root/photo-generator/server/main.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+<!-- ========== 实用工具（效果图2）========== -->
+<view class="page">
+
+  <!-- 工具网格 - 3列 -->
+  <view class="tool-grid">
+    <view 
+      a:for="{{tools}}" 
+      key="id" 
+      class="tool-card" 
+      onTap="openTool" 
+      data-id="{{item.id}}"
+    >
+      <view class="tool-icon-wrap" style="background-color: {{item.bg}};">
+        <text class="tool-icon">{{item.icon}}</text>
+        <view a:if="{{item.badge}}" class="tool-badge"><text>{{item.badge}}</text></view>
+      </view>
+      <text class="tool-name">{{item.name}}</text>
+      <text class="tool-desc">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <!-- 悬浮分享按钮 -->
+  <view class="float-share" onTap="shareApp">
+    <text class="share-icon">↗️</text>
+    <text class="share-label">分享</text>
+  </view>
+
+</view>

@@ -1,0 +1,69 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/tools/tools",
+    "pages/photos/photos",
+    "pages/profile/profile",
+    "pages/login/login",
+    "pages/specs/specs",
+    "pages/capture-guide/capture-guide",
+    "pages/id-camera/id-camera",
+    "pages/generate/generate",
+    "pages/preview/preview",
+    "pages/tool-detail/tool-detail"
+  ],
+  "networkTimeout": {
+    "request": 360000,
+    "connectSocket": 60000,
+    "uploadFile": 360000,
+    "downloadFile": 120000
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于直接拍摄证件照"
+    }
+  },
+  "window": {
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "证件照生成器",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f7fa",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#667eea",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "images/tab_home.png",
+        "selectedIconPath": "images/tab_home_active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/tools/tools",
+        "iconPath": "images/tab_tools.png",
+        "selectedIconPath": "images/tab_tools_active.png",
+        "text": "小工具"
+      },
+      {
+        "pagePath": "pages/photos/photos",
+        "iconPath": "images/tab_photos.png",
+        "selectedIconPath": "images/tab_photos_active.png",
+        "text": "电子照"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "iconPath": "images/tab_profile.png",
+        "selectedIconPath": "images/tab_profile_active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {}
+}

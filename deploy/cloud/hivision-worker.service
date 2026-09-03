@@ -1,0 +1,22 @@
+[Unit]
+Description=Hivision resident matting worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/photo-generator/server
+Environment=PYTHONUNBUFFERED=1
+Environment=RUN_MODE=beast
+Environment=ID_PHOTO_HIVISION_STANDARD_MODEL=hivision_modnet
+Environment=ID_PHOTO_HIVISION_FAST_B_MODEL=modnet_photographic_portrait_matting
+Environment=ID_PHOTO_HIVISION_DETAIL_MODEL=birefnet-v1-lite
+Environment=ID_PHOTO_ONNX_INTRA_OP_THREADS=2
+Environment=ID_PHOTO_ONNX_INTER_OP_THREADS=1
+ExecStart=/root/photo-generator/server/.venv/bin/python3 -m uvicorn id_photo_engines.hivision.worker:app --host 127.0.0.1 --port 8091 --workers 1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
