@@ -1,0 +1,22 @@
+{
+  "format": 2,
+  "compileOptions": {
+    "component2": true
+  },
+  "miniprogramRoot": ".",
+  "compileType": "mini",
+  "appid": "2021006186655158",
+  "projectname": "证件照生成器-支付宝",
+  "axmlStrictCheck": true,
+  "uploadExclude": [
+    "server/**",
+    "reports/**",
+    "logs/**",
+    "tools/**",
+    ".agents/**",
+    "backups/**",
+    "third_party/**",
+    "mockups/**",
+    "*.zip"
+  ]
+}

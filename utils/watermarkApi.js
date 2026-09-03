@@ -190,23 +190,33 @@ function removeV2(params) {
         throw unavailable;
       }
       uploadStartedAt = Date.now();
-      var uploadTask = imageSafetyApi.uploadWithSafety({
+      var formData = {
+        strokesJson: strokeInfo.strokesJson,
+        originalWidth: String(payload.originalWidth),
+        originalHeight: String(payload.originalHeight),
+        displayWidth: String(payload.displayWidth),
+        displayHeight: String(payload.displayHeight),
+        quality: quality,
+        strength: String(params.strength || 'medium'),
+        preserveDetail: params.preserveDetail === false ? 'false' : 'true',
+        smartExpand: params.smartExpand === true ? 'true' : 'false',
+        maskDilationPx: String(Math.max(3, Math.min(12, Number(params.maskDilationPx || 5)))),
+        requestId: requestId,
+        edgeRoiMode: params.edgeRoiMode === true ? 'true' : 'false',
+        roiX: String(params.roiX || 0),
+        roiY: String(params.roiY || 0),
+        roiWidth: String(params.roiWidth || payload.originalWidth || 0),
+        roiHeight: String(params.roiHeight || payload.originalHeight || 0),
+        sourceOriginalWidth: String(params.sourceOriginalWidth || payload.originalWidth || 0),
+        sourceOriginalHeight: String(params.sourceOriginalHeight || payload.originalHeight || 0)
+      };
+
+      var startBusinessUpload = function() {
+        var uploadTask = imageSafetyApi.uploadWithSafety({
         url: joinApiUrl(getBaseUrl(), '/api/watermark/remove-v2'),
         filePath: params.imagePath,
         name: 'image',
-        formData: {
-          strokesJson: strokeInfo.strokesJson,
-          originalWidth: String(payload.originalWidth),
-          originalHeight: String(payload.originalHeight),
-          displayWidth: String(payload.displayWidth),
-          displayHeight: String(payload.displayHeight),
-          quality: quality,
-          strength: String(params.strength || 'medium'),
-          preserveDetail: params.preserveDetail === false ? 'false' : 'true',
-          smartExpand: params.smartExpand === true ? 'true' : 'false',
-          maskDilationPx: String(Math.max(3, Math.min(12, Number(params.maskDilationPx || 5)))),
-          requestId: requestId
-        },
+        formData: formData,
         timeout: quality === 'hd' ? 360000 : 180000,
         success: function(res) {
           wx.hideLoading();
@@ -281,6 +291,19 @@ function removeV2(params) {
             _emitHdStatus(params, statusState, 'analyzing');
           }
         });
+      }
+      };
+      if (params.sourceImagePath && params.sourceImagePath !== params.imagePath) {
+        imageSafetyApi.ensureImageSafety(params.sourceImagePath, 'watermark_removal').then(function(sourceSafety) {
+          formData.sourceSecurityCheckId = sourceSafety && sourceSafety.securityCheckId || '';
+          startBusinessUpload();
+        }).catch(function(err) {
+          wx.hideLoading();
+          cleanupHdProgress();
+          reject(err);
+        });
+      } else {
+        startBusinessUpload();
       }
     }).catch(function(err) {
       wx.hideLoading();

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -19,7 +20,8 @@ REPORT_JSON = REPORT_DIR / "hivision-standalone-test-report.json"
 REPORT_MD = REPORT_DIR / "hivision-standalone-test-report.md"
 HIVISION_ROOT = ROOT / "third_party" / "HivisionIDPhotos"
 WINDOWS_VENV_PYTHON = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
-VENV_PYTHON = WINDOWS_VENV_PYTHON if platform.system() == "Windows" else Path(sys.executable)
+OVERRIDE_PYTHON = os.environ.get("ID_PHOTO_HIVISION_PYTHON", "").strip()
+VENV_PYTHON = Path(OVERRIDE_PYTHON) if OVERRIDE_PYTHON else (WINDOWS_VENV_PYTHON if platform.system() == "Windows" else Path(sys.executable))
 ASCII_BASE = Path(tempfile.gettempdir()) / "idphoto_hivision_ascii"
 ASCII_ROOT = ASCII_BASE / "HivisionIDPhotos"
 ASCII_OUTPUT_DIR = ASCII_BASE / "standalone-output"

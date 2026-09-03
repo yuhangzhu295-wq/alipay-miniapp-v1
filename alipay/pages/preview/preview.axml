@@ -1,0 +1,52 @@
+<!-- ========== 预览证件照 ========== -->
+<view class="page">
+
+  <!-- 预览照片 -->
+  <view class="preview-area">
+    <view class="preview-card" style="background-color: {{bgColor}};">
+      <image class="preview-img" src="{{photoSrc}}" mode="aspectFit" />
+    </view>
+    <view class="preview-tags">
+      <text class="tag">{{specName}}</text>
+      <text class="tag">{{bgName}}底</text>
+    </view>
+  </view>
+
+  <!-- 操作区 -->
+  <view class="actions">
+    <view class="action-row">
+      <view class="action-block" onTap="changeBg">
+        <text class="block-icon">🎨</text>
+        <text class="block-text">换底色</text>
+      </view>
+      <view class="action-block" onTap="changeSize">
+        <text class="block-icon">📐</text>
+        <text class="block-text">换尺寸</text>
+      </view>
+      <view class="action-block" onTap="editPhoto">
+        <text class="block-icon">✏️</text>
+        <text class="block-text">图片编辑</text>
+      </view>
+    </view>
+
+    <view class="action-row">
+      <view class="action-block" onTap="layoutPrint">
+        <text class="block-icon">🖨️</text>
+        <text class="block-text">排版打印</text>
+      </view>
+      <view class="action-block" onTap="sharePhoto">
+        <text class="block-icon">📤</text>
+        <text class="block-text">分享</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <view class="bottom-actions">
+      <view class="btn-secondary" onTap="goBack"><text>重新制作</text></view>
+      <view class="btn-primary-small" onTap="savePhoto"><text>💾 保存到相册</text></view>
+    </view>
+  </view>
+
+</view>

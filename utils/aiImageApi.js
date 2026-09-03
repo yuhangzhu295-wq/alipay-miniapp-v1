@@ -11,6 +11,7 @@
 
 var config = require('./apiConfig.js');
 var imageSafetyApi = require('./imageSafetyApi.js');
+var edgeCompute = require('./edgeCompute.js');
 var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
@@ -805,6 +806,67 @@ function composeIdPhotoV2(options) {
   });
 }
 
+function composeIdPhotoEdge(options) {
+  options = options || {};
+  return new Promise(function(resolve, reject) {
+    var flags = edgeCompute.getFeatureFlags();
+    var caps = edgeCompute.getCapabilities();
+    if (!flags.ENABLE_EDGE_BG_COMPOSE || !caps.canvas) {
+      reject(new Error('EDGE_BG_COMPOSE_UNSUPPORTED'));
+      return;
+    }
+    if (!options.foregroundUrl) {
+      reject(new Error('EDGE_FOREGROUND_URL_MISSING'));
+      return;
+    }
+    var startedAt = Date.now();
+    var endpoint = options.foregroundUrl;
+    console.log('[id-photo-edge] compose route=edge');
+    console.log('[id-photo-edge] foregroundUrl=' + endpoint);
+    console.log('[id-photo-edge] spec=' + (options.widthPx || options.width || 0) + 'x' + (options.heightPx || options.height || 0));
+    edgeCompute.composeForegroundToBackground({
+      foregroundUrl: endpoint,
+      foregroundPath: options.foregroundPath || '',
+      bgColor: options.bgColor || '#1a73e8',
+      widthPx: options.widthPx || options.width || 0,
+      heightPx: options.heightPx || options.height || 0,
+      outputType: 'png'
+    }).then(function(tempFilePath) {
+      var composeMs = Date.now() - startedAt;
+      resolve({
+        tempFilePath: tempFilePath,
+        resultPath: tempFilePath,
+        previewUrl: tempFilePath,
+        finalImageUrl: '',
+        downloadUrl: '',
+        remoteUrl: '',
+        code: 'EDGE_BG_COMPOSE',
+        preparedId: options.preparedId || '',
+        bgColor: options.bgColor || '',
+        bgColorName: options.bgColorName || '',
+        spec: options.spec || null,
+        quality: options.quality || {},
+        engine: 'edge_canvas',
+        engineVersion: 'edge-bg-compose-v1',
+        engineModel: 'canvas',
+        debug: {
+          route: 'edge',
+          foregroundUrl: endpoint,
+          canvas: caps.canvas,
+          worker: caps.worker,
+          wasm: caps.wasm,
+          memoryClass: caps.memoryClass
+        },
+        requestId: options.requestId || '',
+        performance: { composeMs: composeMs, downloadMs: 0, clientComposeMs: composeMs },
+        message: '生成成功'
+      });
+    }).catch(function(err) {
+      reject(err);
+    });
+  });
+}
+
 /**
  * AI 去水印 / Inpainting
  * @param {string} imagePath — 图片临时路径
@@ -1026,6 +1088,7 @@ module.exports = {
   prepareIdPhotoUploadSource: prepareIdPhotoUploadSource,
   prepareIdPhotoV2: prepareIdPhotoV2,
   composeIdPhotoV2: composeIdPhotoV2,
+  composeIdPhotoEdge: composeIdPhotoEdge,
   createIdPhotoDetailJob: createIdPhotoDetailJob,
   getIdPhotoDetailJob: getIdPhotoDetailJob,
   cancelIdPhotoDetailJob: cancelIdPhotoDetailJob,

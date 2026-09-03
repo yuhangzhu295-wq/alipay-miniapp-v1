@@ -1,0 +1,53 @@
+<view class="camera-page">
+  <block a:if="{{cameraMode === 'live' && !cameraError && cameraVisible}}">
+    <camera
+      class="camera-view"
+      device-position="{{cameraPosition}}"
+      flash="{{flashMode}}"
+      mode="normal"
+      onError="onCameraError"
+      onInitDone="onCameraReady"
+    ></camera>
+
+    <view a:if="{{!cameraReady}}" class="camera-init-hint"><text>{{cameraStatusText}}</text></view>
+
+    <view class="camera-copy">
+      <view class="camera-title"><text>站在纯色背景前，拍摄效果最佳</text></view>
+      <view class="camera-subtitle"><text>请将头部和肩膀放入轮廓内</text></view>
+    </view>
+    <view class="portrait-guide" style="left: {{guideLeftPx}}px; top: {{guideTopPx}}px; width: {{guideWidthPx}}px; height: {{guideHeightPx}}px; background-image: url('{{guideSvgDataUri}}'); background-size: 100% 100%;"></view>
+    <view class="eye-label" style="top: {{eyeLabelTopPx}}px;"><text>眼睛保持在虚线附近</text></view>
+
+    <view class="camera-controls">
+      <view class="control-side" onTap="chooseFromAlbum">
+        <view class="control-icon album-icon"><text>▣</text></view>
+        <view class="control-label"><text>相册</text></view>
+      </view>
+      <view class="shutter-outer {{capturing ? 'shutter-active' : ''}} {{!cameraReady ? 'shutter-disabled' : ''}}" onTap="takePhoto">
+        <view class="shutter-inner"></view>
+      </view>
+      <view class="control-side" onTap="switchCamera">
+        <view class="control-icon"><text>↻</text></view>
+        <view class="control-label"><text>切换</text></view>
+      </view>
+    </view>
+  </block>
+
+  <view a:elif="{{cameraMode === 'confirm'}}" class="confirm-view">
+    <image class="captured-preview" src="{{capturedImage}}" mode="aspectFit" />
+    <view class="confirm-caption"><text>请确认照片效果</text></view>
+    <view class="confirm-actions">
+      <view class="confirm-button retake-button" onTap="retakePhoto"><text>↻</text><text>重拍</text></view>
+      <view class="confirm-button use-button" onTap="usePhoto"><text>✓</text><text>{{submitting ? '正在使用' : '使用照片'}}</text></view>
+    </view>
+  </view>
+
+  <view a:else class="camera-error-view">
+    <view class="error-symbol"><text>!</text></view>
+    <text class="error-title">相机不可用</text>
+    <text class="error-text">{{cameraErrorText}}</text>
+    <view a:if="{{permissionDenied}}" class="error-button primary-error-button" onTap="openCameraSettings"><text>去设置</text></view>
+    <view a:else class="error-button primary-error-button" onTap="retryCamera"><text>重新尝试</text></view>
+    <view class="error-button secondary-error-button" onTap="chooseFromAlbum"><text>返回选择相册</text></view>
+  </view>
+</view>

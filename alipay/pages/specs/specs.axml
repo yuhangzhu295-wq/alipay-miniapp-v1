@@ -1,0 +1,67 @@
+<!-- ========== 搜索证件照规格 ========== -->
+<view class="page">
+
+  <view class="spec-toolbar">
+    <view class="spec-search">
+      <text class="spec-search-icon">🔍</text>
+      <input class="spec-search-input" value="{{searchValue}}" placeholder="搜索规格名称、尺寸或用途" onInput="onSearch" />
+    </view>
+    <view class="spec-filter-btn" onTap="toggleFilter">
+      <text class="filter-icon">🗂️</text>
+      <text class="filter-text">筛选</text>
+    </view>
+  </view>
+
+  <view class="spec-page-head">
+    <text class="spec-page-title">{{pageMode === 'group' ? currentGroupName : (pageMode === 'search' ? '搜索结果' : '常用规格')}}</text>
+    <text class="spec-page-desc" a:if="{{pageMode === 'home'}}">常用入口优先展示，多尺寸规格点击后再选择具体尺寸</text>
+    <text class="spec-page-desc" a:if="{{pageMode === 'group'}}">选择一个具体尺寸后进入底色与下载页面</text>
+    <text class="spec-page-desc" a:if="{{pageMode === 'search'}}">优先展示高相关规格，重复尺寸已合并</text>
+    <text class="spec-page-notice">规格可能随地区和报名平台调整，请以当年官方公告为准。</text>
+  </view>
+
+  <view class="spec-grid">
+    <view
+      a:for="{{filteredSpecs}}"
+      key="id"
+      class="spec-card"
+      onTap="selectSpec"
+      data-id="{{item.id}}"
+      data-type="{{item.type}}"
+      data-group="{{item.groupId}}"
+      data-spec="{{item.specId}}"
+    >
+      <view class="spec-card-left">
+        <view class="spec-thumb" style="background-color: {{item.thumbBg}};">
+          <text class="spec-thumb-icon">{{item.icon}}</text>
+        </view>
+      </view>
+      <view class="spec-card-right">
+        <text class="spec-card-name">{{item.name}}</text>
+        <text class="spec-card-size">{{item.size}}</text>
+        <view a:if="{{item.sourceBadge || item.fileText}}" class="spec-meta-row">
+          <text a:if="{{item.fileText}}" class="spec-file-text">{{item.fileText}}</text>
+          <text a:if="{{item.sourceBadge}}" class="source-badge {{item.sourceClass}}">{{item.sourceBadge}}</text>
+        </view>
+        <text a:if="{{item.applicableText}}" class="spec-card-apply">{{item.applicableText}}</text>
+        <view class="spec-colors">
+          <view
+            a:for="{{item.colors}}"
+            key="id"
+            class="color-dot"
+            style="background-color: {{item.hex}}; {{item.id === 'white' ? 'border: 2rpx solid #ddd;' : ''}}"
+          ></view>
+        </view>
+      </view>
+      <view a:if="{{item.badge}}" class="spec-badge"><text>{{item.badge}}</text></view>
+    </view>
+  </view>
+
+  <view a:if="{{pageMode === 'search' && hiddenSearchCount > 0}}" class="show-more" onTap="showMoreSearch"><text>
+    查看更多 {{hiddenSearchCount}} 个结果
+  </text></view>
+
+  <view a:if="{{filteredSpecs.length === 0}}" class="empty-state">
+    <text>未找到相关规格</text>
+  </view>
+</view>

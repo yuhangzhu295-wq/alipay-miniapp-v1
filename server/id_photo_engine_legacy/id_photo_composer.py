@@ -1942,6 +1942,7 @@ def compose_id_photo(
     preserve_detail=False,
     composition_profile=None,
     measurement_calibration=None,
+    foreground_only=False,
 ):
     target_w, target_h = int(target_size[0]), int(target_size[1])
     composition_profile = dict(composition_profile or {})
@@ -2092,7 +2093,10 @@ def compose_id_photo(
     face_h_out = fh * scale
     face_left_out = px + (fx - crop_left) * scale
     
-    result = Image.alpha_composite(bg, layer).convert("RGB")
+    if foreground_only:
+        result = layer.copy()
+    else:
+        result = Image.alpha_composite(bg, layer).convert("RGB")
     cleanup_face_box = {
         "x": face_left_out,
         "y": face_top_out,

@@ -1804,6 +1804,7 @@ def _compose_with_final_geometry_calibration(
     target_size,
     expected_bg,
     source_background_rgb,
+    foreground_only=False,
 ):
     profile = dict(spec.get("compositionProfile") or {})
     has_head_geometry = any(
@@ -1831,6 +1832,7 @@ def _compose_with_final_geometry_calibration(
             preserve_detail=bool((item.get("quality") or {}).get("trustedAlpha")),
             composition_profile=profile,
             measurement_calibration=calibration,
+            foreground_only=False,
         )
         validation = _probe_final_composition(result, compose_quality, spec, expected_bg)
         checks = validation["composition"]["checks"]
@@ -1889,7 +1891,58 @@ def _compose_with_final_geometry_calibration(
         "headHeightFactor": round(calibration["headHeightFactor"], 6),
         "headWidthFactor": round(calibration["headWidthFactor"], 6),
     }
+    if foreground_only:
+        result, compose_quality = compose_id_photo(
+            item["foregroundPngPath"],
+            item.get("faceBox") or (item.get("quality") or {}).get("faceBox"),
+            target_size,
+            expected_bg,
+            composition=item["composition"],
+            source_background_rgb=source_background_rgb,
+            preserve_detail=bool((item.get("quality") or {}).get("trustedAlpha")),
+            composition_profile=profile,
+            measurement_calibration=calibration,
+            foreground_only=True,
+        )
     return result, compose_quality
+
+
+def render_prepared_id_photo_foreground(prepared_id, request_id=""):
+    item = PREPARE_CACHE.get(prepared_id)
+    if not item:
+        raise PortraitQualityError(
+            "PREPARED_NOT_FOUND",
+            {"code": "PREPARED_NOT_FOUND", "message": "prepared id not found or expired"},
+            status_code=404,
+        )
+    spec = dict(item["spec"])
+    target_size = (int(spec.get("width", 413)), int(spec.get("height", 579)))
+    item_quality = item.get("quality") or {}
+    source_background_rgb = (
+        (item_quality.get("mattingRefine") or {}).get("sourceBackgroundRgb")
+        or item_quality.get("sourceBackgroundRgb")
+    )
+    result, quality = _compose_with_final_geometry_calibration(
+        item,
+        spec,
+        target_size,
+        BG_COLORS.get(spec.get("defaultBg") or "blue", spec.get("defaultBg") or "blue"),
+        source_background_rgb,
+        foreground_only=True,
+    )
+    suffix = ".png"
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    result.save(tmp, format="PNG")
+    tmp.flush()
+    return {
+        "path": tmp.name,
+        "spec": spec,
+        "preparedId": prepared_id,
+        "quality": quality,
+        "imageType": item["imageType"],
+        "mode": item["mode"],
+        "requestId": request_id,
+    }
 
 
 def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output_type="jpg", request_id=""):

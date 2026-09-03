@@ -21,11 +21,17 @@ Validation covers:
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
+import hmac
 import json
+import os
 import shutil
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -41,6 +47,8 @@ FINAL = REPORTS / "final"
 DEFAULT_ANIME = ROOT / "server" / "outputs" / "5536a88c9b5e4cfa968ea2842f1ac14e.jpg"
 DEFAULT_MALE = ROOT / "server" / "outputs" / "_male_large_real_test.jpg"
 DEFAULT_FEMALE = ROOT / "server" / "outputs" / "_female_uniform_test.jpg"
+VERIFY_USER_ID = "verify-id-photo-user"
+VERIFY_OPENID = "openid-verify-id-photo"
 
 COLORS: Dict[str, Tuple[str, Tuple[int, int, int]]] = {
     "blue": ("#1A73E8", (26, 115, 232)),
@@ -72,6 +80,90 @@ class PrepareRejected(VerifyError):
         self.status = status
         self.data = data
         self.cost_ms = cost_ms
+
+
+def _utc_iso(epoch: float | None = None) -> str:
+    value = time.time() if epoch is None else epoch
+    return datetime.fromtimestamp(value, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _runtime_dir() -> Path:
+    return Path(os.environ.get("ID_PHOTO_RUNTIME_DIR") or (Path(tempfile.gettempdir()) / "id_photo_server")).resolve()
+
+
+def _auth_secret() -> str:
+    configured = os.environ.get("ID_PHOTO_AUTH_SECRET")
+    if configured:
+        return configured
+    return hashlib.sha256(("id-photo-auth:" + str(_runtime_dir())).encode("utf-8")).hexdigest()
+
+
+def _b64url_encode(data: str) -> str:
+    return base64.urlsafe_b64encode(data.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def _issue_verify_token() -> str:
+    payload = {
+        "userId": VERIFY_USER_ID,
+        "openid": VERIFY_OPENID,
+        "provider": "id-photo-verifier",
+        "iat": int(time.time()),
+        "profile": {"nickName": "id photo verifier"},
+    }
+    payload_text = _b64url_encode(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+    signature = hmac.new(_auth_secret().encode("utf-8"), payload_text.encode("utf-8"), hashlib.sha256).hexdigest()
+    return payload_text + "." + signature
+
+
+def _auth_headers() -> dict:
+    token = _issue_verify_token()
+    return {
+        "Authorization": "Bearer " + token,
+        "X-User-Token": token,
+    }
+
+
+def seed_passed_content_safety(image_path: Path, purpose: str = "id_photo") -> dict:
+    now = time.time()
+    image_bytes = image_path.read_bytes()
+    sha = hashlib.sha256(image_bytes).hexdigest()
+    check_id = "verify_id_photo_" + hashlib.sha256((str(image_path) + sha + str(now)).encode("utf-8")).hexdigest()[:24]
+    registry_path = _runtime_dir() / "content_security_registry.json"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        existing = json.loads(registry_path.read_text(encoding="utf-8"))
+        records = existing.get("records") if isinstance(existing, dict) else existing
+        if not isinstance(records, list):
+            records = []
+    except Exception:
+        records = []
+    records.append({
+        "securityCheckId": check_id,
+        "safeAssetId": check_id,
+        "imageId": "verify_" + sha[:16],
+        "userId": VERIFY_USER_ID,
+        "userOpenId": VERIFY_OPENID,
+        "sha256": sha,
+        "imageBytes": len(image_bytes),
+        "purpose": purpose,
+        "mediaUrl": "local-verifier://id-photo/" + image_path.name,
+        "stagingPath": "",
+        "status": "PASS",
+        "traceId": "local-verifier-" + check_id,
+        "statusReason": "LOCAL_ID_PHOTO_VERIFIER_PASS",
+        "createdAt": _utc_iso(now),
+        "createdAtEpoch": now,
+        "updatedAt": _utc_iso(now),
+        "updatedAtEpoch": now,
+        "expiresAtEpoch": now + 1800,
+    })
+    registry_path.write_text(json.dumps({"records": records}, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {
+        "securityCheckId": check_id,
+        "sha256": sha,
+        "imageBytes": len(image_bytes),
+        "registryPath": str(registry_path),
+    }
 
 
 @dataclass
@@ -262,6 +354,7 @@ def make_negative_samples(real_samples: List[Tuple[str, str, Path, str]]) -> Lis
         "INVALID_INPUT_NOT_REAL_PERSON",
         "MASK_QUALITY_FAILED",
         "ID_PHOTO_TIMEOUT",
+        "ID_PHOTO_POSE_NOT_FRONTAL",
     ]
     if DEFAULT_ANIME.exists():
         target = SAMPLES / "negative" / DEFAULT_ANIME.name
@@ -407,6 +500,7 @@ def make_negative_samples(real_samples: List[Tuple[str, str, Path, str]]) -> Lis
 
 
 def prepare(base_url: str, image_path: Path, label: str) -> Tuple[dict, float]:
+    safety = seed_passed_content_safety(image_path, "id_photo")
     with image_path.open("rb") as fh:
         files = {"image": (image_path.name, fh, "image/jpeg")}
         form = {
@@ -416,12 +510,14 @@ def prepare(base_url: str, image_path: Path, label: str) -> Tuple[dict, float]:
             "mode": "official",
             "composition": "head_shoulder",
             "outfit": "preserve_original",
+            "securityCheckId": safety["securityCheckId"],
         }
         data, cost_ms, status = _request_json(
             "POST",
             base_url.rstrip("/") + "/api/id-photo/prepare",
             files=files,
             data=form,
+            headers=_auth_headers(),
             timeout=45,
         )
     if not data.get("success"):
@@ -449,6 +545,7 @@ def prepare(base_url: str, image_path: Path, label: str) -> Tuple[dict, float]:
 
 
 def expect_rejected(base_url: str, label: str, image_path: Path, expected_codes: List[str]) -> dict:
+    safety = seed_passed_content_safety(image_path, "id_photo_negative")
     with image_path.open("rb") as fh:
         data, cost_ms, status = _request_json(
             "POST",
@@ -461,7 +558,9 @@ def expect_rejected(base_url: str, label: str, image_path: Path, expected_codes:
                 "mode": "official",
                 "composition": "head_shoulder",
                 "outfit": "preserve_original",
+                "securityCheckId": safety["securityCheckId"],
             },
+            headers=_auth_headers(),
             timeout=45,
         )
     ok = (not data.get("success")) and (data.get("code") in expected_codes) and not data.get("preparedId")

@@ -146,11 +146,48 @@ def process_stroke_inpaint(
     mask_build_ms = int((time.perf_counter() - mask_started) * 1000)
     mode = str(quality or "quick").lower()
     if mode in {"hd", "high", "high_quality"}:
+        box = mask_debug["maskBoundingBox"]
+        base_padding = int(round(min(image_width, image_height) * 0.04))
+        stroke_span = max(int(box["width"]), int(box["height"]))
+        adaptive_padding = max(base_padding, int(round(stroke_span * 0.08)))
+        padding = max(32, min(128, adaptive_padding))
+        x1 = max(0, box["x"] - padding)
+        y1 = max(0, box["y"] - padding)
+        x2 = min(image_width, box["x"] + box["width"] + padding)
+        y2 = min(image_height, box["y"] + box["height"] + padding)
+        roi_image = image[y1:y2, x1:x2].copy()
+        roi_mask = mask[y1:y2, x1:x2].copy()
+
+        border_left = max(0, padding - box["x"])
+        border_top = max(0, padding - box["y"])
+        border_right = max(0, box["x"] + box["width"] + padding - image_width)
+        border_bottom = max(0, box["y"] + box["height"] + padding - image_height)
+        if border_left or border_top or border_right or border_bottom:
+            roi_image_for_engine = cv2.copyMakeBorder(
+                roi_image,
+                border_top,
+                border_bottom,
+                border_left,
+                border_right,
+                cv2.BORDER_REFLECT_101,
+            )
+            roi_mask_for_engine = cv2.copyMakeBorder(
+                roi_mask,
+                border_top,
+                border_bottom,
+                border_left,
+                border_right,
+                cv2.BORDER_REFLECT_101,
+            )
+        else:
+            roi_image_for_engine = roi_image
+            roi_mask_for_engine = roi_mask
+
         mask_encode_started = time.perf_counter()
-        mask_png = _encode_png(mask, "ROI 遮罩")
+        mask_png = _encode_png(roi_mask_for_engine, "ROI mask")
         mask_encode_ms = int((time.perf_counter() - mask_encode_started) * 1000)
         result = do_hd_inpaint(
-            image_bytes,
+            _encode_png(roi_image_for_engine, "ROI image"),
             mask_png,
             strength=strength,
             preserve_detail=preserve_detail,
@@ -159,29 +196,78 @@ def process_stroke_inpaint(
             smart_expand=smart_expand,
             mask_dilation_px=mask_dilation_px,
         )
-        engine_debug = dict(result.get("debug") or {})
-        total_ms = int((time.perf_counter() - started) * 1000)
-        engine_debug.update({
+
+        repaired_arr = np.frombuffer(result["bytes"], dtype=np.uint8)
+        repaired_roi = cv2.imdecode(repaired_arr, cv2.IMREAD_COLOR)
+        if repaired_roi is None:
+            raise ManualInpaintError("HD ROI result decode failed")
+        if repaired_roi.shape[:2] != roi_image_for_engine.shape[:2]:
+            repaired_roi = cv2.resize(
+                repaired_roi,
+                (roi_image_for_engine.shape[1], roi_image_for_engine.shape[0]),
+                interpolation=cv2.INTER_LINEAR,
+            )
+        repaired_roi = repaired_roi[
+            border_top:border_top + roi_image.shape[0],
+            border_left:border_left + roi_image.shape[1],
+        ]
+
+        dilation_px = max(3, min(12, int(mask_dilation_px or 5)))
+        roi_allowed_mask = cv2.dilate(
+            roi_mask,
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation_px * 2 + 1, dilation_px * 2 + 1)),
+            iterations=1,
+        )
+        output = image.copy()
+        output[y1:y2, x1:x2] = np.where(
+            roi_allowed_mask[:, :, None] > 0,
+            repaired_roi,
+            roi_image,
+        )
+        allowed_mask = np.zeros_like(mask)
+        allowed_mask[y1:y2, x1:x2] = roi_allowed_mask
+        unchanged_outside_roi = output.copy()
+        unchanged_outside_roi[y1:y2, x1:x2] = image[y1:y2, x1:x2]
+        outside_changed = int(np.count_nonzero(np.any(unchanged_outside_roi != image, axis=2)))
+        output_bytes = _encode_png(output, "HD ROI output")
+        engine_debug = result.get("debug") or {}
+        debug = {
+            **engine_debug,
             **mask_debug,
             "transport": "normalized_strokes_json",
             "strokesPayloadBytes": len(strokes_json.encode("utf-8")),
             "imageUploadBytes": len(image_bytes),
             "originalSize": f"{image_width}x{image_height}",
-            "imageDecodeMs": image_decode_ms + int(engine_debug.get("imageDecodeMs") or 0),
-            "strokeParseMs": stroke_parse_ms,
-            "maskBuildMs": mask_build_ms,
-            "maskEncodeMs": mask_encode_ms,
+            "roiOriginalSize": f"{roi_image_for_engine.shape[1]}x{roi_image_for_engine.shape[0]}",
+            "roi": {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1, "padding": padding},
+            "roiReflectBorder": {
+                "left": border_left,
+                "top": border_top,
+                "right": border_right,
+                "bottom": border_bottom,
+            },
+            "roiPixelRatio": round(((x2 - x1) * (y2 - y1)) / float(image_width * image_height), 6),
+            "outsideRoiChangedPixels": outside_changed,
+            "outsideAllowedMaskChangedPixels": int(
+                np.count_nonzero(np.any(output[allowed_mask == 0] != image[allowed_mask == 0], axis=1))
+            ),
+            "maskPolicy": "strict_local",
+            "smartExpand": False,
+            "maskDilationPx": dilation_px,
             "outputSize": f"{image_width}x{image_height}",
-            "outputBytes": len(result["bytes"]),
-            "durationMs": total_ms,
-            "totalDurationMs": total_ms,
-        })
+            "outputBytes": len(output_bytes),
+            "durationMs": int((time.perf_counter() - started) * 1000),
+            "totalDurationMs": int((time.perf_counter() - started) * 1000),
+        }
         return {
-            **result,
-            "bytes": result["bytes"],
+            "bytes": output_bytes,
             "suffix": ".png",
             "mode": "hd",
-            "debug": engine_debug,
+            "engine": result.get("engine") or "lama",
+            "fallbackUsed": bool(result.get("fallbackUsed")),
+            "backendMode": result.get("backendMode") or "hd",
+            "message": result.get("message") or "processed",
+            "debug": debug,
         }
 
     box = mask_debug["maskBoundingBox"]

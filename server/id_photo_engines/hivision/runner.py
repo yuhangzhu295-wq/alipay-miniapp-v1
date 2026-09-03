@@ -22,7 +22,10 @@ HIVISION_ROOT = ROOT / "third_party" / "HivisionIDPhotos"
 import sys
 import platform
 
-if platform.system() == "Windows":
+_override_python = os.environ.get("ID_PHOTO_HIVISION_PYTHON", "").strip()
+if _override_python:
+    VENV_PYTHON = Path(_override_python)
+elif platform.system() == "Windows":
     _hivision_python = HIVISION_ROOT / ".venv" / "Scripts" / "python.exe"
     VENV_PYTHON = _hivision_python if _hivision_python.exists() else Path(sys.executable)
 else:

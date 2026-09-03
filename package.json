@@ -69,6 +69,19 @@
     "verify:id-photo-camera-permission": "node server/scripts/verify_id_photo_camera_flow.js permission",
     "verify:id-photo-all-entry-points": "node server/scripts/verify_id_photo_camera_flow.js entry",
     "verify:id-photo-full-capture-flow": "node server/scripts/verify_id_photo_camera_flow.js full",
-    "verify:id-photo-detail-ux": "node server/scripts/verify_id_photo_detail_ux.js"
+    "verify:id-photo-detail-ux": "node server/scripts/verify_id_photo_detail_ux.js",
+    "migrate:alipay": "node tools/alipay-migration/migrate.js",
+    "verify:alipay-static": "node tools/alipay-migration/verify.js",
+    "verify:alipay-builder": "node tools/alipay-migration/build.js",
+    "verify:alipay-provider-adapter": "node server/scripts/run_python.js server/scripts/verify_alipay_platform_adapter.py",
+    "verify:alipay-platform-compat": "node tools/alipay-verification/verify-platform-compat.js",
+    "report:alipay-final-validation": "node tools/alipay-verification/write-final-validation-report.js",
+    "verify:alipay-stage2": "node tools/alipay-verification/verify-stage2.js",
+    "verify:alipay-visual-v3": "python tools/alipay-visual-v3/capture_window.py && node tools/alipay-visual-v3/verify-visual-v3.js",
+    "alipay:login-qr": "node tools/alipay-migration/login-qr.js"
+  },
+  "devDependencies": {
+    "minidev": "^2.2.5",
+    "qrcode": "^1.5.4"
   }
 }

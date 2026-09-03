@@ -3,6 +3,7 @@ var specs = require('../../utils/specs.js');
 var imageUtil = require('../../utils/image.js');
 var aiImageApi = require('../../utils/aiImageApi.js');
 var apiConfig = require('../../utils/apiConfig.js');
+var edgeCompute = require('../../utils/edgeCompute.js');
 var imageService = require('../../utils/imageService.js');
 var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 
@@ -32,6 +33,7 @@ Page({
     statusText: '上传照片后自动生成',
     preparedId: '',
     preparedKey: '',
+    foregroundUrl: '',
     sourceId: '',
     detailJobId: '',
     detailJobStatus: '',
@@ -64,6 +66,51 @@ Page({
       width: Math.max(220, width),
       height: Math.max(260, height)
     };
+  },
+
+  getPreparedForegroundUrl: function(preparedId, prepared) {
+    var url = prepared && prepared.foregroundUrl ? prepared.foregroundUrl : '';
+    if (!url && preparedId) {
+      url = '/api/id-photo/prepared/' + encodeURIComponent(preparedId) + '/foreground';
+    }
+    if (url && url.indexOf('http') !== 0) {
+      url = apiConfig.API_BASE_URL + (url.charAt(0) === '/' ? url : '/' + url);
+    }
+    return url;
+  },
+
+  composePreparedResult: function(options) {
+    options = options || {};
+    var preparedId = options.preparedId || '';
+    var foregroundUrl = options.foregroundUrl || this.data.foregroundUrl || this.getPreparedForegroundUrl(preparedId, {});
+    var composeOptions = {
+      preparedId: preparedId,
+      foregroundUrl: foregroundUrl,
+      bgColor: options.bgColor || this.data.bgColorHex,
+      bgColorName: options.bgColorName || this.data.bgColorId,
+      widthPx: options.widthPx || (this.data.currentSpec && this.data.currentSpec.widthPx) || 295,
+      heightPx: options.heightPx || (this.data.currentSpec && this.data.currentSpec.heightPx) || 413,
+      spec: this.data.currentSpec || null,
+      quality: options.quality || {},
+      requestId: options.requestId || ''
+    };
+    if (edgeCompute.chooseExecutionRoute('idPhotoBgCompose') === 'edge' && foregroundUrl) {
+      return aiImageApi.composeIdPhotoEdge(composeOptions).catch(function(edgeErr) {
+        console.warn('[id-photo-fe] edge compose failed, fallback to cloud:', edgeErr);
+        return aiImageApi.composeIdPhotoV2({
+          preparedId: preparedId,
+          bgColor: composeOptions.bgColor,
+          bgColorName: composeOptions.bgColorName,
+          outputType: 'jpg'
+        });
+      });
+    }
+    return aiImageApi.composeIdPhotoV2({
+      preparedId: preparedId,
+      bgColor: composeOptions.bgColor,
+      bgColorName: composeOptions.bgColorName,
+      outputType: 'jpg'
+    });
   },
 
   getCurrentRouteForLog: function() {
@@ -159,6 +206,7 @@ Page({
       statusText: '上传照片后自动生成',
       preparedId: '',
       preparedKey: '',
+      foregroundUrl: '',
       sourceId: '',
       detailJobId: '',
       detailJobStatus: '',
@@ -524,21 +572,22 @@ Page({
       outputType: 'jpg'
     };
     var composeWithRetry = function(preparedId, attempt) {
-      that.updateProcessStage('composing', '正在生成底色');
-      return aiImageApi.composeIdPhotoV2(Object.assign({}, composePayload, {
-        preparedId: preparedId
+      that.updateProcessStage('composing', '?????????');
+      return that.composePreparedResult(Object.assign({}, composePayload, {
+        preparedId: preparedId,
+        foregroundUrl: that.getPreparedForegroundUrl(preparedId, { foregroundUrl: that.data.foregroundUrl })
       })).catch(function(err) {
-        var isExpired = err && (err.code === 'PREPARED_NOT_FOUND' || err.code === 'ID_PHOTO_PREPARED_EXPIRED' || err.code === 'PREPARED_ID_INVALID' || (err.message && (err.message.indexOf('预处理') >= 0 || err.message.indexOf('失效') >= 0)));
+        var isExpired = err && (err.code === 'PREPARED_NOT_FOUND' || err.code === 'ID_PHOTO_PREPARED_EXPIRED' || err.code === 'PREPARED_ID_INVALID' || (err.message && (err.message.indexOf('?????') >= 0 || err.message.indexOf('???') >= 0)));
         if (isExpired && hasPrepared && attempt === 0) {
           console.warn('[id-photo-fe] preparedId expired or invalid, re-preparing source...');
           hasPrepared = false;
-          that.setData({ preparedId: '', preparedKey: '' });
+          that.setData({ preparedId: '', preparedKey: '', foregroundUrl: '' });
           return aiImageApi.prepareIdPhotoV2(requestPhotoSrc, Object.assign({}, requestPayload, {
             onStage: function(stage) {
               var labels = {
-                optimizing: ['optimizing', '正在优化上传图片'],
-                uploading: ['uploading', '正在上传照片'],
-                fastMatting: ['fastMatting', '正在快速抠图']
+                optimizing: ['optimizing', 'optimizing upload'],
+                uploading: ['uploading', 'uploading photo'],
+                fastMatting: ['fastMatting', 'fast matting']
               };
               var next = labels[stage];
               if (next) that.updateProcessStage(next[0], next[1]);
@@ -550,7 +599,8 @@ Page({
             that.setData({
               preparedId: newPrepared.preparedId,
               preparedKey: prepareKey,
-              sourceId: newPrepared.sourceId || that.data.sourceId
+              sourceId: newPrepared.sourceId || that.data.sourceId,
+              foregroundUrl: that.getPreparedForegroundUrl(newPrepared.preparedId, newPrepared)
             });
             return composeWithRetry(newPrepared.preparedId, attempt + 1);
           });
@@ -562,7 +612,7 @@ Page({
         console.warn('[id-photo-fe] compose retry requestId=' + (err.requestId || '') + ' attempt=' + (attempt + 1));
         that.setData({
           processState: 'composing',
-          statusText: '底色生成较慢，正在重试...'
+          statusText: '?????????????????..'
         });
         return new Promise(function(resolve) {
           setTimeout(resolve, 800);
@@ -591,13 +641,12 @@ Page({
         console.log('[id-photo-fe] prepare engineVersion=' + (prepared.engineVersion || (prepared.debug && prepared.debug.engineVersion) || ''));
         console.log('[id-photo-fe] prepare engineModel=' + (prepared.engineModel || (prepared.debug && prepared.debug.engineModel) || ''));
         console.log('[id-photo-fe] prepare debug:', prepared.debug || null);
-        if (!hasPrepared) {
-          that.setData({
-            preparedId: prepared.preparedId,
-            preparedKey: prepareKey,
-            sourceId: prepared.sourceId || that.data.sourceId
-          });
-        }
+        that.setData({
+          preparedId: prepared.preparedId,
+          preparedKey: prepareKey,
+          sourceId: prepared.sourceId || that.data.sourceId,
+          foregroundUrl: that.getPreparedForegroundUrl(prepared.preparedId, prepared)
+        });
         that.updateProcessStage('cropping', '正在调整证件照比例');
         return composeWithRetry(prepared.preparedId, 0);
       })
@@ -816,8 +865,9 @@ Page({
       }
       if (job.status === 'completed' && job.preparedId) {
         that.setData({ detailJobStatus: 'completed', statusText: '正在生成精修底色' });
-        return aiImageApi.composeIdPhotoV2({
+        return that.composePreparedResult({
           preparedId: job.preparedId,
+          foregroundUrl: that.getPreparedForegroundUrl(job.preparedId, {}),
           bgColor: that.data.bgColorHex,
           bgColorName: that.data.bgColorId,
           outputType: 'jpg'

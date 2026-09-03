@@ -321,7 +321,7 @@
           <button class="btn-secondary" bindtap="onWmClear">🗑️ 清空</button>
         </view>
       </view>
-      <view class="wm-debug-card" wx:if="{{isDevelopEnv && showDebugPanel && wmMaskPreview}}">
+      <view class="wm-debug-card" wx:if="{{showDebugPanel && isDevelopEnv && wmMaskPreview}}">
         <view class="section-title">Mask 调试预览</view>
         <image class="wm-mask-preview" src="{{wmMaskPreview}}" mode="aspectFit" />
         <view class="info-row">mask 尺寸: {{wmMaskWidth}}x{{wmMaskHeight}}</view>
@@ -358,7 +358,7 @@
       <button class="btn-primary" bindtap="doStampSave" wx:if="{{photoSrc && !processing && wmStampSampleSet}}">✨ 确认克隆修复</button>
     </block>
 
-    <view class="wm-debug-card" wx:if="{{isDevelopEnv && showDebugPanel && wmBackendDebug && wmBackendDebug.imageSize}}">
+    <view class="wm-debug-card" wx:if="{{showDebugPanel && isDevelopEnv && wmBackendDebug && wmBackendDebug.imageSize}}">
       <view class="section-title">OpenCV 调试信息</view>
       <view class="info-row">imageSize: {{wmBackendDebug.imageSize}}</view>
       <view class="info-row">maskSize: {{wmBackendDebug.maskSize}}</view>
@@ -480,7 +480,7 @@
   <view class="spacer"></view>
 
   <!-- ====== 开发诊断面板 ====== -->
-  <view class="diag-panel" wx:if="{{isDevelopEnv && showDebugPanel}}">
+  <view class="diag-panel" wx:if="{{showDebugPanel && isDevelopEnv}}">
     <view class="diag-header">🔧 证件照开发诊断面板</view>
     
     <view class="diag-section-title">🔌 服务基本配置</view>

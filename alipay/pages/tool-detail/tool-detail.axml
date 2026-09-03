@@ -1,0 +1,523 @@
+<!-- ====== 统一工具详情页 ====== -->
+<view class="page">
+
+  <canvas type="2d" id="tdCanvas" class="hidden-canvas"></canvas>
+
+  <!-- ====== Common Upload ====== -->
+  <view class="upload-section" a:if="{{toolType !== 'customSize' && toolType !== 'collect' && toolType !== 'layout'}}">
+    <view class="upload-card" onTap="{{photoSrc ? '' : 'choosePhoto'}}">
+      <!-- Standard image preview for non-watermark tools -->
+      <image a:if="{{photoSrc && toolType !== 'removeWatermark'}}" class="upload-preview" src="{{photoSrc}}" mode="aspectFit" catchTap="choosePhoto" />
+      
+      <!-- Specialized interactive canvas for removeWatermark tool -->
+      <view a:elif="{{photoSrc && toolType === 'removeWatermark'}}" class="wm-canvas-container" style="width:{{wmDisplayWidth}}px; height:{{wmDisplayHeight}}px; position:relative;">
+        <!-- Error Overlay if canvas initialization failed -->
+        <view a:if="{{wmCanvasInitFailed}}" class="wm-error-overlay" catchTap="stopPropagation">
+          <text class="wm-error-icon">⚠️</text>
+          <text class="wm-error-text">画布初始化失败，请重新选择图片或重试。</text>
+          <view class="wm-error-btns">
+            <view class="wm-error-btn-item btn-primary" catchTap="initWmCanvas"><text>🔄 重新初始化</text></view>
+            <view class="wm-error-btn-item btn-secondary" catchTap="choosePhoto"><text>📷 重新选择图片</text></view>
+          </view>
+        </view>
+        <canvas a:else type="2d" id="wmCanvas" class="wm-canvas-main" style="width:{{wmDisplayWidth}}px; height:{{wmDisplayHeight}}px;" catchTouchStart="onWmTouchStart" catchTouchMove="onWmTouchMove" catchTouchEnd="onWmTouchEnd"></canvas>
+      </view>
+
+      <view a:else class="upload-placeholder">
+        <text class="up-icon">{{toolIcon}}</text>
+        <text class="up-text">点击上传图片</text>
+      </view>
+      <!-- Visual rectangle overlay for removeWatermark -->
+      <view class="select-overlay" a:if="{{photoSrc && selectRect && toolType === 'removeWatermark'}}" style="left: {{selectRect.x}}px; top: {{selectRect.y}}px; width: {{selectRect.w}}px; height: {{selectRect.h}}px;"></view>
+    </view>
+  </view>
+
+  <view class="wm-canvas-action" a:if="{{toolType === 'removeWatermark' && photoSrc && !processing && wmHasMask}}">
+    <button class="btn-primary" onTap="doManualRemoveWatermark">{{wmQuality === 'hd' ? '开始高清修复' : '开始擦除去水印'}}</button>
+  </view>
+
+  <!-- Loading -->
+  <view class="loading-area" a:if="{{processing}}"><text>{{processingText || '处理中...'}}</text></view>
+
+  <!-- Result preview -->
+  <view class="result-section" a:if="{{resultImage}}">
+    <view class="result-label"><text>处理结果</text></view>
+    <block a:if="{{toolType === 'removeWatermark'}}">
+      <view class="wm-result-mode"><text>当前使用模式：{{wmResultModeLabel}}</text></view>
+      <view class="wm-result-mode" a:if="{{wmResultMessage}}"><text>{{wmResultMessage}}</text></view>
+      <view class="wm-result-compare">
+        <view class="wm-result-item">
+          <text class="wm-result-caption">原图</text>
+          <image class="result-preview wm-result-preview" src="{{photoSrc}}" mode="aspectFit" />
+        </view>
+        <view class="wm-result-item">
+          <text class="wm-result-caption">处理结果图</text>
+          <image class="result-preview wm-result-preview" src="{{resultImage}}" mode="aspectFit" />
+        </view>
+      </view>
+      <view class="action-row-btns">
+        <button class="btn-secondary" onTap="continueWatermarkRepair">继续局部修复</button>
+        <button class="btn-secondary" onTap="retryWatermarkQuality" data-quality="hd">高清修复重试</button>
+      </view>
+      <view class="action-row-btns">
+        <button class="btn-secondary" onTap="retryWatermarkQuality" data-quality="fast">快速模式重试</button>
+      </view>
+    </block>
+    <image a:else class="result-preview" src="{{resultImage}}" mode="aspectFit" />
+    <view a:if="{{idPhotoResultMeta}}" class="id-result-meta">
+      <text>当前用途：{{idPhotoResultMeta.specName}}</text>
+      <text>图片类型：{{idPhotoResultMeta.imageTypeLabel}}</text>
+      <text>当前模式：{{idPhotoResultMeta.modeLabel}}</text>
+      <text>当前背景：{{idPhotoResultMeta.bgColorName}}</text>
+      <text>当前构图：{{idPhotoResultMeta.compositionName}}</text>
+      <text a:for="{{idPhotoResultMeta.warnings}}" key="*this" class="id-result-warning">{{item}}</text>
+    </view>
+    <!-- Compress details -->
+    <view a:if="{{compressResult}}" class="compress-detail">
+      <text>目标大小: {{compressResult.targetKB}} KB | 实际大小: {{compressResult.actualKB}} KB</text>
+      <text a:if="{{compressResult.width}}">输出尺寸: {{compressResult.width}}×{{compressResult.height}} px</text>
+      <text>压缩方式: {{compressResult.method}}</text>
+    </view>
+  </view>
+
+  <!-- ====== verifyPhoto ====== -->
+  <view class="config-section" a:if="{{toolType === 'verifyPhoto'}}">
+    <view class="section-title"><text>本地大模型检测模式</text></view>
+    <view class="chips-row">
+      <view class="chip {{auditModel === 'minicpm-v:latest' ? 'chip-active' : ''}}" onTap="setAuditModel" data-model="minicpm-v:latest"><text>🧠 高精分析模式 (MiniCPM-V)</text></view>
+      <view class="chip {{auditModel === 'moondream:latest' ? 'chip-active' : ''}}" onTap="setAuditModel" data-model="moondream:latest"><text>⚡ 极速诊断模式 (Moondream)</text></view>
+    </view>
+    <text class="colorize-note">提示：高精模式基于55亿参数视觉模型，精准透彻；极速模式极省资源，快速反馈。如本地大模型未启动，系统将切换到高效本地诊断方案。</text>
+    
+    <view class="btn-primary" onTap="doVerifyPhoto" a:if="{{photoSrc && !processing && !auditResult}}"><text>🔍 开始 AI 智能质检</text></view>
+    <view class="btn-primary" onTap="doVerifyPhoto" a:if="{{photoSrc && !processing && auditResult}}"><text>🔄 重新质检分析</text></view>
+  </view>
+
+  <!-- ====== verifyPhoto Audit Report ====== -->
+  <view class="audit-report-section" a:if="{{toolType === 'verifyPhoto' && auditResult}}">
+    <view class="audit-header">
+      <text class="audit-title">📊 智能质检报告</text>
+      <view class="audit-badge {{auditResult.qualified ? 'badge-qualified' : 'badge-unqualified'}}"><text>
+        {{auditResult.qualified ? '合规' : '不合规'}}
+      </text></view>
+    </view>
+
+    <!-- Score circle dashboard -->
+    <view class="score-dashboard">
+      <view class="score-circle">
+        <text class="score-num">{{auditResult.score}}</text>
+        <text class="score-unit">分</text>
+      </view>
+      <view class="score-label"><text>证件照综合质量评分</text></view>
+    </view>
+
+    <!-- Dimension checklist -->
+    <view class="audit-checklist">
+      <view class="check-item" a:for="{{auditResult.checks}}" key="key">
+        <text class="check-icon">{{item.status === 'pass' ? '✅' : (item.status === 'warning' ? '⚠️' : '❌')}}</text>
+        <view class="check-content">
+          <text class="check-title">{{item.title}}</text>
+          <text class="check-desc">{{item.message}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Suggestions card -->
+    <view class="audit-suggestions-card" a:if="{{auditResult.suggestions && auditResult.suggestions.length > 0}}">
+      <view class="suggestions-title"><text>💡 智能优化建议</text></view>
+      <view class="suggestions-list">
+        <view class="suggestion-bullet" a:for="{{auditResult.suggestions}}" key="index">
+          <text class="bullet-dot">•</text>
+          <text class="suggestion-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ====== changeBg ====== -->
+  <view class="config-section" a:if="{{toolType === 'changeBg'}}">
+    <text class="colorize-note">支持真人官方证件照、考试报名照、简历头像、二次元/插画创意头像。官方规格建议使用单人正面真人照片；二次元会按创意版生成。</text>
+    <view a:if="{{photoSrc}}" class="id-type-pill"><text>已识别：{{imageTypeLabel}}</text></view>
+    <view class="section-title"><text>选择用途</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoPurposes}}" key="id" class="chip {{idPhotoPurpose === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoPurpose" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>选择规格</text></view>
+    <picker range="{{idPhotoSpecs}}" range-key="name" value="{{idPhotoSpecIndex}}" onChange="onIdSpecSelect">
+      <view class="picker-box"><text>{{idPhotoSpecName}}</text></view>
+    </picker>
+    <view class="section-title"><text>背景色</text></view>
+    <view class="color-grid">
+      <view a:for="{{bgColors}}" key="id" a:for-index="idx"
+        class="color-item {{selBgIdx === idx ? 'color-active' : ''}}"
+        style="background-color: {{item.hex}};"
+        onTap="selectBg" data-idx="{{idx}}">
+        <text class="color-name" style="color: {{item.id === 'white' ? '#333' : '#fff'}};">{{item.name}}</text>
+        <text a:if="{{selBgIdx === idx}}" class="color-check">✓</text>
+      </view>
+    </view>
+    <input a:if="{{bgColors[selBgIdx].id === 'custom'}}" class="form-input id-custom-color" value="{{customBgHex}}" onInput="onCustomBgHexInput" placeholder="#1a73e8" />
+    <view class="section-title"><text>构图</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoCompositions}}" key="id" class="chip {{idPhotoComposition === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoComposition" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>增强等级</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoEnhanceOptions}}" key="id" class="chip {{idPhotoEnhance === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoEnhance" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>边缘处理</text></view>
+    <view style="display:flex; align-items:center; margin-bottom:12px;" onTap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchTap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
+    </view>
+    <text class="colorize-note">官方规格版按所选规格裁切；创意版、二次元创意版仅适合头像、展示、简历美化等场景。</text>
+    <view class="btn-primary" onTap="doChangeBg" a:if="{{photoSrc && !processing}}"><text>生成证件照</text></view>
+    <view class="action-row-btns" a:if="{{resultImage}}">
+      <button class="btn-secondary" onTap="choosePhoto">重新上传</button>
+    </view>
+  </view>
+
+  <!-- ====== customSize — STRING INPUTS ====== -->
+  <view class="config-section" a:if="{{toolType === 'customSize'}}">
+    <view class="section-title"><text>自定义尺寸</text></view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">宽度 (px)</text>
+        <input class="form-input" type="number" value="{{widthPxInput}}" onInput="onWidthPxInput" placeholder="295" />
+      </view>
+      <view class="form-item">
+        <text class="form-label">高度 (px)</text>
+        <input class="form-input" type="number" value="{{heightPxInput}}" onInput="onHeightPxInput" placeholder="413" />
+      </view>
+    </view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">宽度 (mm)</text>
+        <input class="form-input" type="number" value="{{widthMmInput}}" onInput="onWidthMmInput" placeholder="25" />
+      </view>
+      <view class="form-item">
+        <text class="form-label">高度 (mm)</text>
+        <input class="form-input" type="number" value="{{heightMmInput}}" onInput="onHeightMmInput" placeholder="35" />
+      </view>
+    </view>
+    <view class="btn-primary" onTap="doCustomSize"><text>开始制作</text></view>
+  </view>
+
+  <!-- ====== editImage — STRING INPUT ====== -->
+  <view class="config-section" a:if="{{toolType === 'editImage'}}">
+    <view class="section-title"><text>图片编辑</text></view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">压缩质量: {{quality}}</text>
+        <slider min="10" max="100" value="{{quality}}" onChange="onQualityChange" show-value />
+      </view>
+    </view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">目标大小 (KB)</text>
+        <input class="form-input" type="number" value="{{targetKbInput}}" onInput="onTargetKbInput" placeholder="200" />
+      </view>
+    </view>
+    <view class="btn-primary" onTap="doCompress" a:if="{{photoSrc && !processing}}"><text>压缩图片</text></view>
+  </view>
+
+  <!-- ====== formatConvert ====== -->
+  <view class="config-section" a:if="{{toolType === 'formatConvert'}}">
+    <view class="section-title"><text>选择输出格式</text></view>
+    <view class="chips-row">
+      <view class="chip {{targetFormat === 'jpg' ? 'chip-active' : ''}}" onTap="setFormat" data-fmt="jpg"><text>JPG</text></view>
+      <view class="chip {{targetFormat === 'png' ? 'chip-active' : ''}}" onTap="setFormat" data-fmt="png"><text>PNG</text></view>
+    </view>
+    <view class="btn-primary" onTap="doConvert" a:if="{{photoSrc && !processing}}"><text>格式转换</text></view>
+  </view>
+
+  <!-- ====== colorize ====== -->
+  <view class="config-section" a:if="{{toolType === 'colorize'}}">
+    <view class="section-title"><text>着色滤镜</text></view>
+    <view class="chips-row">
+      <view class="chip {{colorFilter === 'warm' ? 'chip-active' : ''}}" onTap="setColorFilter" data-filter="warm"><text>暖色调</text></view>
+      <view class="chip {{colorFilter === 'cold' ? 'chip-active' : ''}}" onTap="setColorFilter" data-filter="cold"><text>冷色调</text></view>
+      <view class="chip {{colorFilter === 'vintage' ? 'chip-active' : ''}}" onTap="setColorFilter" data-filter="vintage"><text>复古</text></view>
+      <view class="chip {{colorFilter === 'enhance' ? 'chip-active' : ''}}" onTap="setColorFilter" data-filter="enhance"><text>增强</text></view>
+    </view>
+    <text class="colorize-note">智能上色 AI 接口预留中，当前提供本地滤镜方案</text>
+    <view class="btn-primary" onTap="doColorize" a:if="{{photoSrc && !processing}}"><text>应用滤镜</text></view>
+  </view>
+
+  <!-- ====== addWatermark ====== -->
+  <view class="config-section" a:if="{{toolType === 'addWatermark'}}">
+    <view class="section-title"><text>水印设置</text></view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">水印文字</text>
+        <input class="form-input" value="{{watermarkText}}" onInput="onWatermarkTextInput" />
+      </view>
+    </view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">透明度: {{watermarkOpacity}}%</text>
+        <slider min="5" max="80" value="{{watermarkOpacity}}" onChange="onWatermarkOpacity" show-value />
+      </view>
+    </view>
+    <view class="form-row">
+      <view class="form-item">
+        <text class="form-label">字号: {{watermarkSize}}</text>
+        <slider min="16" max="72" value="{{watermarkSize}}" onChange="onWatermarkSize" show-value />
+      </view>
+    </view>
+    <view class="section-title"><text>水印位置</text></view>
+    <view class="chips-row">
+      <view class="chip {{watermarkPos === 'leftTop' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="leftTop"><text>左上</text></view>
+      <view class="chip {{watermarkPos === 'rightTop' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="rightTop"><text>右上</text></view>
+      <view class="chip {{watermarkPos === 'center' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="center"><text>居中</text></view>
+      <view class="chip {{watermarkPos === 'leftBottom' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="leftBottom"><text>左下</text></view>
+      <view class="chip {{watermarkPos === 'rightBottom' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="rightBottom"><text>右下</text></view>
+      <view class="chip {{watermarkPos === 'tile' ? 'chip-active' : ''}}" onTap="setWatermarkPos" data-pos="tile"><text>平铺</text></view>
+    </view>
+    <view class="btn-primary" onTap="doAddWatermark" a:if="{{photoSrc && !processing}}"><text>添加水印</text></view>
+  </view>
+
+  <!-- ====== removeWatermark ====== -->
+  <view class="config-section" a:if="{{toolType === 'removeWatermark'}}">
+    <view class="section-title" a:if="{{isDevelopEnv}}" onTap="onWatermarkTitleTap"><text>图片去水印</text></view>
+    <view class="section-title" a:else><text>图片去水印</text></view>
+    <text class="disclaimer">⚠️ 仅用于处理本人图片，请勿侵犯他人版权或权益。</text>
+
+    <view class="section-title"><text>处理模式</text></view>
+    <view class="chips-row">
+      <view class="chip {{wmMode === 'manual' ? 'chip-active' : ''}}" onTap="setWmMode" data-mode="manual"><text>✍️ 手动擦除</text></view>
+      <view class="chip {{wmMode === 'stamp' ? 'chip-active' : ''}}" onTap="setWmMode" data-mode="stamp"><text>🛠️ 仿制图章</text></view>
+    </view>
+
+    <view class="wm-quality-panel" a:if="{{photoSrc && wmMode !== 'stamp'}}">
+      <view class="section-title"><text>处理质量</text></view>
+      <view class="chips-row">
+        <view class="chip {{wmQuality === 'fast' ? 'chip-active' : ''}}" onTap="setWmQuality" data-quality="fast"><text>快速模式</text></view>
+        <view a:if="{{wmHdEnabled}}" class="chip {{wmQuality === 'hd' ? 'chip-active' : ''}} {{wmHdAvailable ? '' : 'chip-disabled'}}" onTap="setWmQuality" data-quality="hd"><text>高清修复</text></view>
+      </view>
+      <text class="colorize-note" a:if="{{wmQuality === 'hd'}}">高清修复会尽量保留原图细节，处理时间较长，适合复杂背景或大面积水印。</text>
+      <text class="colorize-note" a:if="{{wmHdEnabled && !wmHdAvailable}}">高清修复服务未启动，当前可继续使用快速模式。</text>
+    </view>
+
+    <!-- Manual Mode -->
+    <block a:if="{{wmMode === 'manual'}}">
+      <view class="section-title" a:if="{{photoSrc}}"><text>画笔选项</text></view>
+      <view class="brush-settings" a:if="{{photoSrc}}">
+        <view class="form-row">
+          <view class="form-item">
+            <text class="form-label">画笔大小: {{wmBrushSize}}px</text>
+            <slider min="5" max="100" value="{{wmBrushSize}}" onChange="onWmBrushSizeChange" show-value />
+          </view>
+        </view>
+        <view class="section-title"><text>处理强度</text></view>
+        <view class="chips-row">
+          <view class="chip {{wmStrength === 'low' ? 'chip-active' : ''}}" onTap="setWmStrength" data-strength="low"><text>轻度</text></view>
+          <view class="chip {{wmStrength === 'medium' ? 'chip-active' : ''}}" onTap="setWmStrength" data-strength="medium"><text>标准</text></view>
+          <view class="chip {{wmStrength === 'high' ? 'chip-active' : ''}}" onTap="setWmStrength" data-strength="high"><text>强力</text></view>
+        </view>
+        <view class="action-row-btns">
+          <button class="btn-secondary" onTap="onWmUndo">↩️ 撤销</button>
+          <button class="btn-secondary" onTap="onWmRedo">↪️ 重做</button>
+          <button class="btn-secondary" onTap="onWmClear">🗑️ 清空</button>
+        </view>
+      </view>
+      <view class="wm-debug-card" a:if="{{showDebugPanel && isDevelopEnv && wmMaskPreview}}">
+        <view class="section-title"><text>Mask 调试预览</text></view>
+        <image class="wm-mask-preview" src="{{wmMaskPreview}}" mode="aspectFit" />
+        <view class="info-row"><text>mask 尺寸: {{wmMaskWidth}}x{{wmMaskHeight}}</text></view>
+        <view class="info-row"><text>白色像素: {{wmMaskNonZeroPixels}}</text></view>
+        <view class="info-row"><text>白色占比: {{wmMaskRatio}}%</text></view>
+      </view>
+      <view class="rect-info-warn" a:if="{{wmMaskRatioValue > 0.2 && wmQuality === 'hd'}}">
+        <text>当前涂抹区域较大，建议使用高清修复，或分区域多次处理，以减少画面模糊。</text>
+      </view>
+      <view class="rect-info-warn" a:if="{{wmMaskRatioValue > 0.2 && wmQuality === 'fast'}}">
+        <text>快速模式处理大面积区域可能出现模糊，可切换高清修复。</text>
+      </view>
+      <view class="rect-info" a:if="{{wmHasMask}}"><text>已涂抹去水印区域，点击下方按钮开始处理</text></view>
+      <view class="rect-info-warn" a:else><text>💡 提示：在上方图片的水印位置上进行涂抹</text></view>
+    </block>
+    <!-- Clone Stamp Mode -->
+    <block a:if="{{wmMode === 'stamp'}}">
+      <text class="colorize-note">💡 使用方法：\n1. 点击下方「选择采样点」按钮，并在图片中点击想要复制的源像素（如无痕的皮肤或背景）。\n2. 移动手指在水印处涂抹，系统将自动复制像素覆盖水印，实现无痕克隆！</text>
+      <view class="stamp-settings" a:if="{{photoSrc}}">
+        <view class="form-row">
+          <view class="form-item">
+            <text class="form-label">图章大小: {{wmBrushSize}}px</text>
+            <slider min="5" max="100" value="{{wmBrushSize}}" onChange="onWmBrushSizeChange" show-value />
+          </view>
+        </view>
+        <view class="action-row-btns">
+          <button class="btn-action {{wmStampSampling ? 'btn-active' : ''}} btn-secondary" onTap="toggleStampSampling">📍 {{wmStampSampleSet ? '重新采样' : '选择采样点'}}</button>
+          <button class="btn-secondary" onTap="onWmUndo">↩️ 撤销</button>
+          <button class="btn-secondary" onTap="onWmClear">🗑️ 清空</button>
+        </view>
+        <view class="rect-info" a:if="{{wmStampSampleSet}}"><text>采样点已设定，移动画笔开始克隆</text></view>
+        <view class="rect-info-warn" a:else><text>⚠️ 请先点击按钮并在图片上选择一个克隆采样点</text></view>
+      </view>
+      <button class="btn-primary" onTap="doStampSave" a:if="{{photoSrc && !processing && wmStampSampleSet}}">✨ 确认克隆修复</button>
+    </block>
+
+    <view class="wm-debug-card" a:if="{{showDebugPanel && isDevelopEnv && wmBackendDebug && wmBackendDebug.imageSize}}">
+      <view class="section-title"><text>OpenCV 调试信息</text></view>
+      <view class="info-row"><text>imageSize: {{wmBackendDebug.imageSize}}</text></view>
+      <view class="info-row"><text>maskSize: {{wmBackendDebug.maskSize}}</text></view>
+      <view class="info-row"><text>maskNonZeroPixels: {{wmBackendDebug.maskNonZeroPixels}}</text></view>
+      <view class="info-row"><text>maskRatio: {{wmBackendDebug.maskRatio}}</text></view>
+      <view class="info-row"><text>dilationIterations: {{wmBackendDebug.dilationIterations}}</text></view>
+      <view class="info-row"><text>inpaintRadius: {{wmBackendDebug.inpaintRadius}}</text></view>
+      <view class="info-row"><text>diffMean: {{wmBackendDebug.diffMean}}</text></view>
+      <view class="info-row"><text>diffMax: {{wmBackendDebug.diffMax}}</text></view>
+    </view>
+
+    <view class="wm-debug-card" a:if="{{isDevelopEnv && showDebugPanel}}">
+      <view class="section-title"><text>图片去水印服务诊断</text></view>
+      <view class="info-row"><text>当前 API 地址: {{wmApiBaseUrl}}</text></view>
+      <view class="info-row"><text>健康检查状态: {{wmHealthStatus}}</text></view>
+      <view class="info-row"><text>image 尺寸: {{wmBackendDebug.imageSize}}</text></view>
+      <view class="info-row"><text>mask 尺寸: {{wmMaskWidth}}x{{wmMaskHeight}}</text></view>
+      <view class="info-row"><text>mask 白色像素: {{wmMaskNonZeroPixels}}</text></view>
+      <view class="info-row"><text>uploadFile 目标地址: {{wmUploadUrl}}</text></view>
+      <view class="info-row"><text>最后一次错误: {{wmLastError}}</text></view>
+    </view>
+  </view>
+
+  <!-- ====== layout — MULTI IMAGE ====== -->
+  <view class="config-section" a:if="{{toolType === 'layout'}}">
+    <view class="section-title"><text>自定义排版</text></view>
+    <view class="upload-section">
+      <view class="upload-card" onTap="chooseLayoutImages">
+        <view a:if="{{layoutImages.length > 0}}" class="image-grid">
+          <view a:for="{{layoutImages}}" key="index" a:for-item="img" a:for-index="idx" class="layout-thumb-wrap">
+            <image class="layout-thumb" src="{{img.path}}" mode="aspectFill" />
+            <view class="layout-thumb-label"><text>#{{idx+1}}</text></view>
+            <view class="layout-thumb-remove" onTap="removeLayoutImage" data-idx="{{idx}}"><text>×</text></view>
+          </view>
+          <view class="layout-add-btn">
+            <text class="up-icon">+</text>
+            <text class="up-text">添加更多</text>
+          </view>
+        </view>
+        <view a:else class="upload-placeholder">
+          <text class="up-icon">🖼️</text>
+          <text class="up-text">点击选择多张图片排版</text>
+        </view>
+      </view>
+    </view>
+    <view class="section-title"><text>列数</text></view>
+    <view class="chips-row">
+      <view class="chip {{layoutCols === 2 ? 'chip-active' : ''}}" onTap="setLayoutCols" data-v="2"><text>2列</text></view>
+      <view class="chip {{layoutCols === 4 ? 'chip-active' : ''}}" onTap="setLayoutCols" data-v="4"><text>4列</text></view>
+      <view class="chip {{layoutCols === 6 ? 'chip-active' : ''}}" onTap="setLayoutCols" data-v="6"><text>6列</text></view>
+    </view>
+    <view class="section-title"><text>行数</text></view>
+    <view class="chips-row">
+      <view class="chip {{layoutRows === 1 ? 'chip-active' : ''}}" onTap="setLayoutRows" data-v="1"><text>1行</text></view>
+      <view class="chip {{layoutRows === 2 ? 'chip-active' : ''}}" onTap="setLayoutRows" data-v="2"><text>2行</text></view>
+      <view class="chip {{layoutRows === 4 ? 'chip-active' : ''}}" onTap="setLayoutRows" data-v="4"><text>4行</text></view>
+    </view>
+    <view class="btn-primary" onTap="doLayout" a:if="{{layoutImages.length > 0 && !processing}}"><text>生成排版图</text></view>
+  </view>
+
+  <!-- ====== professional ====== -->
+  <view class="config-section" a:if="{{toolType === 'professional'}}">
+    <text class="colorize-note">支持真人职业形象照、简历头像和二次元职业形象照。默认生成肩宽头像，也可选择上半身职业照。</text>
+    <view a:if="{{photoSrc}}" class="id-type-pill"><text>已识别：{{imageTypeLabel}}</text></view>
+    <view class="section-title"><text>选择用途</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoPurposes}}" key="id" a:if="{{item.id === 'career_portrait' || item.id === 'resume' || item.id === 'anime_avatar' || item.id === 'creative_id_photo'}}" class="chip {{idPhotoPurpose === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoPurpose" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>选择规格</text></view>
+    <picker range="{{idPhotoSpecs}}" range-key="name" value="{{idPhotoSpecIndex}}" onChange="onIdSpecSelect">
+      <view class="picker-box"><text>{{idPhotoSpecName}}</text></view>
+    </picker>
+    <view class="section-title"><text>背景色</text></view>
+    <view class="color-grid">
+      <view a:for="{{bgColors}}" key="id" a:for-index="idx" class="color-item {{selBgIdx === idx ? 'color-active' : ''}}" style="background-color: {{item.hex}};" onTap="selectBg" data-idx="{{idx}}">
+        <text class="color-name" style="color: {{item.id === 'white' ? '#333' : '#fff'}};">{{item.name}}</text>
+        <text a:if="{{selBgIdx === idx}}" class="color-check">✓</text>
+      </view>
+    </view>
+    <input a:if="{{bgColors[selBgIdx].id === 'custom'}}" class="form-input id-custom-color" value="{{customBgHex}}" onInput="onCustomBgHexInput" placeholder="#1a73e8" />
+    <view class="section-title"><text>构图</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoCompositions}}" key="id" class="chip {{idPhotoComposition === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoComposition" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>增强等级</text></view>
+    <view class="chips-row">
+      <view a:for="{{idPhotoEnhanceOptions}}" key="id" class="chip {{idPhotoEnhance === item.id ? 'chip-active' : ''}}" onTap="setIdPhotoEnhance" data-id="{{item.id}}"><text>{{item.name}}</text></view>
+    </view>
+    <view class="section-title"><text>边缘处理</text></view>
+    <view style="display:flex; align-items:center; margin-bottom:12px;" onTap="onToggleHairRetouch">
+      <checkbox checked="{{hairRetouch}}" catchTap="onToggleHairRetouch" color="#1a73e8" />
+      <text style="margin-left:8px; font-size:13px; color:#555;">开启发丝精修（较慢，适合长发空隙穿透）</text>
+    </view>
+    <text class="colorize-note">创意版和二次元创意版不保证官方审核通过；官方用途请使用真人正面照片。</text>
+    <view class="btn-primary" onTap="doProfessional" a:if="{{photoSrc && !processing}}"><text>生成形象照</text></view>
+    <view class="action-row-btns" a:if="{{resultImage}}">
+      <button class="btn-secondary" onTap="choosePhoto">重新上传</button>
+    </view>
+  </view>
+
+  <!-- ====== collect ====== -->
+  <view class="config-section" a:if="{{toolType === 'collect'}}">
+    <view class="section-title"><text>证件照采集</text></view>
+    <view class="action-row-btns">
+      <view class="btn-secondary" onTap="doCollectCapture"><text>拍照</text></view>
+      <view class="btn-secondary" onTap="doCollectUpload"><text>上传</text></view>
+    </view>
+    <view class="upload-card" a:if="{{photoSrc}}">
+      <image class="upload-preview" src="{{photoSrc}}" mode="aspectFit" />
+    </view>
+    <view class="btn-primary" onTap="doCollectAdd" a:if="{{photoSrc}}"><text>添加到电子照列表</text></view>
+  </view>
+
+  <!-- Save -->
+  <view class="bottom-save" a:if="{{resultImage}}">
+    <view class="btn-primary" onTap="saveResult"><text>💾 保存到相册</text></view>
+  </view>
+
+  <view class="spacer"></view>
+
+  <!-- ====== 开发诊断面板 ====== -->
+  <view class="diag-panel" a:if="{{showDebugPanel && isDevelopEnv}}">
+    <view class="diag-header"><text>🔧 证件照开发诊断面板</text></view>
+    
+    <view class="diag-section-title"><text>🔌 服务基本配置</text></view>
+    <view class="diag-row"><text class="diag-label">API_BASE_URL:</text><text class="diag-val">{{diagApiBaseUrl}}</text></view>
+    <view class="diag-row"><text class="diag-label">ENABLE_AI:</text><text class="diag-val">{{diagEnableAi ? '开启' : '关闭'}}</text></view>
+    <view class="diag-row"><text class="diag-label">后端健康状态:</text><text class="diag-val">{{diagHealthStatus}}</text></view>
+    
+    <view class="diag-section-title"><text>⚙️ 功能调用诊断</text></view>
+    <view class="diag-row"><text class="diag-label">当前功能:</text><text class="diag-val">{{toolTitle}} ({{toolType}})</text></view>
+    <view class="diag-row"><text class="diag-label">请求 Method:</text><text class="diag-val">{{diagMethod}}</text></view>
+    <view class="diag-row"><text class="diag-label">请求 URL / Endpoint:</text><text class="diag-val">{{diagUrl}}</text></view>
+    <view class="diag-row"><text class="diag-label">请求 Params:</text><text class="diag-val">{{diagParams}}</text></view>
+    <view class="diag-row"><text class="diag-label">后端核心算法模式:</text><text class="diag-val diag-highlight">{{diagBackendMode}}</text></view>
+
+    <view class="diag-section-title"><text>📥 接口响应详情</text></view>
+    <view class="diag-row"><text class="diag-label">响应 success:</text><text class="diag-val">{{diagLastSuccess}}</text></view>
+    <view class="diag-row"><text class="diag-label">响应 message:</text><text class="diag-val">{{diagLastMessage}}</text></view>
+    <view class="diag-row"><text class="diag-label">智能质检得分:</text><text class="diag-val">{{diagScore}} 分</text></view>
+    <view class="diag-row"><text class="diag-label">输出文件体积:</text><text class="diag-val">{{diagActualKB}} KB</text></view>
+
+    <view class="diag-section-title"><text>📂 文件路径与比对</text></view>
+    <view class="diag-row"><text class="diag-label">原始图片临时路径:</text><text class="diag-val path-val">{{diagOriginalPath}}</text></view>
+    <view class="diag-row"><text class="diag-label">处理后输出路径:</text><text class="diag-val path-val">{{diagResultPath}}</text></view>
+    <view class="diag-row"><text class="diag-label">resultPath === originalPath:</text><text class="diag-val {{!diagResultDiffer ? 'warn-text' : 'success-text'}}">{{diagIsEqual}}</text></view>
+    
+    <!-- Bold Red Warning Block -->
+    <view a:if="{{!diagResultDiffer}}" class="diag-warn-bold"><text>
+      ⚠️ 结果仍为原图，处理未生效！
+    </text></view>
+    
+    <view class="diag-section-title"><text>🧪 接口一键测试</text></view>
+    <view class="diag-btns">
+      <button class="diag-btn" onTap="runDiagHealthCheck" size="mini">测试后端连接</button>
+      <button class="diag-btn" onTap="diagTestRemoveBg" size="mini">测试AI抠图</button>
+      <button class="diag-btn" onTap="diagTestChangeBg" size="mini">测试AI换底</button>
+      <button class="diag-btn" onTap="diagTestInpaint" size="mini">测试修复接口</button>
+      <button class="diag-btn" onTap="diagTestVerifyPhoto" size="mini">测试AI质检</button>
+    </view>
+  </view>
+</view>

@@ -42,6 +42,7 @@ from services.id_photo_v2 import (
     get_detail_source,
     prepare_detail_id_photo,
     prepare_id_photo_v2,
+    render_prepared_id_photo_foreground,
 )
 from services.heavy_task_queue import HeavyTaskBusyError, heavy_task_queue
 from services.hd_progress import begin_request, finish_request, get_request, normalize_request_id, update_request
@@ -60,6 +61,16 @@ from services.wechat_security import (
     WeChatSecurityError,
     WeChatSecurityService,
     evaluate_media_check_callback,
+)
+from services.alipay_auth import (
+    AlipayAuthConfigurationError,
+    AlipayAuthError,
+    AlipayAuthService,
+)
+from services.alipay_content_safety import (
+    AlipayContentSafetyConfigurationError,
+    AlipayContentSafetyError,
+    AliyunGreenContentSafetyService,
 )
 from id_photo_engines import get_engine_info, get_engine_runtime_tags
 
@@ -96,6 +107,8 @@ _detail_job_futures = {}
 _detail_job_executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="id-photo-detail")
 ID_PHOTO_DETAIL_MAX_ACTIVE = max(1, int(os.environ.get("ID_PHOTO_DETAIL_MAX_ACTIVE", "3")))
 wechat_security_service = WeChatSecurityService.from_env()
+alipay_auth_service = AlipayAuthService.from_env()
+alipay_content_safety_service = AliyunGreenContentSafetyService.from_env()
 content_safety_store = ContentSafetyStore(
     CONTENT_SECURITY_REGISTRY_PATH,
     CONTENT_SECURITY_STAGING_DIR,
@@ -365,10 +378,11 @@ def _sign_token_payload(payload_text):
     return hmac.new(AUTH_SECRET.encode("utf-8"), payload_text.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
-def _issue_user_token(user_id, openid="", provider="local_profile", profile=None):
+def _issue_user_token(user_id, openid="", platform_identity="", provider="local_profile", profile=None):
     payload = {
         "userId": user_id,
         "openid": openid or "",
+        "platformIdentity": platform_identity or "",
         "provider": provider,
         "iat": int(time.time()),
         "profile": profile or {},
@@ -408,6 +422,7 @@ def _require_user(request):
     return {
         "userId": str(payload.get("userId") or "").strip(),
         "openid": str(payload.get("openid") or "").strip(),
+        "platformIdentity": str(payload.get("platformIdentity") or "").strip(),
         "provider": str(payload.get("provider") or "").strip(),
     }
 
@@ -435,9 +450,24 @@ def _require_content_safety_user(request):
             401,
             STATUS_ERROR,
         )
-    if not user.get("openid"):
+    provider = user.get("provider")
+    if provider == "wechat_openid" and not user.get("openid"):
         raise ContentSafetyGateError(
             "CONTENT_SAFETY_OPENID_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    if provider == "alipay_user_id" and not user.get("platformIdentity"):
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_PLATFORM_IDENTITY_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    if provider not in {"wechat_openid", "alipay_user_id"}:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_PLATFORM_UNSUPPORTED",
             CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
             403,
             STATUS_ERROR,
@@ -447,7 +477,8 @@ def _require_content_safety_user(request):
 
 def _content_safety_public_base_url(request):
     configured = (
-        os.environ.get("WECHAT_CONTENT_SECURITY_PUBLIC_BASE_URL")
+        os.environ.get("CONTENT_SECURITY_PUBLIC_BASE_URL")
+        or os.environ.get("WECHAT_CONTENT_SECURITY_PUBLIC_BASE_URL")
         or os.environ.get("PUBLIC_BASE_URL")
         or ""
     ).strip().rstrip("/")
@@ -521,6 +552,39 @@ def _assert_verified_content_safety(request, security_check_id, image_bytes):
             403,
             STATUS_ERROR,
         )
+    return record
+
+
+def _assert_passed_content_safety_check(request, security_check_id):
+    user = _require_content_safety_user(request)
+    check_id = str(security_check_id or "").strip()
+    if not check_id:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_REQUIRED",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            428,
+            STATUS_ERROR,
+        )
+    record = content_safety_store.get_owned(check_id, user["userId"])
+    if not record:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_NOT_FOUND",
+            CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+            403,
+            STATUS_ERROR,
+        )
+    status = str(record.get("status") or STATUS_ERROR)
+    if status == STATUS_REJECT:
+        raise ContentSafetyGateError(
+            "CONTENT_SAFETY_REJECTED",
+            CONTENT_SAFETY_REJECTED_MESSAGE,
+            403,
+            status,
+        )
+    if status != STATUS_PASS:
+        code = "CONTENT_SAFETY_PENDING" if status == STATUS_PENDING else "CONTENT_SAFETY_UNAVAILABLE"
+        message = CONTENT_SAFETY_PENDING_MESSAGE if status == STATUS_PENDING else CONTENT_SAFETY_UNAVAILABLE_MESSAGE
+        raise ContentSafetyGateError(code, message, 503, status)
     return record
 
 
@@ -833,10 +897,72 @@ async def auth_login(request: Request):
         "success": True,
         "userId": user_id,
         "openidBound": bool(openid),
+        "identityBound": bool(openid),
         "provider": provider,
         "token": token,
         "userInfo": {
             "nickName": profile.get("nickName") or "微信用户",
+            "avatarUrl": profile.get("avatarUrl") or "",
+        },
+    }
+
+
+@app.post("/api/auth/alipay/login")
+async def auth_alipay_login(request: Request):
+    """Exchange an Alipay auth code for a server-signed, bound identity token."""
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    data = data if isinstance(data, dict) else {}
+    code = str(data.get("code") or "").strip()
+    profile = data.get("userInfo") if isinstance(data.get("userInfo"), dict) else {}
+    if not code:
+        return JSONResponse(status_code=401, content={
+            "success": False,
+            "code": "ALIPAY_AUTH_CODE_REQUIRED",
+            "message": "支付宝登录授权未完成，请重试。",
+        })
+    try:
+        exchanged = await asyncio.to_thread(alipay_auth_service.exchange_auth_code, code)
+    except AlipayAuthConfigurationError as exc:
+        print("[alipay-auth] configuration unavailable", {"reason": str(exc)}, flush=True)
+        return JSONResponse(status_code=503, content={
+            "success": False,
+            "code": "ALIPAY_AUTH_UNAVAILABLE",
+            "message": "支付宝登录服务暂不可用，请稍后重试。",
+        })
+    except AlipayAuthError as exc:
+        print("[alipay-auth] exchange failed", {"reason": str(exc)}, flush=True)
+        return JSONResponse(status_code=401, content={
+            "success": False,
+            "code": "ALIPAY_AUTH_FAILED",
+            "message": "支付宝登录授权失败，请重试。",
+        })
+
+    platform_identity = str(exchanged.get("userId") or "").strip()
+    if not platform_identity:
+        return JSONResponse(status_code=401, content={
+            "success": False,
+            "code": "ALIPAY_IDENTITY_REQUIRED",
+            "message": "支付宝登录授权失败，请重试。",
+        })
+    user_id = _normalize_user_id("alipay:" + platform_identity)
+    token = _issue_user_token(
+        user_id,
+        platform_identity=platform_identity,
+        provider="alipay_user_id",
+        profile=profile,
+    )
+    return {
+        "success": True,
+        "userId": user_id,
+        "openidBound": False,
+        "identityBound": True,
+        "provider": "alipay_user_id",
+        "token": token,
+        "userInfo": {
+            "nickName": profile.get("nickName") or "支付宝用户",
             "avatarUrl": profile.get("avatarUrl") or "",
         },
     }
@@ -889,10 +1015,21 @@ async def submit_content_security_image(
 
     suffix = _content_safety_suffix(upload)
     public_base_url = _content_safety_public_base_url(request)
+    provider = user.get("provider")
     try:
-        wechat_security_service.ensure_configured(require_callback=True)
-    except WeChatSecurityConfigurationError as exc:
-        print("[content-security] configuration unavailable", {"reason": str(exc)}, flush=True)
+        if provider == "wechat_openid":
+            wechat_security_service.ensure_configured(require_callback=True)
+        elif provider == "alipay_user_id":
+            alipay_content_safety_service.ensure_configured()
+        else:
+            raise ContentSafetyGateError(
+                "CONTENT_SAFETY_PLATFORM_UNSUPPORTED",
+                CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
+                403,
+                STATUS_ERROR,
+            )
+    except (WeChatSecurityConfigurationError, AlipayContentSafetyConfigurationError) as exc:
+        print("[content-security] configuration unavailable", {"provider": provider, "reason": str(exc)}, flush=True)
         raise ContentSafetyGateError(
             "CONTENT_SAFETY_UNAVAILABLE",
             CONTENT_SAFETY_UNAVAILABLE_MESSAGE,
@@ -917,23 +1054,54 @@ async def submit_content_security_image(
         purpose=purpose,
     )
     try:
-        submitted = await asyncio.to_thread(
-            wechat_security_service.check_image,
+        if provider == "wechat_openid":
+            submitted = await asyncio.to_thread(
+                wechat_security_service.check_image,
+                media_url,
+                user["openid"],
+            )
+            record = content_safety_store.mark_submitted(record["securityCheckId"], submitted["traceId"]) or record
+            print(
+                "[content-security] mediaCheckAsync submitted",
+                {
+                    "checkId": record["securityCheckId"],
+                    "traceIdHash": _wechat_callback_trace_hash(submitted["traceId"]),
+                    "purpose": purpose,
+                },
+                flush=True,
+            )
+            return JSONResponse(status_code=202, content=_content_safety_response(record))
+
+        decision = await asyncio.to_thread(
+            alipay_content_safety_service.check_image,
             media_url,
-            user["openid"],
+            record["securityCheckId"],
         )
-        record = content_safety_store.mark_submitted(record["securityCheckId"], submitted["traceId"]) or record
+        record = content_safety_store.mark_submitted(record["securityCheckId"], decision["traceId"]) or record
+        record = content_safety_store.mark_terminal(
+            record["securityCheckId"],
+            decision["status"],
+            decision["reason"],
+        ) or record
         print(
-            "[content-security] mediaCheckAsync submitted",
+            "[content-security] alipay image moderation completed",
             {
                 "checkId": record["securityCheckId"],
-                "traceIdHash": _wechat_callback_trace_hash(submitted["traceId"]),
+                "traceIdHash": _wechat_callback_trace_hash(decision["traceId"]),
+                "status": decision["status"],
                 "purpose": purpose,
             },
             flush=True,
         )
-        return JSONResponse(status_code=202, content=_content_safety_response(record))
-    except (WeChatSecurityConfigurationError, WeChatSecurityError) as exc:
+        if decision["status"] == STATUS_REJECT:
+            raise ContentSafetyGateError(
+                "CONTENT_SAFETY_REJECTED",
+                CONTENT_SAFETY_REJECTED_MESSAGE,
+                403,
+                STATUS_REJECT,
+            )
+        return JSONResponse(status_code=200, content=_content_safety_response(record))
+    except (WeChatSecurityConfigurationError, WeChatSecurityError, AlipayContentSafetyConfigurationError, AlipayContentSafetyError) as exc:
         content_safety_store.mark_terminal(record["securityCheckId"], STATUS_ERROR, "SUBMIT_FAILED")
         print(
             "[content-security] mediaCheckAsync failed",
@@ -1774,6 +1942,9 @@ async def id_photo_prepare(
             "detailReasons": quality.get("detailReasons") or [],
             "selectedModel": quality.get("finalSelectedModel") or actual_model,
             "detailFallbackUsed": False,
+            "foregroundUrl": f"/api/id-photo/prepared/{result['preparedId']}/foreground",
+            "foregroundWidth": int(result["spec"].get("width") or 0),
+            "foregroundHeight": int(result["spec"].get("height") or 0),
             "performance": performance,
             **timestamps,
             "engine": actual_engine,
@@ -1860,6 +2031,31 @@ async def id_photo_prepare(
             "code": "PREPARE_FAILED",
             "requestId": request_id,
             "message": f"人像预处理失败，请重新上传清晰正面照片。错误：{str(e)[:50]}"
+        })
+
+
+@app.get("/api/id-photo/prepared/{prepared_id}/foreground")
+async def id_photo_prepared_foreground(prepared_id: str, request: Request):
+    try:
+        payload = await asyncio.to_thread(render_prepared_id_photo_foreground, prepared_id)
+        return FileResponse(
+            payload["path"],
+            media_type="image/png",
+            filename=f"{prepared_id}.png",
+        )
+    except PortraitQualityError as qe:
+        return JSONResponse(status_code=qe.status_code, content={
+            "success": False,
+            "code": qe.quality.get("code") or qe.code,
+            "message": qe.quality.get("message") or str(qe),
+            "requestId": prepared_id,
+        })
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "code": "PREPARED_FOREGROUND_FAILED",
+            "message": str(exc),
+            "requestId": prepared_id,
         })
 
 
@@ -2619,6 +2815,14 @@ async def watermark_remove_v2(
     requestId: str = Form(""),
     smartExpand: str = Form("false"),
     maskDilationPx: int = Form(5),
+    sourceSecurityCheckId: str = Form(""),
+    edgeRoiMode: str = Form("false"),
+    roiX: int = Form(0),
+    roiY: int = Form(0),
+    roiWidth: int = Form(0),
+    roiHeight: int = Form(0),
+    sourceOriginalWidth: int = Form(0),
+    sourceOriginalHeight: int = Form(0),
     securityCheckId: str = Form(""),
 ):
     """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
@@ -2646,6 +2850,9 @@ async def watermark_remove_v2(
         })
         normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         stroke_request_parse_ms = int((time.perf_counter() - parse_started) * 1000)
+        source_check_id = str(sourceSecurityCheckId or "").strip()
+        if source_check_id:
+            _assert_passed_content_safety_check(request, source_check_id)
         upload_started = time.perf_counter()
         image_bytes = await _read_verified_image(image, request, securityCheckId)
         upload_save_ms = int((time.perf_counter() - upload_started) * 1000)
@@ -2683,6 +2890,14 @@ async def watermark_remove_v2(
             "queueActiveTaskTypeAtArrival": queue_state.get("activeTaskType"),
             "uploadSaveMs": upload_save_ms,
             "strokeRequestParseMs": stroke_request_parse_ms,
+            "edgeRoiMode": str(edgeRoiMode).lower() not in ("0", "false", "no", "off"),
+            "roiX": int(roiX or 0),
+            "roiY": int(roiY or 0),
+            "roiWidth": int(roiWidth or 0),
+            "roiHeight": int(roiHeight or 0),
+            "sourceOriginalWidth": int(sourceOriginalWidth or 0),
+            "sourceOriginalHeight": int(sourceOriginalHeight or 0),
+            "sourceSecurityCheckIdPresent": bool(source_check_id),
             "saveOutputMs": save_output_ms,
             "responseWriteMs": 0,
             "totalServerMs": int((time.perf_counter() - request_started) * 1000),

@@ -8,13 +8,17 @@ that chooses the endpoint and result currently being downloaded.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
+import hmac
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -42,6 +46,8 @@ CHAIN_MD = FINAL / "watermark-hd-chain-report.md"
 CHAIN_JSON = FINAL / "watermark-hd-chain-report.json"
 REGRESSION_MD = WATERMARK_REPORTS / "watermark-regression-report.md"
 REGRESSION_JSON = WATERMARK_REPORTS / "watermark-regression-report.json"
+VERIFY_USER_ID = "verify-watermark-user"
+VERIFY_OPENID = "openid-verify-watermark"
 
 
 @dataclass
@@ -62,6 +68,98 @@ def _sha256(data: bytes) -> str:
 
 def _hash_file(path: Path) -> str:
     return _sha256(path.read_bytes())
+
+
+def _utc_iso(epoch: float | None = None) -> str:
+    value = time.time() if epoch is None else epoch
+    return datetime.fromtimestamp(value, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _runtime_dir() -> Path:
+    return Path(os.environ.get("ID_PHOTO_RUNTIME_DIR") or (Path(tempfile.gettempdir()) / "id_photo_server")).resolve()
+
+
+def _auth_secret() -> str:
+    configured = os.environ.get("ID_PHOTO_AUTH_SECRET")
+    if configured:
+        return configured
+    return hashlib.sha256(("id-photo-auth:" + os.path.abspath(str(_runtime_dir()))).encode("utf-8")).hexdigest()
+
+
+def _b64url_encode(data: str) -> str:
+    return base64.urlsafe_b64encode(data.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def _issue_verify_token() -> str:
+    payload = {
+        "userId": VERIFY_USER_ID,
+        "openid": VERIFY_OPENID,
+        "provider": "watermark-verifier",
+        "iat": int(time.time()),
+        "profile": {"nickName": "watermark verifier"},
+    }
+    payload_text = _b64url_encode(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+    signature = hmac.new(_auth_secret().encode("utf-8"), payload_text.encode("utf-8"), hashlib.sha256).hexdigest()
+    return payload_text + "." + signature
+
+
+def _auth_headers() -> dict[str, str]:
+    token = _issue_verify_token()
+    return {
+        "Authorization": "Bearer " + token,
+        "X-User-Token": token,
+    }
+
+
+def seed_passed_content_safety(sample: Sample) -> dict[str, Any]:
+    """Seed a local PASS record so this regression still exercises the backend Gate.
+
+    The content-security callback itself is covered by the dedicated WeChat
+    security verifier. This watermark verifier needs a real PASS
+    securityCheckId so the image-processing endpoints do not correctly fail
+    closed before reaching the watermark engines.
+    """
+    now = time.time()
+    image_bytes = sample.image_path.read_bytes()
+    check_id = "verify_watermark_" + hashlib.sha256((sample.name + str(now)).encode("utf-8")).hexdigest()[:24]
+    runtime_dir = _runtime_dir()
+    registry_path = runtime_dir / "content_security_registry.json"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        existing = json.loads(registry_path.read_text(encoding="utf-8"))
+        records = existing.get("records") if isinstance(existing, dict) else existing
+        if not isinstance(records, list):
+            records = []
+    except Exception:
+        records = []
+    record = {
+        "securityCheckId": check_id,
+        "safeAssetId": check_id,
+        "imageId": "verify_" + hashlib.sha256(image_bytes).hexdigest()[:16],
+        "userId": VERIFY_USER_ID,
+        "userOpenId": VERIFY_OPENID,
+        "sha256": hashlib.sha256(image_bytes).hexdigest(),
+        "imageBytes": len(image_bytes),
+        "purpose": "watermark_removal",
+        "mediaUrl": "local-verifier://watermark/" + sample.name,
+        "stagingPath": "",
+        "status": "PASS",
+        "traceId": "local-verifier-" + check_id,
+        "statusReason": "LOCAL_WATERMARK_VERIFIER_PASS",
+        "createdAt": _utc_iso(now),
+        "createdAtEpoch": now,
+        "updatedAt": _utc_iso(now),
+        "updatedAtEpoch": now,
+        "expiresAtEpoch": now + 1800,
+    }
+    records.append(record)
+    registry_path.write_text(json.dumps({"records": records}, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {
+        "securityCheckId": check_id,
+        "registryPath": str(registry_path),
+        "imageBytes": len(image_bytes),
+        "sha256": record["sha256"],
+    }
 
 
 def _full_url(base_url: str, image_url: str) -> str:
@@ -115,6 +213,8 @@ def ensure_backend(base_url: str) -> dict[str, Any]:
         "8000",
     ]
     try:
+        env = os.environ.copy()
+        env.setdefault("ID_PHOTO_RUNTIME_DIR", str(_runtime_dir()))
         flags = 0
         if os.name == "nt":
             flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
@@ -124,6 +224,7 @@ def ensure_backend(base_url: str) -> dict[str, Any]:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=flags,
+            env=env,
         )
         status["started"] = True
         status["pid"] = process.pid
@@ -247,7 +348,7 @@ def generate_samples() -> list[Sample]:
     return samples
 
 
-def post_chain(base_url: str, mode: str, sample: Sample) -> dict[str, Any]:
+def post_chain(base_url: str, mode: str, sample: Sample, safety: dict[str, Any], headers: dict[str, str]) -> dict[str, Any]:
     endpoint = {
         "manual": "/api/watermark/manual-remove",
         "quick": "/api/watermark/quick-remove",
@@ -267,7 +368,9 @@ def post_chain(base_url: str, mode: str, sample: Sample) -> dict[str, Any]:
                 "engine": "hd" if mode == "hd" else f"opencv_{mode}",
                 "strength": "medium",
                 "preserveDetail": "true",
+                "securityCheckId": safety["securityCheckId"],
             },
+            headers=headers,
             timeout=180 if mode == "hd" else 90,
         )
     elapsed = int((time.perf_counter() - started) * 1000)
@@ -451,17 +554,25 @@ def check_health(base_url: str) -> dict[str, Any]:
 def run_sample_matrix(base_url: str, samples: list[Sample]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     failures: list[str] = []
+    headers = _auth_headers()
     for sample in samples:
+        safety = seed_passed_content_safety(sample)
         row: dict[str, Any] = {
             "sample": sample.name,
             "source": str(sample.image_path),
             "mask": str(sample.mask_path),
+            "security": {
+                "mode": "localPassRecordForWatermarkRegression",
+                "securityCheckId": safety["securityCheckId"],
+                "registryPath": safety["registryPath"],
+                "imageBytes": safety["imageBytes"],
+            },
             "modes": {},
             "comparisons": {},
             "failures": [],
         }
         for mode in ("manual", "quick", "hd"):
-            response = post_chain(base_url, mode, sample)
+            response = post_chain(base_url, mode, sample, safety, headers)
             output_path = MODE_DIRS[mode] / f"{sample.name}_{mode}.jpg"
             download = download_result(base_url, response, output_path)
             quality_path = MODE_DIRS[mode] / f"{sample.name}_{mode}.json"

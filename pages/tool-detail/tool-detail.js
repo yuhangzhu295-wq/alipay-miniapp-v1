@@ -10,6 +10,7 @@ var apiConfig = require('../../utils/apiConfig.js');
 var aiImageApi = require('../../utils/aiImageApi.js');
 var professionalApi = require('../../utils/professionalApi.js');
 var idPhotoEntry = require('../../utils/idPhotoEntry.js');
+var edgeCompute = require('../../utils/edgeCompute.js');
 
 var TOOL_CONFIGS = {
   verifyPhoto: { title: 'AI 证件照质检', icon: '🔍' },
@@ -1364,7 +1365,7 @@ Page({
     
     // 小程序内展示宽度，设计为 640rpx
     var displayContainerW = Math.floor(winW * 640 / 750);
-    var displayContainerH = Math.max(280, Math.floor(winH * 0.52));
+    var displayContainerH = Math.min(420, Math.max(260, Math.floor(winH * 0.38)));
     
     // 重置异常状态并开启 loading
     that.setData({
@@ -1774,66 +1775,55 @@ Page({
     var apiCall = wmApi.removeV2;
     var endpoint = '/api/watermark/remove-v2';
     var backendMode = modeKey === 'hd' ? 'hd' : (modeKey === 'quick' ? 'opencv_quick' : 'opencv_manual');
+    var edgeRoi = null;
+    try {
+      edgeRoi = edgeCompute.createWatermarkRoiPackage(strokeInfo);
+      console.log('[watermark-edge-roi]', edgeRoi || {});
+    } catch (roiErr) {
+      console.warn('[watermark-edge-roi] compute failed:', roiErr);
+    }
     that.setData({
       processing: true,
       processingText: quality === 'hd' ? '正在上传图片，已等待0秒' : '处理中...'
     });
+    var edgeRoiInfo = edgeRoi && edgeRoi.route === 'edge' && edgeRoi.bbox ? edgeRoi : null;
+    var edgeAttempted = false;
+    var cloudAttempted = false;
 
-    apiCall({
-      imagePath: that.data.photoSrc,
-      strokeInfo: strokeInfo,
-      quality: modeKey,
-      strength: that.data.wmStrength,
-      preserveDetail: true,
-      onStatus: quality === 'hd' ? function(status) {
-        if (that.data.processing && status && status.text) {
-          that.setData({ processingText: status.text });
-        }
-      } : null
-    }).then(function(res) {
-      if (!res.tempFilePath) {
-        that.setData({ processing: false });
-        wx.showModal({
-          title: '处理失败',
-          content: '处理失败，未生成结果图。',
-          showCancel: false
-        });
-        return;
-      }
+    function buildPerformancePatch(clientPerformance) {
+      return Object.assign({}, clientPerformance || {}, {
+        edgeRoiRoute: edgeRoi && edgeRoi.route || 'cloud',
+        originalPixels: edgeRoi && edgeRoi.originalPixels || 0,
+        roiPixels: edgeRoi && edgeRoi.roiPixels || 0,
+        pixelReductionRatio: edgeRoi && edgeRoi.pixelReductionRatio || 0
+      });
+    }
 
-      var remoteUrl = res.previewUrl || res.resultUrl || '';
-      var actualMode = res.mode || modeKey;
-      var actualEngine = res.engine || backendMode;
-      if (quality === 'hd' && (res.fallbackUsed || actualEngine === 'opencv_hd_fallback')) {
-        var fallbackErr = new Error('高清修复模型未就绪，请启动本地 IOPaint/LaMa 服务后重试。当前可先使用快速模式。');
-        fallbackErr.debug = res.debug || {};
-        fallbackErr.fallbackAvailable = true;
-        throw fallbackErr;
-      }
+    function finishSuccess(res, finalTempPath, actualMode, actualEngine, remoteUrl, extraDebug) {
       var resultMessage = actualMode === 'hd'
         ? '已使用高清修复模式'
         : (actualMode === 'quick' ? '已使用快速模式' : '已使用手动擦除模式');
+      var finalResultPath = finalTempPath || res.tempFilePath;
       var statePatch = {
         processing: false,
         processingText: '处理中...',
-        resultImage: res.tempFilePath,
-        wmBackendDebug: res.debug || {},
-        wmClientPerformance: res.clientPerformance || {},
+        resultImage: finalResultPath,
+        wmBackendDebug: extraDebug || res.debug || {},
+        wmClientPerformance: buildPerformancePatch(res.clientPerformance || {}),
         wmResultQuality: quality,
         wmResultModeLabel: that.getWatermarkModeLabel(actualMode),
         wmResultMessage: resultMessage,
         currentWatermarkMode: actualMode,
         currentResultUrl: remoteUrl,
-        currentResultLocalPath: res.tempFilePath,
+        currentResultLocalPath: finalResultPath,
         currentEngine: actualEngine,
         currentOutputPath: res.outputPath || '',
         currentFileHash: res.fileHash || ''
       };
       statePatch[actualMode + 'ResultUrl'] = res.resultUrl || remoteUrl;
-      statePatch[actualMode + 'ResultLocalPath'] = res.tempFilePath;
+      statePatch[actualMode + 'ResultLocalPath'] = finalResultPath;
       that.setData(statePatch);
       wx.showToast({ title: actualMode === 'hd' ? '高清修复完成' : '去水印成功', icon: 'success' });
-
       that.updateDiagInfo({
         method: 'POST',
         url: endpoint,
@@ -1844,15 +1834,20 @@ Page({
           radius: quality === 'fast' ? that.getWmInpaintRadius() : '-',
           maskSize: maskInfo.width + 'x' + maskInfo.height,
           maskNonZeroPixels: maskInfo.nonZeroPixels,
-          maskRatio: maskInfo.maskRatio
+          maskRatio: maskInfo.maskRatio,
+          edgeRoiRoute: edgeRoi && edgeRoi.route || 'cloud',
+          roiPixels: edgeRoi && edgeRoi.roiPixels || 0,
+          pixelReductionRatio: edgeRoi && edgeRoi.pixelReductionRatio || 0
         },
         success: true,
         message: res.message || (quality === 'hd' ? '高清修复成功' : '手动去水印成功'),
         original: that.data.photoSrc,
-        result: res.resultUrl || res.tempFilePath,
+        result: res.resultUrl || finalResultPath,
         backendMode: res.engine || res.backendMode || backendMode
       });
-    }).catch(function(err) {
+    }
+
+    function finishFailure(err) {
       console.error('[watermark] removeWatermark API request failed:', err);
       var debugMsg = (err && err.message) || '处理失败，未生成结果图。';
       var userMsg = quality === 'hd'
@@ -1879,12 +1874,111 @@ Page({
           radius: quality === 'fast' ? that.getWmInpaintRadius() : '-',
           maskSize: maskInfo.width + 'x' + maskInfo.height,
           maskNonZeroPixels: maskInfo.nonZeroPixels,
-          maskRatio: maskInfo.maskRatio
+          maskRatio: maskInfo.maskRatio,
+          edgeRoiRoute: edgeRoi && edgeRoi.route || 'cloud',
+          roiPixels: edgeRoi && edgeRoi.roiPixels || 0,
+          pixelReductionRatio: edgeRoi && edgeRoi.pixelReductionRatio || 0
         },
         success: false,
         message: userMsg,
         backendMode: backendMode
       });
+    }
+
+    function submitCloudPath() {
+      cloudAttempted = true;
+      apiCall({
+        imagePath: that.data.photoSrc,
+        sourceImagePath: that.data.photoSrc,
+        strokeInfo: strokeInfo,
+        quality: modeKey,
+        strength: that.data.wmStrength,
+        preserveDetail: true,
+        onStatus: quality === 'hd' ? function(status) {
+          if (that.data.processing && status && status.text) {
+            that.setData({ processingText: status.text });
+          }
+        } : null
+      }).then(function(res) {
+        if (!res.tempFilePath) {
+          throw new Error('处理失败，未生成结果图。');
+        }
+        var remoteUrl = res.previewUrl || res.resultUrl || '';
+        var actualMode = res.mode || modeKey;
+        var actualEngine = res.engine || backendMode;
+        if (quality === 'hd' && (res.fallbackUsed || actualEngine === 'opencv_hd_fallback')) {
+          var fallbackErr = new Error('高清修复模型未就绪，请启动本地 IOPaint/LaMa 服务后重试。当前可先使用快速模式。');
+          fallbackErr.debug = res.debug || {};
+          fallbackErr.fallbackAvailable = true;
+          throw fallbackErr;
+        }
+        finishSuccess(res, res.tempFilePath, actualMode, actualEngine, remoteUrl, res.debug || {});
+      }).catch(function(err) {
+        finishFailure(err);
+      });
+    }
+
+    if (!edgeRoiInfo) {
+      submitCloudPath();
+      return;
+    }
+
+    edgeAttempted = true;
+    edgeCompute.cropImageRegion({
+      imagePath: that.data.photoSrc,
+      roi: edgeRoiInfo.bbox,
+      outputType: 'png'
+    }).then(function(roiImagePath) {
+      return apiCall({
+        imagePath: roiImagePath,
+        sourceImagePath: that.data.photoSrc,
+        strokeInfo: edgeRoiInfo.roiStrokeInfo || strokeInfo,
+        quality: modeKey,
+        strength: that.data.wmStrength,
+        preserveDetail: true,
+        edgeRoiMode: true,
+        roiX: edgeRoiInfo.bbox.x,
+        roiY: edgeRoiInfo.bbox.y,
+        roiWidth: edgeRoiInfo.bbox.width,
+        roiHeight: edgeRoiInfo.bbox.height,
+        sourceOriginalWidth: maskInfo.width,
+        sourceOriginalHeight: maskInfo.height,
+        onStatus: quality === 'hd' ? function(status) {
+          if (that.data.processing && status && status.text) {
+            that.setData({ processingText: status.text });
+          }
+        } : null
+      }).then(function(res) {
+        if (!res.tempFilePath) {
+          throw new Error('处理失败，未生成结果图。');
+        }
+        var remoteUrl = res.previewUrl || res.resultUrl || '';
+        var actualMode = res.mode || modeKey;
+        var actualEngine = res.engine || backendMode;
+        if (quality === 'hd' && (res.fallbackUsed || actualEngine === 'opencv_hd_fallback')) {
+          var fallbackErr = new Error('高清修复模型未就绪，请启动本地 IOPaint/LaMa 服务后重试。当前可先使用快速模式。');
+          fallbackErr.debug = res.debug || {};
+          fallbackErr.fallbackAvailable = true;
+          throw fallbackErr;
+        }
+        return edgeCompute.pasteRoiBack({
+          baseImagePath: that.data.photoSrc,
+          roiImagePath: res.tempFilePath,
+          roi: edgeRoiInfo.bbox,
+          baseWidth: maskInfo.width,
+          baseHeight: maskInfo.height,
+          outputType: 'png'
+        }).then(function(finalTempPath) {
+          finishSuccess(res, finalTempPath, actualMode, actualEngine, remoteUrl, res.debug || {});
+        }).catch(function(pasteErr) {
+          pasteErr = pasteErr || new Error('ROI 贴回失败');
+          console.warn('[watermark-edge-roi] paste failed, fallback to cloud:', pasteErr);
+          submitCloudPath();
+        });
+      });
+    }).catch(function(err) {
+      console.warn('[watermark-edge-roi] crop failed, fallback to cloud:', err);
+      submitCloudPath();
     });
   },
 
