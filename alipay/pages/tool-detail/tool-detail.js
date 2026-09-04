@@ -12,6 +12,7 @@ var aiImageApi = require('../../utils/aiImageApi.js');
 var professionalApi = require('../../utils/professionalApi.js');
 var idPhotoEntry = require('../../utils/idPhotoEntry.js');
 var edgeCompute = require('../../utils/edgeCompute.js');
+var canvasAdapter = require('../../utils/platform/canvasAdapter.js');
 
 var TOOL_CONFIGS = {
   verifyPhoto: { title: 'AI 证件照质检', icon: '🔍' },
@@ -1352,7 +1353,10 @@ Page({
   
   initWmCanvas: function() {
     var that = this;
+    if (that._wmCanvasInitializing) return;
+    that._wmCanvasInitializing = true;
     if (!that.data.photoSrc || that.data.toolType !== 'removeWatermark') {
+      that._wmCanvasInitializing = false;
       console.warn('[watermark] initWmCanvas skipped: photoSrc is empty or toolType is not removeWatermark');
       return;
     }
@@ -1381,6 +1385,7 @@ Page({
     var watchdog = setTimeout(function() {
       if (initSucceeded) return;
       isAborted = true;
+      that._wmCanvasInitializing = false;
       console.error('[watermark] initCanvas failed: 8s timeout triggered');
       wx.hideLoading();
       that.setData({
@@ -1399,18 +1404,14 @@ Page({
       
       console.log('[watermark] polling canvas node. attempt:', attempt);
       
-      // Scope selector query with in(that) for absolute node location stability
-      var query = wx.createSelectorQuery().in(that);
-      query.select('#wmCanvas').fields({ node: true, size: true });
-      query.exec(function(res) {
+      // Alipay Canvas 2D nodes are obtained through the platform adapter.
+      canvasAdapter.getCanvas2D(that, 'wmCanvas').then(function(canvasNode) {
         if (isAborted || initSucceeded) return;
-
-        if (res && res[0] && res[0].node) {
-          console.log('[watermark] canvas node found successfully on attempt', attempt);
+        if (canvasNode && canvasNode.canvas) {
+          console.log('[watermark] Alipay canvas node found successfully on attempt', attempt);
           initSucceeded = true;
           clearTimeout(watchdog);
-          
-          var displayCanvas = res[0].node;
+          var displayCanvas = canvasNode.canvas;
           var wmCanvas = require('../../utils/watermarkCanvas.js');
           
           wmCanvas.initCanvases({
@@ -1423,6 +1424,7 @@ Page({
           }).then(function(canvasInfo) {
             console.log('[watermark] initCanvases resolved successfully:', canvasInfo);
             wx.hideLoading();
+            that._wmCanvasInitializing = false;
             that.setData({
               wmDisplayWidth: canvasInfo.displayW,
               wmDisplayHeight: canvasInfo.displayH,
@@ -1442,6 +1444,7 @@ Page({
           }).catch(function(err) {
             console.error('[watermark] initCanvases promise rejected:', err);
             wx.hideLoading();
+            that._wmCanvasInitializing = false;
             that.setData({
               wmCanvasInitFailed: true
             });
@@ -1458,11 +1461,23 @@ Page({
             console.error('[watermark] canvas node polling failed after 20 attempts');
             clearTimeout(watchdog);
             wx.hideLoading();
+            that._wmCanvasInitializing = false;
             that.setData({
               wmCanvasInitFailed: true
             });
             wx.showToast({ title: '找不到画布节点', icon: 'none' });
           }
+        }
+      }).catch(function(err) {
+        console.log('[watermark] Alipay Canvas node not ready. attempt:', attempt, err && err.message);
+        if (attempt < 20) {
+          setTimeout(function() { pollQuery(attempt + 1); }, 250);
+        } else {
+          clearTimeout(watchdog);
+          wx.hideLoading();
+          that._wmCanvasInitializing = false;
+          that.setData({ wmCanvasInitFailed: true });
+          wx.showToast({ title: '找不到画布节点', icon: 'none' });
         }
       });
     }

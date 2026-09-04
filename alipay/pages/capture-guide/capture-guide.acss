@@ -5,7 +5,8 @@
 }
 
 .content {
-  padding: 24rpx 24rpx 154rpx;
+  padding: 24rpx;
+  padding-bottom: 154rpx;
 }
 
 .section-title {
@@ -26,9 +27,11 @@
 
 .pose-card {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .pose-image {
+  flex-shrink: 0;
   width: 168rpx;
   height: 224rpx;
   border-radius: 8rpx;
@@ -36,6 +39,9 @@
 }
 
 .pose-list {
+  flex: 1;
+  min-width: 0;
+  margin-left: 22rpx;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -50,6 +56,8 @@
 }
 
 .step {
+  flex-shrink: 0;
+  margin-right: 10rpx;
   width: 30rpx;
   height: 30rpx;
   border-radius: 50%;
@@ -62,6 +70,8 @@
 
 .pose-note,
 .purpose-note {
+  width: 100%;
+  margin-top: 22rpx;
   display: flex;
   align-items: center;
   padding: 16rpx;
@@ -79,6 +89,8 @@
 }
 
 .note-icon {
+  flex-shrink: 0;
+  margin-right: 12rpx;
   height: 30rpx;
   border: 2rpx solid #2f7df6;
   border-radius: 50%;
@@ -106,10 +118,13 @@
 }
 
 .label {
+  width: 136rpx;
+  flex-shrink: 0;
   color: #667085;
 }
 
 .color-list {
+  flex: 1;
   display: flex;
   flex-wrap: wrap;
   padding: 12rpx 0;
@@ -118,6 +133,7 @@
 .color-option {
   display: flex;
   align-items: center;
+  margin: 0 14rpx 14rpx 0;
 }
 
 .color-dot {
@@ -147,6 +163,7 @@
 }
 
 .action-button {
+  width: 48%;
   height: 88rpx;
   border-radius: 8rpx;
   display: flex;
@@ -158,6 +175,7 @@
 }
 
 .album-button {
+  margin-right: 18rpx;
   border: 2rpx solid #2f7df6;
   background: #ffffff;
   color: #2f7df6;
@@ -173,15 +191,4 @@
 }
 
 
-/* Alipay layout compatibility: WX grid/gap fallback */
-.tips-card,
-.spec-card,
-.action-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
-.action-btn {
-  width: 48.5%;
-  flex-shrink: 0;
-}
+/* Alipay flex equivalents for the WeChat grid and gap layout. */

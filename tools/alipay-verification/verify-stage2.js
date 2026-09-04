@@ -172,7 +172,7 @@ function loginIdentityChecks() {
 }
 
 function main() {
-  const wechatBaseSha = git(['rev-parse', 'HEAD']);
+  const candidateSha = git(['rev-parse', 'HEAD']);
   const pageMap = buildPageMap();
   const buttonMatrix = pageMap.flatMap((item) => item.exists ? extractPageHandlers(item.wechatPage) : []);
   const wxApis = extractWxApis();
@@ -187,33 +187,34 @@ function main() {
   const summary = {
     generatedAt: new Date().toISOString(),
     ALIPAY_PROJECT_PATH: ALIPAY_ROOT,
-    WECHAT_BASE_SHA: wechatBaseSha,
+    CANDIDATE_SHA: candidateSha,
     ALIPAY_PAGE_COUNT: (readJson(path.join(ALIPAY_ROOT, 'app.json')).pages || []).length,
     WECHAT_PAGE_COUNT: (readJson(path.join(ROOT, 'app.json')).pages || []).length,
     MISSING_PAGE_COUNT: pageMap.filter((item) => !item.exists || item.migrationStatus !== 'PASS').length,
-    UI_HOME_PASS: Object.values(home).every((item) => item === 'PASS') ? 'PASS' : 'FAIL',
-    UI_TOOL_PASS: pageMap.some((item) => item.wechatPage === 'pages/tools/tools' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
-    UI_ID_PHOTO_PASS: pageMap.some((item) => item.wechatPage === 'pages/generate/generate' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
-    UI_WATERMARK_PASS: longImage.previewHeightCapped && longImage.actionButtonOutsideCanvas && longImage.canvasContainerOverflowHidden ? 'PASS' : 'FAIL',
-    UI_PHOTOS_PASS: pageMap.some((item) => item.wechatPage === 'pages/photos/photos' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
-    UI_PROFILE_PASS: pageMap.some((item) => item.wechatPage === 'pages/profile/profile' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
-    UI_TABBAR_PASS: readJson(path.join(ALIPAY_ROOT, 'app.json')).tabBar && readJson(path.join(ALIPAY_ROOT, 'app.json')).tabBar.items.length === 4 ? 'PASS' : 'FAIL',
+    UI_HOME_STATIC_PASS: Object.values(home).every((item) => item === 'PASS') ? 'PASS' : 'FAIL',
+    UI_TOOL_STATIC_PASS: pageMap.some((item) => item.wechatPage === 'pages/tools/tools' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
+    UI_ID_PHOTO_STATIC_PASS: pageMap.some((item) => item.wechatPage === 'pages/generate/generate' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
+    UI_WATERMARK_STATIC_PASS: longImage.previewHeightCapped && longImage.actionButtonOutsideCanvas && longImage.canvasContainerOverflowHidden ? 'PASS' : 'FAIL',
+    UI_PHOTOS_STATIC_PASS: pageMap.some((item) => item.wechatPage === 'pages/photos/photos' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
+    UI_PROFILE_STATIC_PASS: pageMap.some((item) => item.wechatPage === 'pages/profile/profile' && item.migrationStatus === 'PASS') ? 'PASS' : 'FAIL',
+    UI_TABBAR_STATIC_PASS: readJson(path.join(ALIPAY_ROOT, 'app.json')).tabBar && readJson(path.join(ALIPAY_ROOT, 'app.json')).tabBar.items.length === 4 ? 'PASS' : 'FAIL',
     LAYOUT_OVERFLOW_COUNT: unsupportedAcss.length,
     TEXT_OVERFLOW_COUNT: 'NOT_RUN',
     MINI_PROJECT_UNKNOWN_CONFIG_WARNING: miniProject.unknownConfig ? 'FAIL' : 'PASS',
     WX_API_LEFT_IN_BUSINESS_CODE: uncoveredApis.length,
     WX_API_UNCOVERED: uncoveredApis,
     BUTTON_HANDLER_MISSING_COUNT: buttonMatrix.filter((item) => !item.pass).length,
-    LONG_IMAGE_UI_PASS: longImage.previewHeightCapped && longImage.actionButtonOutsideCanvas && longImage.canvasContainerOverflowHidden ? 'PASS' : 'FAIL',
+    LONG_IMAGE_UI_STATIC_PASS: longImage.previewHeightCapped && longImage.actionButtonOutsideCanvas && longImage.canvasContainerOverflowHidden ? 'PASS' : 'FAIL',
     LOGIN_CODE_REVIEW_PASS: !login.hardcodedUserIdFound && !login.hardcodedTokenFound && !login.fakeLoginFound && login.alipayAuthCodePathPresent ? 'PASS' : 'FAIL',
     HARDCODED_USER_ID_FOUND: login.hardcodedUserIdFound,
     HARDCODED_TOKEN_FOUND: login.hardcodedTokenFound,
     USER_PHOTO_ISOLATION_STATIC_PASS: !login.hardcodedUserIdFound && !login.hardcodedTokenFound ? 'PASS' : 'FAIL',
-    FULL_UI_PASS: pageMap.every((item) => item.migrationStatus === 'PASS') && Object.values(home).every((item) => item === 'PASS') && unsupportedAcss.length === 0 && uncoveredApis.length === 0 && buttonMatrix.every((item) => item.pass) ? 'PASS' : 'FAIL',
+    FULL_UI_STATIC_PARITY_PASS: pageMap.every((item) => item.migrationStatus === 'PASS') && Object.values(home).every((item) => item === 'PASS') && unsupportedAcss.length === 0 && uncoveredApis.length === 0 && buttonMatrix.every((item) => item.pass) ? 'PASS' : 'FAIL',
+    FULL_UI_RUNTIME_PASS: 'NOT_RUN',
     LOCAL_FULL_BUSINESS_PASS: 'NOT_RUN',
     WECHAT_CODE_CHANGED_BY_ALIPAY: false,
     ALIPAY_APP_ID_CONFIGURED: !!(miniProject.appid || (miniProject.unknownConfig && miniProject.unknownConfig.appid)),
-    MINIDEV_AUTHENTICATED: 'PASS',
+    MINIDEV_REMOTE_DEBUG: 'NOT_RUN',
     ALIPAY_PREVIEW_QR_GENERATED: 'NOT_RUN'
   };
 
@@ -225,11 +226,12 @@ function main() {
   writeText(path.join(REPORT_DIR, 'ui-regression-final.md'), [
     '# Alipay UI regression check',
     '',
-    `- WECHAT_BASE_SHA: ${wechatBaseSha}`,
+    `- CANDIDATE_SHA: ${candidateSha}`,
     `- ALIPAY_PROJECT_PATH: ${ALIPAY_ROOT}`,
-    `- UI_HOME_PASS: ${summary.UI_HOME_PASS}`,
-    `- UI_WATERMARK_PASS: ${summary.UI_WATERMARK_PASS}`,
-    `- UI_TABBAR_PASS: ${summary.UI_TABBAR_PASS}`,
+    `- UI_HOME_STATIC_PASS: ${summary.UI_HOME_STATIC_PASS}`,
+    `- UI_WATERMARK_STATIC_PASS: ${summary.UI_WATERMARK_STATIC_PASS}`,
+    `- UI_TABBAR_STATIC_PASS: ${summary.UI_TABBAR_STATIC_PASS}`,
+    `- FULL_UI_RUNTIME_PASS: ${summary.FULL_UI_RUNTIME_PASS}`,
     `- LAYOUT_OVERFLOW_COUNT: ${summary.LAYOUT_OVERFLOW_COUNT}`,
     `- WX_API_LEFT_IN_BUSINESS_CODE: ${summary.WX_API_LEFT_IN_BUSINESS_CODE}`,
     `- BUTTON_HANDLER_MISSING_COUNT: ${summary.BUTTON_HANDLER_MISSING_COUNT}`,
@@ -245,7 +247,7 @@ function main() {
   ].join('\n'));
 
   console.log(JSON.stringify(summary, null, 2));
-  if (summary.FULL_UI_PASS !== 'PASS') process.exitCode = 1;
+  if (summary.FULL_UI_STATIC_PARITY_PASS !== 'PASS') process.exitCode = 1;
 }
 
 main();

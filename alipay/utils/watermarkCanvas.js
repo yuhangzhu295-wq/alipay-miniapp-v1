@@ -1,4 +1,5 @@
 var wx = require('./platform/alipayWxCompat.js');
+var canvasAdapter = require('./platform/canvasAdapter.js');
 /**
  * 图片去水印 Canvas 画笔与仿制图章核心状态管理器
  */
@@ -95,11 +96,11 @@ function initCanvases(params) {
             console.log('[watermark] stroke transport mode: full-size offscreen canvases disabled');
           } else {
           console.log('[watermark] creating offscreen maskCanvas, size:', imgW, 'x', imgH);
-          maskCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
+          maskCanvasNode = canvasAdapter.createOffscreenCanvas(imgW, imgH);
           maskContext = maskCanvasNode.getContext('2d');
 
           console.log('[watermark] creating offscreen fullCanvas, size:', imgW, 'x', imgH);
-          fullCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
+          fullCanvasNode = canvasAdapter.createOffscreenCanvas(imgW, imgH);
           fullContext = fullCanvasNode.getContext('2d');
           }
         } catch (offscreenErr) {
@@ -283,7 +284,7 @@ function ensureFullCanvas() {
   if (fullCanvasNode && fullContext) return true;
   if (!imgW || !imgH) return false;
   try {
-    fullCanvasNode = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
+    fullCanvasNode = canvasAdapter.createOffscreenCanvas(imgW, imgH);
     fullContext = fullCanvasNode.getContext('2d');
     if (originalImageObj) fullContext.drawImage(originalImageObj, 0, 0, imgW, imgH);
     publishRuntimeState();
@@ -570,7 +571,7 @@ function createBlackWhiteMaskCanvas() {
   }
 
   var strokes = getActiveBrushStrokes();
-  var canvas = wx.createOffscreenCanvas({ type: '2d', width: imgW, height: imgH });
+  var canvas = canvasAdapter.createOffscreenCanvas(imgW, imgH);
   var ctx = canvas.getContext('2d');
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, imgW, imgH);
@@ -605,34 +606,13 @@ function getMaskStats(ctx) {
 }
 
 function canvasToTempPath(canvas, fileType, quality) {
-  return new Promise(function(resolve, reject) {
-    var successCb = function(res) { resolve(res.tempFilePath); };
-    var failCb = function(err) { reject(new Error('导出画布失败: ' + (err.errMsg || ''))); };
-
-    if (canvas && typeof canvas.toTempFilePath === 'function') {
-      canvas.toTempFilePath({
-        fileType: fileType || 'png',
-        quality: quality || 1,
-        success: successCb,
-        fail: function() {
-          wx.canvasToTempFilePath({
-            canvas: canvas,
-            fileType: fileType || 'png',
-            quality: quality || 1,
-            success: successCb,
-            fail: failCb
-          });
-        }
-      });
-    } else {
-      wx.canvasToTempFilePath({
-        canvas: canvas,
-        fileType: fileType || 'png',
-        quality: quality || 1,
-        success: successCb,
-        fail: failCb
-      });
-    }
+  return canvasAdapter.exportCanvas(canvas, {
+    fileType: fileType || 'png',
+    quality: quality || 1
+  }).then(function(result) {
+    return result.tempFilePath;
+  }).catch(function(err) {
+    throw new Error('导出画布失败: ' + ((err && (err.errMsg || err.message)) || ''));
   });
 }
 
@@ -716,84 +696,17 @@ function checkHasPaint() {
  * 导出 Mask 图片文件路径
  */
 function exportMask() {
-  return new Promise(function (resolve, reject) {
-    if (!maskCanvasNode) { reject(new Error('Canvas 未初始化')); return; }
-    
-    var successCb = function (res) {
-      resolve(res.tempFilePath);
-    };
-    var failCb = function (err) {
-      reject(new Error('导出遮罩图片失败: ' + (err.errMsg || '')));
-    };
-
-    if (typeof maskCanvasNode.toTempFilePath === 'function') {
-      console.log('[watermark] using maskCanvasNode.toTempFilePath');
-      maskCanvasNode.toTempFilePath({
-        fileType: 'png',
-        success: successCb,
-        fail: function(err) {
-          console.warn('[watermark] maskCanvasNode.toTempFilePath failed, trying wx.canvasToTempFilePath', err);
-          wx.canvasToTempFilePath({
-            canvas: maskCanvasNode,
-            fileType: 'png',
-            success: successCb,
-            fail: failCb
-          });
-        }
-      });
-    } else {
-      console.log('[watermark] maskCanvasNode.toTempFilePath is not a function, using wx.canvasToTempFilePath');
-      wx.canvasToTempFilePath({
-        canvas: maskCanvasNode,
-        fileType: 'png',
-        success: successCb,
-        fail: failCb
-      });
-    }
-  });
+  if (!maskCanvasNode) return Promise.reject(new Error('Canvas 未初始化'));
+  return canvasToTempPath(maskCanvasNode, 'png', 1);
 }
 
 /**
  * 导出克隆图章处理后的结果图
  */
 function exportResult() {
-  return new Promise(function (resolve, reject) {
-    if (!fullCanvasNode) { reject(new Error('Canvas 未初始化')); return; }
-    
-    var successCb = function (res) {
-      resolve(res.tempFilePath);
-    };
-    var failCb = function (err) {
-      reject(new Error('导出处理图片失败: ' + (err.errMsg || '')));
-    };
-
-    if (typeof fullCanvasNode.toTempFilePath === 'function') {
-      console.log('[watermark] using fullCanvasNode.toTempFilePath');
-      fullCanvasNode.toTempFilePath({
-        fileType: 'jpg',
-        quality: 0.95,
-        success: successCb,
-        fail: function(err) {
-          console.warn('[watermark] fullCanvasNode.toTempFilePath failed, trying wx.canvasToTempFilePath', err);
-          wx.canvasToTempFilePath({
-            canvas: fullCanvasNode,
-            fileType: 'jpg',
-            quality: 0.95,
-            success: successCb,
-            fail: failCb
-          });
-        }
-      });
-    } else {
-      console.log('[watermark] fullCanvasNode.toTempFilePath is not a function, using wx.canvasToTempFilePath');
-      wx.canvasToTempFilePath({
-        canvas: fullCanvasNode,
-        fileType: 'jpg',
-        quality: 0.95,
-        success: successCb,
-        fail: failCb
-      });
-    }
+  if (!fullCanvasNode) return Promise.reject(new Error('Canvas 未初始化'));
+  return canvasToTempPath(fullCanvasNode, 'jpg', 0.95).catch(function(err) {
+    throw new Error('导出处理图片失败: ' + ((err && err.message) || ''));
   });
 }
 

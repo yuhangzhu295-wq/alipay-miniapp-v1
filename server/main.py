@@ -32,7 +32,7 @@ from services.professional import do_professional_photo
 from services.manual_inpaint import do_manual_inpaint, do_quick_inpaint
 from services.scan_template import do_scan_template
 from services.hd_inpaint import HdInpaintError, do_hd_inpaint, get_hd_status
-from services.stroke_inpaint import process_stroke_inpaint
+from services.stroke_inpaint import process_roi_stroke_inpaint, process_stroke_inpaint
 from services.id_photo_v2 import (
     TemplateError,
     compose_prepared_id_photo,
@@ -585,6 +585,30 @@ def _assert_passed_content_safety_check(request, security_check_id):
         code = "CONTENT_SAFETY_PENDING" if status == STATUS_PENDING else "CONTENT_SAFETY_UNAVAILABLE"
         message = CONTENT_SAFETY_PENDING_MESSAGE if status == STATUS_PENDING else CONTENT_SAFETY_UNAVAILABLE_MESSAGE
         raise ContentSafetyGateError(code, message, 503, status)
+    return record
+
+
+def _assert_verified_source_safety(request, security_check_id, source_asset_id=""):
+    """Reuse an owned PASS record for a derived ROI upload."""
+    user = _require_content_safety_user(request)
+    check_id = str(security_check_id or "").strip()
+    if not check_id:
+        raise ContentSafetyGateError("CONTENT_SAFETY_REQUIRED", CONTENT_SAFETY_UNAVAILABLE_MESSAGE, 428, STATUS_ERROR)
+    record = content_safety_store.get_owned(check_id, user["userId"])
+    if not record:
+        raise ContentSafetyGateError("CONTENT_SAFETY_NOT_FOUND", CONTENT_SAFETY_UNAVAILABLE_MESSAGE, 403, STATUS_ERROR)
+    status = str(record.get("status") or STATUS_ERROR)
+    if status == STATUS_REJECT:
+        raise ContentSafetyGateError("CONTENT_SAFETY_REJECTED", CONTENT_SAFETY_REJECTED_MESSAGE, 403, status)
+    if status != STATUS_PASS:
+        code = "CONTENT_SAFETY_PENDING" if status == STATUS_PENDING else "CONTENT_SAFETY_UNAVAILABLE"
+        message = CONTENT_SAFETY_PENDING_MESSAGE if status == STATUS_PENDING else CONTENT_SAFETY_UNAVAILABLE_MESSAGE
+        raise ContentSafetyGateError(code, message, 503, status)
+    expected_asset_id = str(record.get("safeAssetId") or record.get("securityCheckId") or "")
+    if not source_asset_id or not hmac.compare_digest(str(source_asset_id), expected_asset_id):
+        raise ContentSafetyGateError("CONTENT_SAFETY_SOURCE_MISMATCH", CONTENT_SAFETY_UNAVAILABLE_MESSAGE, 403, STATUS_ERROR)
+    if not record.get("sha256") or not record.get("imageId"):
+        raise ContentSafetyGateError("CONTENT_SAFETY_SOURCE_INVALID", CONTENT_SAFETY_UNAVAILABLE_MESSAGE, 403, STATUS_ERROR)
     return record
 
 
@@ -2824,12 +2848,20 @@ async def watermark_remove_v2(
     sourceOriginalWidth: int = Form(0),
     sourceOriginalHeight: int = Form(0),
     securityCheckId: str = Form(""),
+    sourceAssetId: str = Form(""),
 ):
     """Remove a watermark from normalized brush strokes without a Base64 mask upload."""
     request_started = time.perf_counter()
     request_received_at = _utc_iso()
     is_hd = str(quality).lower() == "hd"
+    is_roi = str(edgeRoiMode).lower() in ("1", "true", "yes", "on")
     request_id = normalize_request_id(requestId) if is_hd else ""
+    if is_roi and not is_hd:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "code": "ROI_MODE_HD_ONLY",
+            "message": "ROI edge mode is reserved for HD repair",
+        })
     if is_hd and not begin_request(request_id):
         return JSONResponse(status_code=409, content={
             "success": False,
@@ -2843,34 +2875,63 @@ async def watermark_remove_v2(
         if not isinstance(payload, dict):
             raise ValueError("strokesJson must be an object")
         payload.update({
-            "originalWidth": int(originalWidth),
-            "originalHeight": int(originalHeight),
             "displayWidth": float(displayWidth),
             "displayHeight": float(displayHeight),
         })
+        if not is_roi:
+            payload.update({
+                "originalWidth": int(originalWidth),
+                "originalHeight": int(originalHeight),
+            })
         normalized_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         stroke_request_parse_ms = int((time.perf_counter() - parse_started) * 1000)
-        source_check_id = str(sourceSecurityCheckId or "").strip()
-        if source_check_id:
-            _assert_passed_content_safety_check(request, source_check_id)
         upload_started = time.perf_counter()
-        image_bytes = await _read_verified_image(image, request, securityCheckId)
+        source_record = None
+        if is_roi:
+            source_record = _assert_verified_source_safety(
+                request,
+                sourceSecurityCheckId or securityCheckId,
+                sourceAssetId,
+            )
+            image_bytes = await image.read()
+            if not image_bytes or len(image_bytes) > CONTENT_SECURITY_MAX_IMAGE_BYTES:
+                raise ValueError("ROI image is empty or exceeds the upload limit")
+        else:
+            image_bytes = await _read_verified_image(image, request, securityCheckId)
         upload_save_ms = int((time.perf_counter() - upload_started) * 1000)
         if is_hd:
             update_request(request_id, "analyzing")
         preserve_detail = str(preserveDetail).lower() not in ("0", "false", "no", "off")
         smart_expand = str(smartExpand).lower() not in ("0", "false", "no", "off")
-        task = lambda: process_stroke_inpaint(
-            image_bytes,
-            normalized_json,
-            quality,
-            strength,
-            preserve_detail,
-            request_id=request_id,
-            progress_callback=(lambda stage, **details: update_request(request_id, stage, **details)) if is_hd else None,
-            smart_expand=smart_expand,
-            mask_dilation_px=maskDilationPx,
-        )
+        if is_roi:
+            task = lambda: process_roi_stroke_inpaint(
+                image_bytes,
+                normalized_json,
+                int(sourceOriginalWidth or originalWidth),
+                int(sourceOriginalHeight or originalHeight),
+                roiX,
+                roiY,
+                roiWidth,
+                roiHeight,
+                strength=strength,
+                preserve_detail=preserve_detail,
+                request_id=request_id,
+                progress_callback=lambda stage, **details: update_request(request_id, stage, **details),
+                mask_dilation_px=maskDilationPx,
+                original_upload_bytes=int(source_record.get("imageBytes") or 0) if source_record else 0,
+            )
+        else:
+            task = lambda: process_stroke_inpaint(
+                image_bytes,
+                normalized_json,
+                quality,
+                strength,
+                preserve_detail,
+                request_id=request_id,
+                progress_callback=(lambda stage, **details: update_request(request_id, stage, **details)) if is_hd else None,
+                smart_expand=smart_expand,
+                mask_dilation_px=maskDilationPx,
+            )
         queue_state = heavy_task_queue.snapshot() if is_hd else {}
         if is_hd:
             result, queue_wait_ms = await asyncio.to_thread(heavy_task_queue.run, "lama", task)
@@ -2890,14 +2951,14 @@ async def watermark_remove_v2(
             "queueActiveTaskTypeAtArrival": queue_state.get("activeTaskType"),
             "uploadSaveMs": upload_save_ms,
             "strokeRequestParseMs": stroke_request_parse_ms,
-            "edgeRoiMode": str(edgeRoiMode).lower() not in ("0", "false", "no", "off"),
+            "edgeRoiMode": is_roi,
             "roiX": int(roiX or 0),
             "roiY": int(roiY or 0),
             "roiWidth": int(roiWidth or 0),
             "roiHeight": int(roiHeight or 0),
             "sourceOriginalWidth": int(sourceOriginalWidth or 0),
             "sourceOriginalHeight": int(sourceOriginalHeight or 0),
-            "sourceSecurityCheckIdPresent": bool(source_check_id),
+            "sourceSecurityCheckIdPresent": bool(sourceSecurityCheckId or securityCheckId) if is_roi else False,
             "saveOutputMs": save_output_ms,
             "responseWriteMs": 0,
             "totalServerMs": int((time.perf_counter() - request_started) * 1000),
@@ -2905,6 +2966,9 @@ async def watermark_remove_v2(
             "outputPath": saved["path"],
             "fileHash": saved["hash"],
         })
+        roi_box = result.get("roiBox") or debug.get("roiBox") or debug.get("roi")
+        if is_hd and roi_box:
+            debug["roiPatchUrl"] = saved["url"]
         if is_hd:
             finish_request(request_id, True, resultUrl=saved["url"])
             print("[watermark-hd-speed] " + json.dumps(debug, ensure_ascii=False, separators=(",", ":")), flush=True)
@@ -2920,6 +2984,8 @@ async def watermark_remove_v2(
             "fallbackUsed": result["fallbackUsed"],
             "backendMode": result["backendMode"],
             "message": result["message"],
+            "roiBox": roi_box,
+            "roiPatchUrl": saved["url"] if is_hd and roi_box else "",
             "debug": debug,
         }
     except HeavyTaskBusyError:

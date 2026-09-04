@@ -123,6 +123,7 @@ async function main() {
   const tests = {
     providerAdapter: run(PYTHON, [path.join(ROOT, 'server', 'scripts', 'verify_alipay_platform_adapter.py')]),
     platformCompat: run(process.execPath, [path.join(ROOT, 'tools', 'alipay-verification', 'verify-platform-compat.js')]),
+    edgeRoiContract: run(PYTHON, [path.join(ROOT, 'server', 'scripts', 'verify_alipay_edge_roi_contract.py')]),
     static: run(process.execPath, [path.join(ROOT, 'tools', 'alipay-migration', 'verify.js')]),
     builder: run(process.execPath, [path.join(ROOT, 'tools', 'alipay-migration', 'build.js')]),
     stage2: run(process.execPath, [path.join(ROOT, 'tools', 'alipay-verification', 'verify-stage2.js')]),
@@ -159,7 +160,8 @@ async function main() {
     alipayPackageBytes: Number(builderReport.packageBytes || staticReport.packageBytes || 0),
     alipayBuilder: testExitPass.builder ? 'PASS' : 'FAIL',
     alipayStatic: testExitPass.static && staticReport.allPassed === true ? 'PASS' : 'FAIL',
-    alipayStage2StaticParity: testExitPass.stage2 && stage2Report.FULL_UI_PASS === 'PASS' ? 'PASS' : 'FAIL',
+    alipayStage2StaticParity: testExitPass.stage2 && stage2Report.FULL_UI_STATIC_PARITY_PASS === 'PASS' ? 'PASS' : 'FAIL',
+    alipayEdgeWatermarkRoiContract: testExitPass.edgeRoiContract ? 'PASS' : 'FAIL',
     alipayClientAdapter: testExitPass.platformCompat && compatReport.pass === true ? 'PASS' : 'FAIL',
     alipayServerProvider: testExitPass.providerAdapter && providerReport.pass === true ? 'PASS' : 'FAIL',
     alibabaGreenSdkRequirement: fs.readFileSync(requirementsFile, 'utf8').includes('alibabacloud-green20220302==3.2.4') ? 'PASS' : 'FAIL',
@@ -206,6 +208,7 @@ async function main() {
     commandExit: {
       providerAdapter: tests.providerAdapter.exitCode,
       platformCompat: tests.platformCompat.exitCode,
+      edgeRoiContract: tests.edgeRoiContract.exitCode,
     },
   });
   writeJson('03-build-static-validation.json', {
@@ -264,9 +267,9 @@ async function main() {
     '',
     'Status: `BLOCKED_EXTERNAL`.',
     '',
-    'The source code now has a server-side Alipay auth provider and a fail-closed Alibaba Cloud image moderation provider. No actual credential value is present in this workspace, and no staging backend has been configured or deployed for this branch. Therefore a real Alipay login, content-safety check, ID-photo generation, watermark removal, camera capture, download, or real-device check has not been claimed as passing.',
+    'The source code now has a server-side Alipay auth provider and a fail-closed Alibaba Cloud image moderation provider. No actual credential value is present in this workspace. The local network cannot currently complete its public HTTPS probe, so it cannot verify the isolated Staging process from this machine. Therefore a real Alipay login, content-safety check, ID-photo generation, watermark removal, camera capture, download, or real-device check has not been claimed as passing.',
     '',
-    `Read-only production probe: /api/health=${cloudProbe.health.status}; /api/auth/alipay/login=${cloudProbe.alipayLoginRoute.status}; /alipay-staging-v1/api/health=${cloudProbe.alipayStagingHealth.status}. The current production backend has not received this branch, and the isolated Staging route has not been installed.`,
+    `Read-only public probe from this workstation: /api/health=${cloudProbe.health.status}; /api/auth/alipay/login=${cloudProbe.alipayLoginRoute.status}; /alipay-staging-v1/api/health=${cloudProbe.alipayStagingHealth.status}. These values are not treated as server absence because this workstation's HTTPS path is currently blocked. The current production backend has not received this branch.`,
     '',
     'To remove this block in a non-production environment:',
     '',
@@ -295,6 +298,7 @@ async function main() {
     `- Alipay builder validation: ${summary.alipayBuilder}`,
     `- Page/event/layout parity static validation: ${summary.alipayStage2StaticParity}`,
     `- Alipay client adapter contract: ${summary.alipayClientAdapter}`,
+    `- Alipay HD ROI contract: ${summary.alipayEdgeWatermarkRoiContract}`,
     `- Alipay auth and safety Provider fail-closed contract: ${summary.alipayServerProvider}`,
     `- Alibaba Cloud Green SDK requirement: ${summary.alibabaGreenSdkRequirement}`,
     `- WeChat business source changed by this task: ${summary.wechatBusinessSourceChangedByThisTask}`,

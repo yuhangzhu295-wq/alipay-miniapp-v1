@@ -20,7 +20,7 @@
             <view class="wm-error-btn-item btn-secondary" catchTap="choosePhoto"><text>📷 重新选择图片</text></view>
           </view>
         </view>
-        <canvas a:else type="2d" id="wmCanvas" class="wm-canvas-main" style="width:{{wmDisplayWidth}}px; height:{{wmDisplayHeight}}px;" catchTouchStart="onWmTouchStart" catchTouchMove="onWmTouchMove" catchTouchEnd="onWmTouchEnd"></canvas>
+        <canvas a:else type="2d" id="wmCanvas" onReady="initWmCanvas" class="wm-canvas-main" style="width:{{wmDisplayWidth}}px; height:{{wmDisplayHeight}}px;" catchTouchStart="onWmTouchStart" catchTouchMove="onWmTouchMove" catchTouchEnd="onWmTouchEnd"></canvas>
       </view>
 
       <view a:else class="upload-placeholder">

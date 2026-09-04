@@ -22,8 +22,41 @@ global.my = {
   },
   chooseImage(options) {
     calls.push({ method: 'chooseImage', options });
-    options.success({ apFilePaths: ['/tmp/alipay-test.jpg'] });
+    options.success({
+      apFilePaths: ['/tmp/alipay-test.jpg'],
+      tempFiles: [{ path: '/tmp/alipay-test.jpg', size: 1024 }]
+    });
     if (options.complete) options.complete({});
+  },
+  downloadFile(options) {
+    calls.push({ method: 'downloadFile', options });
+    options.success({ apFilePath: 'ap://downloaded-result.image', statusCode: 200 });
+  },
+  compressImage(options) {
+    calls.push({ method: 'compressImage', options });
+    options.success({ apFilePath: 'ap://compressed-upload.image' });
+  },
+  createSelectorQuery() {
+    var selector = '';
+    return {
+      select(value) {
+        selector = value;
+        return this;
+      },
+      node() { return this; },
+      exec(callback) {
+        callback([{
+          node: {
+            width: 320,
+            height: 240,
+            getContext(type) { return type === '2d' ? { kind: '2d' } : null; }
+          },
+          width: 320,
+          height: 240,
+          selector
+        }]);
+      }
+    };
   },
   getAuthCode(options) {
     calls.push({ method: 'getAuthCode', options });
@@ -53,6 +86,7 @@ global.my = {
 const compat = require(path.join(root, 'alipay/utils/platform/alipayWxCompat.js'));
 const apiConfig = require(path.join(root, 'alipay/utils/apiConfig.js'));
 const authService = require(path.join(root, 'alipay/utils/authService.js'));
+const canvasAdapter = require(path.join(root, 'alipay/utils/platform/canvasAdapter.js'));
 
 async function main() {
   const report = { kind: 'alipay-client-compatibility', tests: {}, pass: false };
@@ -65,7 +99,36 @@ async function main() {
   });
   report.tests.chooseMediaNormalizesAlipayPath = Boolean(
     mediaResult && mediaResult.tempFiles && mediaResult.tempFiles.length === 1 &&
-    mediaResult.tempFiles[0].tempFilePath === '/tmp/alipay-test.jpg'
+    mediaResult.tempFiles[0].tempFilePath === '/tmp/alipay-test.jpg' &&
+    mediaResult.tempFiles[0].size === 1024
+  );
+
+  let imageResult = null;
+  compat.chooseImage({
+    count: 1,
+    success(result) { imageResult = result; },
+  });
+  report.tests.chooseImageNormalizesAlipayFileResult = Boolean(
+    imageResult && imageResult.tempFiles && imageResult.tempFiles[0].tempFilePath === '/tmp/alipay-test.jpg'
+  );
+
+  let downloaded = null;
+  compat.downloadFile({ url: 'https://example.invalid/result.png', success(result) { downloaded = result; } });
+  report.tests.downloadNormalizesAlipayPath = Boolean(downloaded && downloaded.tempFilePath === 'ap://downloaded-result.image');
+
+  let compressed = null;
+  compat.compressImage({ src: '/tmp/original.jpg', success(result) { compressed = result; } });
+  report.tests.compressNormalizesAlipayPath = Boolean(compressed && compressed.tempFilePath === 'ap://compressed-upload.image');
+
+  const exported = await canvasAdapter.exportCanvas({
+    toTempFilePath(options) { options.success({ apFilePath: 'ap://canvas-export.image' }); }
+  }, { fileType: 'png' });
+  report.tests.canvasExportNormalizesAlipayPath = exported.tempFilePath === 'ap://canvas-export.image';
+
+  const canvasNode = await canvasAdapter.getCanvas2D(null, 'wmCanvas');
+  report.tests.canvasSelectorNodeContract = Boolean(
+    canvasNode && canvasNode.width === 320 && canvasNode.height === 240 &&
+    canvasNode.context && canvasNode.context.kind === '2d'
   );
 
   let loginResult = null;

@@ -4,6 +4,7 @@ var wx = require('./platform/alipayWxCompat.js');
  */
 var watermarkConfig = require('./watermarkConfig.js');
 var imageSafetyApi = require('./imageSafetyApi.js');
+var authService = require('./authService.js');
 var activeHdRequests = {};
 
 function getBaseUrl() {
@@ -72,6 +73,16 @@ function _downloadResult(imageUrl) {
       fail: function(err) { reject(new Error(_formatNetworkError(err))); }
     });
   });
+}
+
+function _uploadVerifiedDerivedFile(options, sourceSafety) {
+  if (!sourceSafety || sourceSafety.status !== 'PASS' || !sourceSafety.securityCheckId) {
+    throw new Error('verified source image is required before ROI upload');
+  }
+  var nextOptions = Object.assign({}, options, {
+    header: Object.assign({}, authService.getAuthHeader(), options.header || {})
+  });
+  return wx.uploadFile(nextOptions);
 }
 
 function _utf8Bytes(value) {
@@ -297,7 +308,87 @@ function removeV2(params) {
       if (params.sourceImagePath && params.sourceImagePath !== params.imagePath) {
         imageSafetyApi.ensureImageSafety(params.sourceImagePath, 'watermark_removal').then(function(sourceSafety) {
           formData.sourceSecurityCheckId = sourceSafety && sourceSafety.securityCheckId || '';
-          startBusinessUpload();
+          formData.sourceAssetId = sourceSafety && (sourceSafety.safeAssetId || sourceSafety.securityCheckId) || '';
+          var uploadTask = _uploadVerifiedDerivedFile({
+            url: joinApiUrl(getBaseUrl(), '/api/watermark/remove-v2'),
+            filePath: params.imagePath,
+            name: 'image',
+            formData: formData,
+            timeout: quality === 'hd' ? 360000 : 180000,
+            success: function(res) {
+              wx.hideLoading();
+              if (!uploadCompletedAt) uploadCompletedAt = Date.now();
+              try {
+                var data = JSON.parse(res.data || '{}');
+                var resultUrl = data.resultUrl || data.imageUrl;
+                if (res.statusCode < 200 || res.statusCode >= 300 || !data.success || !resultUrl) {
+                  cleanupHdProgress();
+                  reject(_makeApiError(data, '去水印处理失败'));
+                  return;
+                }
+                if (quality === 'hd' && (data.fallbackUsed === true || data.engine !== 'lama')) {
+                  cleanupHdProgress();
+                  reject(_makeApiError(data, '高清模式未使用真实 LaMa 模型'));
+                  return;
+                }
+                var responseAt = Date.now();
+                if (quality === 'hd') _emitHdStatus(params, statusState, 'preview');
+                var previewStartedAt = Date.now();
+                _downloadResult(resultUrl).then(function(localPath) {
+                  var previewLoadMs = Date.now() - previewStartedAt;
+                  var clientPerformance = {
+                    requestId: requestId,
+                    imageWidth: Number(payload.originalWidth || 0),
+                    imageHeight: Number(payload.originalHeight || 0),
+                    imageBytes: imageBytes,
+                    strokeCount: (payload.strokes || []).length,
+                    maskBytes: Number(strokeInfo.transportBytes || _utf8Bytes(strokeInfo.strokesJson)),
+                    clientImagePrepareMs: clientImagePrepareMs,
+                    maskSerializeMs: Number(strokeInfo.serializeMs || 0),
+                    uploadMs: Math.max(0, uploadCompletedAt - uploadStartedAt),
+                    waitResponseMs: Math.max(0, responseAt - uploadCompletedAt),
+                    previewLoadMs: previewLoadMs,
+                    totalClientMs: Date.now() - clientStartedAt
+                  };
+                  cleanupHdProgress();
+                  console.log('[watermark-hd-client]', clientPerformance);
+                  resolve({
+                    tempFilePath: localPath,
+                    resultUrl: resultUrl,
+                    previewUrl: resultUrl + (resultUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(),
+                    outputPath: data.outputPath || '',
+                    fileHash: data.fileHash || '',
+                    mode: data.mode || quality,
+                    engine: data.engine || '',
+                    fallbackUsed: data.fallbackUsed === true,
+                    backendMode: data.backendMode || '',
+                    message: data.message || '处理成功',
+                    debug: data.debug || null,
+                    clientPerformance: clientPerformance
+                  });
+                }).catch(function(err) {
+                  cleanupHdProgress();
+                  reject(err);
+                });
+              } catch (err) {
+                cleanupHdProgress();
+                reject(err instanceof Error ? err : new Error('后端返回异常'));
+              }
+            },
+            fail: function(err) {
+              wx.hideLoading();
+              cleanupHdProgress();
+              reject(new Error(_formatNetworkError(err)));
+            }
+          });
+          if (quality === 'hd' && uploadTask && uploadTask.onProgressUpdate) {
+            uploadTask.onProgressUpdate(function(progress) {
+              if (progress && Number(progress.progress) >= 100 && !uploadCompletedAt) {
+                uploadCompletedAt = Date.now();
+                _emitHdStatus(params, statusState, 'analyzing');
+              }
+            });
+          }
         }).catch(function(err) {
           wx.hideLoading();
           cleanupHdProgress();

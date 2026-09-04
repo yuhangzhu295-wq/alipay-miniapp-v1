@@ -8,6 +8,44 @@ function normalizeToastOptions(options) {
   });
 }
 
+function normalizeTempFileResult(result) {
+  var source = result || {};
+  var tempFilePath = source.tempFilePath || source.apFilePath || source.path || source.filePath || '';
+  return Object.assign({}, source, {
+    tempFilePath: tempFilePath,
+    apFilePath: source.apFilePath || tempFilePath,
+    path: source.path || tempFilePath
+  });
+}
+
+function normalizeTempFiles(result) {
+  var source = result || {};
+  var rawFiles = Array.isArray(source.tempFiles) ? source.tempFiles : [];
+  var paths = source.apFilePaths || source.tempFilePaths || [];
+  var files = rawFiles.length ? rawFiles : paths.map(function(path) { return { path: path }; });
+  return files.map(function(file, index) {
+    var normalized = normalizeTempFileResult(file);
+    var fallbackPath = paths[index] || '';
+    var tempFilePath = normalized.tempFilePath || fallbackPath;
+    return Object.assign({}, normalized, {
+      tempFilePath: tempFilePath,
+      apFilePath: normalized.apFilePath || tempFilePath,
+      path: normalized.path || tempFilePath,
+      size: Number(normalized.size || 0)
+    });
+  }).filter(function(file) { return !!file.tempFilePath; });
+}
+
+function normalizeChooseImageResult(result) {
+  var source = result || {};
+  var files = normalizeTempFiles(source);
+  return Object.assign({}, source, {
+    tempFiles: files,
+    tempFilePaths: files.map(function(file) { return file.tempFilePath; }),
+    apFilePaths: files.map(function(file) { return file.apFilePath; })
+  });
+}
+
 function request(options) {
   options = options || {};
   var next = Object.assign({}, options, {
@@ -32,8 +70,7 @@ function downloadFile(options) {
   var success = options.success;
   var next = Object.assign({}, options, {
     success: function(res) {
-      if (res && res.apFilePath && !res.tempFilePath) res.tempFilePath = res.apFilePath;
-      if (typeof success === 'function') success(res);
+      if (typeof success === 'function') success(normalizeTempFileResult(res));
     }
   });
   return platform.callMy('downloadFile', next);
@@ -45,15 +82,24 @@ function chooseMedia(options) {
     count: options.count || 1,
     sourceType: options.sourceType || ['album', 'camera'],
     success: function(res) {
-      var paths = res.apFilePaths || res.tempFilePaths || [];
-      var files = paths.map(function(p) { return { tempFilePath: p, path: p, size: 0 }; });
       if (typeof options.success === 'function') {
-        options.success({ tempFiles: files, type: 'image' });
+        options.success(Object.assign(normalizeChooseImageResult(res), { type: 'image' }));
       }
     },
     fail: options.fail,
     complete: options.complete
   });
+}
+
+function chooseImage(options) {
+  options = options || {};
+  var success = options.success;
+  var next = Object.assign({}, options, {
+    success: function(res) {
+      if (typeof success === 'function') success(normalizeChooseImageResult(res));
+    }
+  });
+  return platform.callMy('chooseImage', next);
 }
 
 function login(options) {
@@ -84,7 +130,7 @@ module.exports = {
   uploadFile: uploadFile,
   downloadFile: downloadFile,
   chooseMedia: chooseMedia,
-  chooseImage: function(options) { return platform.callMy('chooseImage', options); },
+  chooseImage: chooseImage,
   login: login,
   getAuthCode: function(options) { return platform.callMy('getAuthCode', options); },
   showToast: function(options) { return platform.callMy('showToast', normalizeToastOptions(options)); },
@@ -112,14 +158,31 @@ module.exports = {
   createWorker: function(path) { return platform.hasMy() && my.createWorker ? my.createWorker(path) : null; },
   createOffscreenCanvas: function(options) { return platform.hasMy() && my.createOffscreenCanvas ? my.createOffscreenCanvas(options) : null; },
   createCanvasContext: function(id, owner) { return platform.hasMy() && my.createCanvasContext ? my.createCanvasContext(id, owner) : null; },
-  canvasToTempFilePath: function(options) { return platform.callMy('canvasToTempFilePath', options); },
+  canvasToTempFilePath: function(options) {
+    options = options || {};
+    var success = options.success;
+    return platform.callMy('canvasToTempFilePath', Object.assign({}, options, {
+      success: function(res) {
+        if (typeof success === 'function') success(normalizeTempFileResult(res));
+      }
+    }));
+  },
   compressImage: function(options) {
-    if (platform.hasMy() && typeof my.compressImage === 'function') return my.compressImage(options);
-    if (options && typeof options.success === 'function') options.success({ tempFilePath: options.src });
+    options = options || {};
+    var success = options.success;
+    var next = Object.assign({}, options, {
+      success: function(res) {
+        if (typeof success === 'function') success(normalizeTempFileResult(res));
+      }
+    });
+    if (platform.hasMy() && typeof my.compressImage === 'function') return my.compressImage(next);
+    if (typeof success === 'function') success(normalizeTempFileResult({ tempFilePath: options.src }));
     return null;
   },
   getImageInfo: function(options) { return platform.callMy('getImageInfo', options); },
   getFileInfo: function(options) { return platform.callMy('getFileInfo', options); },
   getFileSystemManager: function() { return platform.hasMy() && my.getFileSystemManager ? my.getFileSystemManager() : null; },
   nextTick: function(callback) { return setTimeout(callback, 0); }
+  ,normalizeTempFileResult: normalizeTempFileResult
+  ,normalizeTempFiles: normalizeTempFiles
 };

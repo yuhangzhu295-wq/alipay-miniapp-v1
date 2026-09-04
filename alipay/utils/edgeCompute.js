@@ -1,5 +1,6 @@
 var wx = require('./platform/alipayWxCompat.js');
 var apiConfig = require('./apiConfig.js');
+var canvasAdapter = require('./platform/canvasAdapter.js');
 
 function getRuntimeEnvVersion() {
   var info = apiConfig.getApiRuntimeInfo ? apiConfig.getApiRuntimeInfo() : null;
@@ -49,37 +50,19 @@ function chooseExecutionRoute(kind) {
 }
 
 function _createCanvas(width, height) {
-  if (!wx || !wx.createOffscreenCanvas) throw new Error('OffscreenCanvas unavailable');
-  return wx.createOffscreenCanvas({ type: '2d', width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)) });
+  return canvasAdapter.createOffscreenCanvas(width, height);
 }
 
 function _loadImage(canvas, src) {
-  return new Promise(function(resolve, reject) {
-    var image = canvas.createImage();
-    image.onload = function() { resolve(image); };
-    image.onerror = function(err) { reject(err || new Error('image load failed')); };
-    image.src = src;
-  });
+  return canvasAdapter.createImage(canvas, src);
 }
 
 function _exportCanvas(canvas, fileType, quality) {
-  return new Promise(function(resolve, reject) {
-    var options = {
-      fileType: fileType || 'png',
-      quality: quality || 1,
-      success: function(res) { resolve(res.tempFilePath); },
-      fail: reject
-    };
-    if (canvas && typeof canvas.toTempFilePath === 'function') {
-      canvas.toTempFilePath(options);
-      return;
-    }
-    if (wx.canvasToTempFilePath) {
-      options.canvas = canvas;
-      wx.canvasToTempFilePath(options);
-      return;
-    }
-    reject(new Error('canvas export unsupported'));
+  return canvasAdapter.exportCanvas(canvas, {
+    fileType: fileType || 'png',
+    quality: quality || 1
+  }).then(function(result) {
+    return result.tempFilePath;
   });
 }
 

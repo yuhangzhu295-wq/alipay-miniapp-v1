@@ -13,6 +13,7 @@ var wx = require('./platform/alipayWxCompat.js');
 var config = require('./apiConfig.js');
 var imageSafetyApi = require('./imageSafetyApi.js');
 var edgeCompute = require('./edgeCompute.js');
+var canvasAdapter = require('./platform/canvasAdapter.js');
 var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
@@ -349,40 +350,20 @@ function _makeUploadPreparationError(code, cause) {
 
 function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
   return new Promise(function(resolve, reject) {
-    if (!wx.createOffscreenCanvas) {
-      reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_UNSUPPORTED'));
-      return;
-    }
     try {
-      var canvas = wx.createOffscreenCanvas({ type: '2d', width: targetWidth, height: targetHeight });
+      var canvas = canvasAdapter.createOffscreenCanvas(targetWidth, targetHeight);
       var context = canvas.getContext('2d');
-      var image = canvas.createImage();
-      image.onload = function() {
+      canvasAdapter.createImage(canvas, photoSrc).then(function(image) {
         context.drawImage(image, 0, 0, targetWidth, targetHeight);
-        var exportOptions = {
+        return canvasAdapter.exportCanvas(canvas, {
           fileType: 'jpg',
-          quality: ID_PHOTO_UPLOAD_QUALITY / 100,
-          success: function(res) {
-            if (res && res.tempFilePath) resolve(res.tempFilePath);
-            else reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EMPTY'));
-          },
-          fail: function(err) {
-            reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_FAILED', err));
-          }
-        };
-        if (canvas && typeof canvas.toTempFilePath === 'function') {
-          canvas.toTempFilePath(exportOptions);
-        } else if (wx.canvasToTempFilePath) {
-          exportOptions.canvas = canvas;
-          wx.canvasToTempFilePath(exportOptions);
-        } else {
-          reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_UNSUPPORTED'));
-        }
-      };
-      image.onerror = function(err) {
-        reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_DRAW_FAILED', err));
-      };
-      image.src = photoSrc;
+          quality: ID_PHOTO_UPLOAD_QUALITY / 100
+        });
+      }).then(function(res) {
+        resolve(res.tempFilePath);
+      }).catch(function(err) {
+        reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_FAILED', err));
+      });
     } catch (err) {
       reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_CREATE_FAILED', err));
     }
@@ -436,6 +417,12 @@ function prepareIdPhotoUploadSource(photoSrc, options) {
         compressFallback: false,
         compressMs: Date.now() - startedAt
       };
+      console.log('[id-photo-mobile] upload source', {
+        sourcePathScheme: String(photoSrc || '').split(':')[0] || 'relative',
+        sourceBytes: originalBytes,
+        sourceWidth: originalWidth,
+        sourceHeight: originalHeight
+      });
       if (!maxSide) {
         throw _makeUploadPreparationError('ID_PHOTO_UPLOAD_SOURCE_INFO_UNAVAILABLE');
       }
@@ -460,11 +447,12 @@ function prepareIdPhotoUploadSource(photoSrc, options) {
           compressedWidth: targetWidth,
           compressedHeight: targetHeight,
           success: function(res) {
-            if (!res || !res.tempFilePath) {
+            var normalized = wx.normalizeTempFileResult ? wx.normalizeTempFileResult(res) : res;
+            if (!normalized || !normalized.tempFilePath) {
               makeCanvasCopy().then(resolve).catch(reject);
               return;
             }
-            _readIdPhotoUploadCopy(base, res.tempFilePath, targetWidth, targetHeight, false, startedAt).then(resolve).catch(function() {
+            _readIdPhotoUploadCopy(base, normalized.tempFilePath, targetWidth, targetHeight, false, startedAt).then(resolve).catch(function() {
               makeCanvasCopy().then(resolve).catch(reject);
             });
           },

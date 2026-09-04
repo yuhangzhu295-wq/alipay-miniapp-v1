@@ -8,7 +8,7 @@ from typing import Any
 import cv2
 import numpy as np
 
-from services.hd_inpaint import do_hd_inpaint
+from services.hd_inpaint import _call_iopaint, do_hd_inpaint
 from services.manual_inpaint import ManualInpaintError, do_manual_inpaint, do_quick_inpaint
 
 
@@ -386,5 +386,110 @@ def process_stroke_inpaint(
         "fallbackUsed": bool(result.get("fallbackUsed")),
         "backendMode": result.get("backendMode") or mode,
         "message": result.get("message") or "处理成功",
+        "debug": debug,
+    }
+
+
+def process_roi_stroke_inpaint(
+    roi_image_bytes: bytes,
+    roi_strokes_json: str,
+    original_width: int,
+    original_height: int,
+    roi_x: int,
+    roi_y: int,
+    roi_width: int,
+    roi_height: int,
+    strength: str = "medium",
+    preserve_detail: bool = True,
+    request_id: str = "",
+    progress_callback=None,
+    mask_dilation_px: int = 5,
+    original_upload_bytes: int = 0,
+) -> dict[str, Any]:
+    """Run the existing LaMa service on an already-cropped client ROI."""
+    del strength, preserve_detail
+    started = time.perf_counter()
+    image = cv2.imdecode(np.frombuffer(roi_image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if image is None:
+        raise ManualInpaintError("ROI image decode failed")
+    image_height, image_width = image.shape[:2]
+    if image_width != int(roi_width) or image_height != int(roi_height):
+        raise ManualInpaintError(
+            f"ROI image size {image_width}x{image_height} does not match declared ROI {roi_width}x{roi_height}"
+        )
+    if (
+        int(roi_x) < 0
+        or int(roi_y) < 0
+        or int(roi_x) + image_width > int(original_width)
+        or int(roi_y) + image_height > int(original_height)
+    ):
+        raise ManualInpaintError("ROI geometry is outside the source dimensions")
+
+    payload = parse_strokes_payload(roi_strokes_json)
+    if (
+        int(_number(payload.get("originalWidth"))) != image_width
+        or int(_number(payload.get("originalHeight"))) != image_height
+    ):
+        raise ManualInpaintError("ROI strokes dimensions do not match ROI image")
+    mask, mask_debug = build_mask_from_strokes(payload, image_width, image_height)
+    dilation_px = max(3, min(12, int(mask_dilation_px or 5)))
+    allowed_mask = cv2.dilate(
+        mask,
+        cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation_px * 2 + 1, dilation_px * 2 + 1)),
+        iterations=1,
+    )
+    if progress_callback:
+        try:
+            progress_callback("analyzing", requestId=request_id, roiMode=True)
+        except Exception:
+            pass
+
+    repaired, lama_debug = _call_iopaint(image, mask, feather=False, timeout=180, request_id=request_id)
+    if repaired.shape[:2] != image.shape[:2]:
+        raise ManualInpaintError("LaMa ROI output dimensions changed")
+    patch = cv2.cvtColor(repaired, cv2.COLOR_BGR2BGRA)
+    patch[:, :, 3] = allowed_mask
+    patch_bytes = _encode_png(patch, "ROI patch")
+    total_ms = int((time.perf_counter() - started) * 1000)
+    debug = {
+        **(lama_debug or {}),
+        **mask_debug,
+        "transport": "client_roi_image_plus_roi_strokes_json",
+        "roiMode": True,
+        "roiUploadBytes": len(roi_image_bytes),
+        "originalUploadBytes": int(original_upload_bytes or 0),
+        "originalSize": f"{int(original_width)}x{int(original_height)}",
+        "roiBox": {
+            "x": int(roi_x),
+            "y": int(roi_y),
+            "width": image_width,
+            "height": image_height,
+        },
+        "roiPixels": image_width * image_height,
+        "roiPixelRatio": round(
+            (image_width * image_height) / float(max(1, int(original_width) * int(original_height))),
+            6,
+        ),
+        "lamaInputWidth": image_width,
+        "lamaInputHeight": image_height,
+        "lamaInputIsRoi": True,
+        "lamaInputMatchesUpload": True,
+        "maskDilationPx": dilation_px,
+        "outputSize": f"{image_width}x{image_height}",
+        "outputBytes": len(patch_bytes),
+        "durationMs": total_ms,
+        "totalDurationMs": total_ms,
+        "outsideRoiChangedPixels": 0,
+    }
+    return {
+        "bytes": patch_bytes,
+        "roiBytes": patch_bytes,
+        "suffix": ".png",
+        "mode": "hd",
+        "engine": "lama",
+        "fallbackUsed": False,
+        "backendMode": "roi_lama",
+        "message": "ok",
+        "roiBox": debug["roiBox"],
         "debug": debug,
     }
