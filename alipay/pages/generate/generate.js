@@ -75,7 +75,7 @@ Page({
       url = '/api/id-photo/prepared/' + encodeURIComponent(preparedId) + '/foreground';
     }
     if (url && url.indexOf('http') !== 0) {
-      url = apiConfig.API_BASE_URL + (url.charAt(0) === '/' ? url : '/' + url);
+      url = apiConfig.getApiBaseUrl() + (url.charAt(0) === '/' ? url : '/' + url);
     }
     return url;
   },
@@ -490,8 +490,8 @@ Page({
     var requestBgColorId = that.data.bgColorId;
     var requestBgColorHex = that.data.bgColorHex;
     var requestBgColorName = that.data.bgColorName;
-    var prepareEndpoint = apiConfig.API_BASE_URL + '/api/id-photo/prepare';
-    var composeEndpoint = apiConfig.API_BASE_URL + '/api/id-photo/compose';
+    var prepareEndpoint = apiConfig.getApiBaseUrl() + '/api/id-photo/prepare';
+    var composeEndpoint = apiConfig.getApiBaseUrl() + '/api/id-photo/compose';
     var requestPayload = {
       purpose: that.getBackendPurpose(requestSpec),
       specId: that.getBackendSpecId(requestSpec),
@@ -538,13 +538,13 @@ Page({
     });
     that.startProcessTimer(30000);
     that.updateProcessStage(hasPrepared ? 'composing' : 'optimizing', hasPrepared ? '正在生成底色' : '正在优化上传图片');
-    console.log('[id-photo-generate] API_BASE_URL:', apiConfig.API_BASE_URL);
+    console.log('[id-photo-generate] API_BASE_URL:', apiConfig.getApiBaseUrl());
     console.log('[id-photo-generate] prepare endpoint:', prepareEndpoint);
     console.log('[id-photo-generate] compose endpoint:', composeEndpoint);
     console.log('[id-photo-generate] specId:', requestPayload.specId);
     console.log('[id-photo-generate] bgColor:', requestPayload.bgColor, requestPayload.bgColorName);
     console.log('[id-photo-fe] route=' + currentRoute);
-    console.log('[id-photo-fe] API_BASE_URL=' + apiConfig.API_BASE_URL);
+    console.log('[id-photo-fe] API_BASE_URL=' + apiConfig.getApiBaseUrl());
     console.log('[id-photo-fe] prepare endpoint=' + prepareEndpoint);
     console.log('[id-photo-fe] compose endpoint=' + composeEndpoint);
     console.log('[id-photo-fe] selectedBgColor=' + requestBgColorHex);

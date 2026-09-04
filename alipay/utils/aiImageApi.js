@@ -40,12 +40,12 @@ function _safeUploadFile(options) {
  */
 function checkApiAvailable() {
   return new Promise(function (resolve) {
-    if (!config.ENABLE_AI || !config.API_BASE_URL) {
+    if (!config.ENABLE_AI || !config.getApiBaseUrl()) {
       resolve(false);
       return;
     }
     wx.request({
-      url: config.API_BASE_URL + '/api/health',
+      url: config.getApiBaseUrl() + '/api/health',
       method: 'GET',
       timeout: 5000,
       success: function (res) {
@@ -75,7 +75,7 @@ function removeBg(imagePath, model) {
     }
 
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/remove-bg',
+      url: config.getApiBaseUrl() + '/api/remove-bg',
       filePath: imagePath,
       name: 'file',
       formData: formData,
@@ -120,7 +120,7 @@ function changeBg(imagePath, bgColor, model) {
     }
 
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/change-bg',
+      url: config.getApiBaseUrl() + '/api/change-bg',
       filePath: imagePath,
       name: 'file',
       formData: formData,
@@ -150,7 +150,7 @@ function validatePortraitInput(imagePath, task) {
   return new Promise(function(resolve, reject) {
     if (!_checkConfig()) { reject(new Error('AI 服务未配置')); return; }
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/portrait/validate',
+      url: config.getApiBaseUrl() + '/api/portrait/validate',
       filePath: imagePath,
       name: 'file',
       formData: { task: task || 'changeBg' },
@@ -179,7 +179,7 @@ function inspectPortrait(imagePath) {
   return new Promise(function(resolve, reject) {
     if (!_checkConfig()) { reject(new Error('生成服务暂不可用，请稍后重试。')); return; }
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/portrait/inspect',
+      url: config.getApiBaseUrl() + '/api/portrait/inspect',
       filePath: imagePath,
       name: 'image',
       formData: {},
@@ -208,7 +208,7 @@ function getIdPhotoCapabilities() {
   return new Promise(function(resolve, reject) {
     if (!_checkConfig()) { reject(new Error('生成服务暂不可用，请稍后重试。')); return; }
     wx.request({
-      url: config.API_BASE_URL + '/api/id-photo/capabilities',
+      url: config.getApiBaseUrl() + '/api/id-photo/capabilities',
       method: 'GET',
       timeout: 10000,
       success: function(res) {
@@ -233,7 +233,7 @@ function generateIdPhotoV2(imagePath, options) {
     if (!_checkConfig()) { reject(new Error('生成服务暂不可用，请稍后重试。')); return; }
 
     wx.showLoading({ title: '生成中...' });
-    var endpoint = config.API_BASE_URL + '/api/id-photo/generate-v2';
+    var endpoint = config.getApiBaseUrl() + '/api/id-photo/generate-v2';
     var formData = {
       purpose: options.purpose || 'official_id_photo',
       specId: options.specId || '',
@@ -250,7 +250,7 @@ function generateIdPhotoV2(imagePath, options) {
       outputType: options.outputType || 'jpg',
       hairRetouch: options.hairRetouch ? 'true' : 'false'
     };
-    console.log('[id-photo-api] API_BASE_URL:', config.API_BASE_URL);
+    console.log('[id-photo-api] API_BASE_URL:', config.getApiBaseUrl());
     console.log('[id-photo-api] endpoint:', endpoint);
     console.log('[id-photo-api] request:', {
       specId: formData.specId,
@@ -482,7 +482,7 @@ function prepareIdPhotoV2(imagePath, options) {
   var runtimeInfo = config.getApiRuntimeInfo ? config.getApiRuntimeInfo() : {
     envVersion: 'unknown',
     storedApiTarget: '',
-    actualApiBaseUrl: config.API_BASE_URL
+    actualApiBaseUrl: config.getApiBaseUrl()
   };
   return prepareIdPhotoUploadSource(imagePath, options).then(function(uploadMeta) {
     return new Promise(function(resolve, reject) {
@@ -643,7 +643,7 @@ function createIdPhotoDetailJob(options) {
   options = options || {};
   return new Promise(function(resolve, reject) {
     wx.request({
-      url: config.API_BASE_URL + '/api/id-photo/detail-jobs',
+      url: config.getApiBaseUrl() + '/api/id-photo/detail-jobs',
       method: 'POST',
       header: { 'content-type': 'application/x-www-form-urlencoded' },
       data: {
@@ -665,7 +665,7 @@ function createIdPhotoDetailJob(options) {
 function getIdPhotoDetailJob(jobId) {
   return new Promise(function(resolve, reject) {
     wx.request({
-      url: config.API_BASE_URL + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
+      url: config.getApiBaseUrl() + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
       method: 'GET',
       timeout: 10000,
       success: function(res) {
@@ -681,7 +681,7 @@ function getIdPhotoDetailJob(jobId) {
 function cancelIdPhotoDetailJob(jobId) {
   return new Promise(function(resolve) {
     wx.request({
-      url: config.API_BASE_URL + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
+      url: config.getApiBaseUrl() + '/api/id-photo/detail-jobs/' + encodeURIComponent(jobId),
       method: 'DELETE',
       timeout: 10000,
       complete: function(res) { resolve((res && res.data) || { status: 'cancelled' }); }
@@ -692,7 +692,7 @@ function cancelIdPhotoDetailJob(jobId) {
 function composeIdPhotoV2(options) {
   options = options || {};
   return new Promise(function(resolve, reject) {
-    var endpoint = config.API_BASE_URL + '/api/id-photo/compose';
+    var endpoint = config.getApiBaseUrl() + '/api/id-photo/compose';
     var composeStartedAt = Date.now();
     console.log('[id-photo-api] compose endpoint:', endpoint);
     console.log('[id-photo-fe] compose endpoint=' + endpoint);
@@ -877,7 +877,7 @@ function inpaint(imagePath, rect, maskPath) {
     };
 
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/inpaint',
+      url: config.getApiBaseUrl() + '/api/inpaint',
       filePath: imagePath,
       name: 'file',
       formData: formData,
@@ -922,7 +922,7 @@ function compressByServer(imagePath, targetKB) {
     wx.showLoading({ title: '后端压缩中...' });
 
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/compress',
+      url: config.getApiBaseUrl() + '/api/compress',
       filePath: imagePath,
       name: 'file',
       formData: { targetKB: String(targetKB) },
@@ -969,7 +969,7 @@ function compressByServer(imagePath, targetKB) {
 // ====== 内部工具方法 ======
 
 function _checkConfig() {
-  return config.ENABLE_AI && config.API_BASE_URL;
+  return config.ENABLE_AI && config.getApiBaseUrl();
 }
 
 function _makeApiError(data, fallbackMessage) {
@@ -990,7 +990,7 @@ function _normalizeResultUrl(imageUrl) {
   if (!imageUrl) return '';
   if (imageUrl.indexOf('http') === 0) return imageUrl;
   if (imageUrl.charAt(0) !== '/') imageUrl = '/' + imageUrl;
-  return config.API_BASE_URL + imageUrl;
+  return config.getApiBaseUrl() + imageUrl;
 }
 
 function _withCacheBust(imageUrl, requestId, cacheBust) {
@@ -1009,7 +1009,7 @@ function _downloadResult(imageUrl) {
   return new Promise(function (resolve, reject) {
     var fullUrl = imageUrl;
     if (imageUrl.indexOf('http') !== 0) {
-      fullUrl = config.API_BASE_URL + imageUrl;
+      fullUrl = config.getApiBaseUrl() + imageUrl;
     }
     wx.downloadFile({
       url: fullUrl,
@@ -1041,7 +1041,7 @@ function verifyPhoto(imagePath, modelName) {
     wx.showLoading({ title: 'AI 质检中...' });
 
     _safeUploadFile({
-      url: config.API_BASE_URL + '/api/verify-photo',
+      url: config.getApiBaseUrl() + '/api/verify-photo',
       filePath: imagePath,
       name: 'file',
       formData: { model: modelName || 'minicpm-v:latest' },
