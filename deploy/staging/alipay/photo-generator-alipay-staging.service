@@ -7,7 +7,10 @@ Wants=network-online.target
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/opt/photo-generator-alipay-staging/server
+# Keep import resolution on the atomically selected release.  ExecStart already
+# uses this same `current` symlink; a fixed directory here could otherwise load
+# stale modules after a release switch.
+WorkingDirectory=/opt/photo-generator-alipay-staging/current/server
 EnvironmentFile=/etc/photo-generator/alipay-staging.env
 Environment=PORT=18001
 Environment=IOPAINT_URL=http://127.0.0.1:8081
