@@ -214,7 +214,7 @@ function removeV2(params) {
         smartExpand: params.smartExpand === true ? 'true' : 'false',
         maskDilationPx: String(Math.max(3, Math.min(12, Number(params.maskDilationPx || 5)))),
         requestId: requestId,
-        edgeRoiMode: params.edgeRoiMode === true ? 'true' : 'false',
+        roiMode: params.edgeRoiMode === true ? 'true' : 'false',
         roiX: String(params.roiX || 0),
         roiY: String(params.roiY || 0),
         roiWidth: String(params.roiWidth || payload.originalWidth || 0),
