@@ -362,6 +362,7 @@ function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
       }).then(function(res) {
         resolve(res.tempFilePath);
       }).catch(function(err) {
+        console.error('[id-photo-copy] export failed', err && err.name, err && err.message, err && err.code);
         reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_FAILED', err));
       });
     } catch (err) {

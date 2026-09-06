@@ -36,10 +36,19 @@ function getClientUserId() {
   return clientId;
 }
 
+function getApiBaseUrl() {
+  return apiConfig.getApiBaseUrl ? apiConfig.getApiBaseUrl() : apiConfig.API_BASE_URL;
+}
+
 function getAuth() {
   var auth = safeGet(AUTH_KEY, null);
-  if (auth && auth.token && auth.userId) {
+  var apiBaseUrl = getApiBaseUrl();
+  if (auth && auth.token && auth.userId && auth.apiBaseUrl === apiBaseUrl) {
     return auth;
+  }
+  if (auth) {
+    safeRemove(AUTH_KEY);
+    safeRemove(TOKEN_KEY);
   }
   return null;
 }
@@ -87,6 +96,7 @@ function loginWithProfile(userInfo) {
           userInfo: {
             nickName: userInfo.nickName || '支付宝用户',
             avatarUrl: userInfo.avatarUrl || ''
+
           }
         },
         timeout: 15000,
@@ -100,6 +110,7 @@ function loginWithProfile(userInfo) {
               openidBound: !!data.openidBound,
               identityBound: !!data.identityBound,
               userInfo: data.userInfo || userInfo,
+              apiBaseUrl: getApiBaseUrl(),
               loginAt: Date.now()
             };
             safeSet(AUTH_KEY, auth);

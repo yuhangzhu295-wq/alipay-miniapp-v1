@@ -8,9 +8,10 @@ function normalizeToastOptions(options) {
   });
 }
 
+
 function normalizeTempFileResult(result) {
   var source = result || {};
-  var tempFilePath = source.tempFilePath || source.apFilePath || source.path || source.filePath || '';
+  var tempFilePath = source.tempFilePath || source.apFilePath || (source.apFilePaths && source.apFilePaths[0]) || source.path || source.filePath || '';
   return Object.assign({}, source, {
     tempFilePath: tempFilePath,
     apFilePath: source.apFilePath || tempFilePath,
@@ -170,6 +171,22 @@ module.exports = {
   compressImage: function(options) {
     options = options || {};
     var success = options.success;
+    if (platform.hasMy() && typeof my.compressImage === 'function') {
+      var src = options.src || options.filePath || '';
+      var quality = typeof options.quality === 'number' ? options.quality : 88;
+      var level = quality >= 90 ? 0 : (quality >= 75 ? 1 : 2);
+      return my.compressImage({
+        apFilePaths: [src],
+        level: level,
+        success: function(res) {
+          if (typeof success === 'function') {
+            success(normalizeTempFileResult(res));
+          }
+        },
+        fail: options.fail,
+        complete: options.complete
+      });
+    }
     var next = Object.assign({}, options, {
       success: function(res) {
         if (typeof success === 'function') success(normalizeTempFileResult(res));
@@ -185,4 +202,5 @@ module.exports = {
   nextTick: function(callback) { return setTimeout(callback, 0); }
   ,normalizeTempFileResult: normalizeTempFileResult
   ,normalizeTempFiles: normalizeTempFiles
+
 };
