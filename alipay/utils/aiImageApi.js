@@ -362,7 +362,20 @@ function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
       }).then(function(res) {
         resolve(res.tempFilePath);
       }).catch(function(err) {
-        console.error('[id-photo-copy] export failed', err && err.name, err && err.message, err && err.code);
+        console.error('[id-photo-copy] export failed', {
+          name: err && err.name,
+          message: err && err.message,
+          code: err && err.code,
+          errMsg: err && err.errMsg,
+          rawResultType: err && err.rawResultType,
+          rawResultKeys: err && err.rawResultKeys,
+          canvasWidth: Number(canvas && canvas.width || targetWidth),
+          canvasHeight: Number(canvas && canvas.height || targetHeight),
+          destWidth: targetWidth,
+          destHeight: targetHeight,
+          fileType: 'jpg',
+          quality: ID_PHOTO_UPLOAD_QUALITY / 100
+        });
         reject(_makeUploadPreparationError('ID_PHOTO_UPLOAD_COPY_EXPORT_FAILED', err));
       });
     } catch (err) {

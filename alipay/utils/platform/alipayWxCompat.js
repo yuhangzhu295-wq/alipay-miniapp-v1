@@ -10,8 +10,23 @@ function normalizeToastOptions(options) {
 
 
 function normalizeTempFileResult(result) {
+  if (typeof result === 'string' && result) {
+    return {
+      tempFilePath: result,
+      apFilePath: result,
+      path: result
+    };
+  }
+
   var source = result || {};
-  var tempFilePath = source.tempFilePath || source.apFilePath || (source.apFilePaths && source.apFilePaths[0]) || source.path || source.filePath || '';
+  var tempFilePath = source.tempFilePath ||
+    source.apFilePath ||
+    (source.apFilePaths && source.apFilePaths[0]) ||
+    (source.tempFilePaths && source.tempFilePaths[0]) ||
+    (source.filePaths && source.filePaths[0]) ||
+    source.path ||
+    source.filePath ||
+    '';
   return Object.assign({}, source, {
     tempFilePath: tempFilePath,
     apFilePath: source.apFilePath || tempFilePath,
@@ -164,6 +179,8 @@ module.exports = {
     var success = options.success;
     return platform.callMy('canvasToTempFilePath', Object.assign({}, options, {
       success: function(res) {
+        console.log('[id-photo-copy] canvas export result', { type: typeof res, keys: res && typeof res === 'object' ? Object.keys(res) : [], hasTempFilePath: !!(res && res.tempFilePath), hasApFilePath: !!(res && res.apFilePath), hasFilePath: !!(res && res.filePath), hasPath: !!(res && res.path), errMsg: res && res.errMsg });
+
         if (typeof success === 'function') success(normalizeTempFileResult(res));
       }
     }));

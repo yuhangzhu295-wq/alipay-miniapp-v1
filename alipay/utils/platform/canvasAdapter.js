@@ -52,6 +52,15 @@ function createImage(canvas, path) {
   });
 }
 
+function makeExportError(message, code, raw) {
+  var error = new Error(message);
+  error.code = code;
+  error.rawResultType = raw === null ? 'null' : typeof raw;
+  error.rawResultKeys = raw && typeof raw === 'object' ? Object.keys(raw) : [];
+  error.errMsg = raw && typeof raw === 'object' ? String(raw.errMsg || raw.errorMessage || raw.message || '') : '';
+  return error;
+}
+
 function exportCanvas(canvas, options) {
   options = options || {};
   return new Promise(function(resolve, reject) {
@@ -59,12 +68,22 @@ function exportCanvas(canvas, options) {
       success: function(result) {
         var normalized = compat.normalizeTempFileResult(result);
         if (!normalized.tempFilePath) {
-          reject(new Error('Alipay Canvas export returned no temporary path'));
+          reject(makeExportError(
+            'Alipay Canvas export returned no temporary path',
+            'ALIPAY_CANVAS_EXPORT_PATH_MISSING',
+            result
+          ));
           return;
         }
         resolve(normalized);
       },
-      fail: function(err) { reject(err || new Error('Alipay Canvas export failed')); }
+      fail: function(err) {
+        reject(makeExportError(
+          'Alipay Canvas export failed',
+          'ALIPAY_CANVAS_EXPORT_FAILED',
+          err
+        ));
+      }
     });
     try {
       if (canvas && typeof canvas.toTempFilePath === 'function') {
