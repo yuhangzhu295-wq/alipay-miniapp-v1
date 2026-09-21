@@ -26,14 +26,25 @@ function computeGuideLayout(guideWidthVw, windowWidth, windowHeight, safeAreaBot
 
   var bottomInset = safeAreaBottom;
   if (bottomInset === undefined) {
-    if (sys.safeArea && sys.safeArea.bottom && sys.windowHeight) {
-      bottomInset = Math.max(0, sys.windowHeight - sys.safeArea.bottom);
+    // sys.safeArea is expressed in SCREEN coordinates, so it must be compared against
+    // screenHeight. The previous code compared it against windowHeight, which on a
+    // tabBar page gives 675 - 810 = -135 -> clamped to 0, so the home-indicator inset was
+    // ALWAYS reported as 0 and the capture controls were laid out flush to the bottom.
+    if (sys.safeArea && typeof sys.safeArea.bottom === 'number') {
+      var refHeight = Number(sys.screenHeight || 0) || Number(sys.windowHeight || 0);
+      bottomInset = refHeight > 0 ? Math.max(0, Math.round(refHeight - Number(sys.safeArea.bottom))) : 0;
     } else {
       bottomInset = 0;
     }
   }
 
   var controlsHeightPx = Math.round(190 * wWidth / 750) + bottomInset;
+  var controlsPaddingBottomPx = Math.round(18 * wWidth / 750) + bottomInset;
+  // Alipay renders <camera> as a NATIVE component. A native surface is sized from the
+  // element's explicit box, not from CSS top/bottom stretch the way a normal DOM node is,
+  // so `height: auto` + `bottom: 190rpx` can leave the native preview at its default size
+  // while the rest of the page stays black. Compute an explicit camera box here and bind
+  // it inline on <camera> so both platforms get a concrete width/height.
   var cameraHeightPx = Math.max(200, wHeight - controlsHeightPx);
 
   var vw = guideWidthVw || 70;
@@ -61,7 +72,12 @@ function computeGuideLayout(guideWidthVw, windowWidth, windowHeight, safeAreaBot
     guideHeightPx: guideHeightPx,
     guideLeftPx: guideLeftPx,
     guideTopPx: guideTopPx,
-    eyeLabelTopPx: eyeLabelTopPx
+    eyeLabelTopPx: eyeLabelTopPx,
+    cameraWidthPx: wWidth,
+    cameraHeightPx: cameraHeightPx,
+    controlsHeightPx: controlsHeightPx,
+    controlsPaddingBottomPx: controlsPaddingBottomPx,
+    safeAreaBottomPx: bottomInset
   };
 }
 
@@ -105,6 +121,11 @@ Page({
     guideLeftPx: 56,
     guideTopPx: 120,
     eyeLabelTopPx: 250,
+    cameraWidthPx: 375,
+    cameraHeightPx: 568,
+    controlsHeightPx: 95,
+    controlsPaddingBottomPx: 9,
+    safeAreaBottomPx: 0,
     guideSvgDataUri: "data:image/svg+xml;charset=utf-8,%3Csvg%20viewBox%3D%220%200%20200%20300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M%2060%20100%20C%2060%2020%2C%20140%2020%2C%20140%20100%20C%20140%20140%2C%20120%20160%2C%20100%20160%20C%2080%20160%2C%2060%20140%2C%2060%20100%20Z%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%224%22%20stroke-dasharray%3D%228%2C8%22%20%2F%3E%3Cpath%20d%3D%22M%20100%20160%20C%20100%20180%2C%20150%20200%2C%20200%20240%20L%20200%20300%20L%200%20300%20L%200%20240%20C%2050%20200%2C%20100%20180%2C%20100%20160%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%224%22%20stroke-dasharray%3D%228%2C8%22%20%2F%3E%3C%2Fsvg%3E"
   },
 
@@ -112,6 +133,7 @@ Page({
     this._cameraInitTimer = null;
     this._cameraRestartTimer = null;
     this._cameraNeedsRestart = false;
+    this._cameraReadyForMount = false;
     options = options || {};
     var specId = options.specId || 'yicun';
     var isCustom = options.custom === 'true';
@@ -120,20 +142,26 @@ Page({
     var guideWidth = Math.max(65, Math.min(74, Math.round(70 + (0.72 - ratio) * 10)));
     var layout = computeGuideLayout(guideWidth);
 
-    this.setData({
+    var nextData = {
       specId: specId,
       specName: spec.displayName || spec.name || '证件照',
       isCustom: isCustom,
       returnMode: options.returnMode === 'replace' ? 'replace' : 'initial',
       guideWidthVw: guideWidth,
-      guideHeightVw: Math.round(guideWidth * 1.44),
-      guideWidthPx: layout.guideWidthPx,
-      guideHeightPx: layout.guideHeightPx,
-      guideLeftPx: layout.guideLeftPx,
-      guideTopPx: layout.guideTopPx,
-      eyeLabelTopPx: layout.eyeLabelTopPx
+      guideHeightVw: Math.round(guideWidth * 1.44)
+    };
+    // layout carries the guide box AND the explicit camera / controls box (see
+    // computeGuideLayout) so <camera> always receives a concrete width+height.
+    Object.assign(nextData, layout);
+    this.setData(nextData);
+    this.debugCamera('page load', {
+      specId: specId,
+      returnMode: options.returnMode || 'initial',
+      cameraWidthPx: layout.cameraWidthPx,
+      cameraHeightPx: layout.cameraHeightPx,
+      controlsHeightPx: layout.controlsHeightPx,
+      safeAreaBottomPx: layout.safeAreaBottomPx
     });
-    this.debugCamera('page load', { specId: specId, returnMode: options.returnMode || 'initial' });
   },
 
   onReady: function() {
@@ -216,18 +244,22 @@ Page({
     var that = this;
     if (!this.data.pageActive || this.data.cameraMode !== 'live' || !this.data.cameraVisible || this.data.cameraError) return;
     this.clearCameraInitTimer();
+    // Alipay runtime mounts the <camera> component and fires its ready event BEFORE the
+    // page-level onReady lifecycle. Re-arming the watchdog here would reset an already
+    // ready camera and time out, because a mounted camera does not re-emit ready.
+    var alreadyReady = !!this._cameraReadyForMount;
     this.cameraContext = null;
     var attempt = Number(this.data.cameraInitAttempt || 0) + 1;
     this.setData({
-      cameraReady: false,
+      cameraReady: alreadyReady,
       cameraError: false,
       cameraErrorText: '',
       permissionDenied: false,
-      cameraInitState: 'initializing',
-      cameraStatusText: '相机正在初始化',
+      cameraInitState: alreadyReady ? 'ready' : 'initializing',
+      cameraStatusText: alreadyReady ? '相机已就绪' : '相机正在初始化',
       cameraInitAttempt: attempt
     });
-    this.debugCamera('restart', { reason: reason, attempt: attempt });
+    this.debugCamera('restart', { reason: reason, attempt: attempt, alreadyReady: alreadyReady });
     afterViewCommit(function() {
       if (!that.data.pageActive || that.data.cameraMode !== 'live' || !that.data.cameraVisible) return;
       try {
@@ -237,9 +269,13 @@ Page({
         that.failCameraInit('无法创建相机上下文，请重新初始化或改用相册。', false, err);
         return;
       }
+      if (alreadyReady) {
+        that.debugCamera('ready state', { state: 'ready', source: 'already-ready-for-mount' });
+        return;
+      }
       that._cameraInitTimer = setTimeout(function() {
-        if (!that.data.cameraReady && that.data.pageActive && that.data.cameraVisible) {
-          that.failCameraInit('5秒内未收到相机就绪事件，请重新初始化或改用相册。', false, 'initdone timeout');
+        if (!that.data.cameraReady && that.pageActive !== false && that.data.pageActive && that.data.cameraVisible) {
+          that.failCameraInit('5秒内未收到相机就绪事件，请重新初始化或改用相册。', false, 'ready timeout');
         }
       }, 5000);
     });
@@ -265,6 +301,7 @@ Page({
       this.debugCamera('initdone', { ignored: true });
       return;
     }
+    this._cameraReadyForMount = true;
     this.clearCameraInitTimer();
     this.debugCamera('initdone');
     this.setData({
@@ -326,6 +363,7 @@ Page({
     this.clearCameraInitTimer();
     if (this._cameraRestartTimer) clearTimeout(this._cameraRestartTimer);
     this.cameraContext = null;
+    this._cameraReadyForMount = false;
     var nextData = Object.assign({
       cameraError: false,
       cameraErrorText: '',

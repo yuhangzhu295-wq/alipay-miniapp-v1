@@ -43,6 +43,29 @@ function getPurposeAdvice(spec) {
   return '建议正面拍摄，肩颈完整可见。';
 }
 
+// The bottom action bar is `position: fixed; bottom: 0`. On devices with a home
+// indicator (safe-area-inset-bottom > 0) a flat `bottom: 0` puts 相册选择/直接拍摄
+// under the system gesture area. Alipay exposes the inset through the runtime
+// safeArea, so compute it here and bind it as explicit padding.
+function computeBottomInset() {
+  try {
+    if (typeof wx !== 'undefined' && wx.getSystemInfoSync) {
+      var sys = wx.getSystemInfoSync() || {};
+      var wWidth = Number(sys.windowWidth || 375);
+      // sys.safeArea is in SCREEN coordinates -> compare with screenHeight.
+      // Comparing with windowHeight (675) against safeArea.bottom (810) yields a negative
+      // number that gets clamped to 0, so the home-indicator inset was always lost.
+      if (sys.safeArea && typeof sys.safeArea.bottom === 'number') {
+        var refHeight = Number(sys.screenHeight || 0) || Number(sys.windowHeight || 0);
+        var inset = refHeight > 0 ? Math.max(0, Math.round(refHeight - Number(sys.safeArea.bottom))) : 0;
+        return { windowWidth: wWidth, inset: inset };
+      }
+      return { windowWidth: wWidth, inset: 0 };
+    }
+  } catch (e) {}
+  return { windowWidth: 375, inset: 0 };
+}
+
 Page({
   data: {
     specId: 'yicun',
@@ -56,7 +79,10 @@ Page({
     purposeAdvice: '建议正面拍摄，肩颈完整可见。',
     colors: [],
     choosingAlbum: false,
-    openingCamera: false
+    openingCamera: false,
+    safeAreaBottomPx: 0,
+    contentPaddingBottomPx: 77,
+    actionsPaddingBottomPx: 9
   },
 
   onShow: function() {
@@ -78,6 +104,8 @@ Page({
     });
     var specName = spec.displayName || spec.name || '证件照';
     this.currentSpec = spec;
+    var safe = computeBottomInset();
+    var unit = safe.windowWidth / 750;
     this.setData({
       specId: spec.id || specId,
       isCustom: isCustom,
@@ -88,7 +116,10 @@ Page({
       fileSizeText: getFileSizeText(spec),
       dpiText: getDpiText(spec),
       purposeAdvice: getPurposeAdvice(spec),
-      colors: colorDots
+      colors: colorDots,
+      safeAreaBottomPx: safe.inset,
+      contentPaddingBottomPx: Math.round(154 * unit) + safe.inset,
+      actionsPaddingBottomPx: Math.round(18 * unit) + safe.inset
     });
     wx.setNavigationBarTitle({ title: specName });
   },

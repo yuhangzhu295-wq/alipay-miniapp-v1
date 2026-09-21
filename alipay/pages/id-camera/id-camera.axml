@@ -2,11 +2,12 @@
   <block a:if="{{cameraMode === 'live' && !cameraError && cameraVisible}}">
     <camera
       class="camera-view"
+      style="width: {{cameraWidthPx}}px; height: {{cameraHeightPx}}px;"
       device-position="{{cameraPosition}}"
       flash="{{flashMode}}"
       mode="normal"
       onError="onCameraError"
-      onInitDone="onCameraReady"
+      onReady="onCameraReady"
     ></camera>
 
     <view a:if="{{!cameraReady}}" class="camera-init-hint"><text>{{cameraStatusText}}</text></view>
@@ -18,7 +19,7 @@
     <view class="portrait-guide" style="left: {{guideLeftPx}}px; top: {{guideTopPx}}px; width: {{guideWidthPx}}px; height: {{guideHeightPx}}px; background-image: url('{{guideSvgDataUri}}'); background-size: 100% 100%;"></view>
     <view class="eye-label" style="top: {{eyeLabelTopPx}}px;"><text>眼睛保持在虚线附近</text></view>
 
-    <view class="camera-controls">
+    <view class="camera-controls" style="height: {{controlsHeightPx}}px; padding-bottom: {{controlsPaddingBottomPx}}px;">
       <view class="control-side" onTap="chooseFromAlbum">
         <view class="control-icon album-icon"><text>▣</text></view>
         <view class="control-label"><text>相册</text></view>

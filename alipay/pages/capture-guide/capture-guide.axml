@@ -1,5 +1,5 @@
 <view class="guide-page">
-  <view class="content">
+  <view class="content" style="padding-bottom: {{contentPaddingBottomPx}}px;">
     <text class="section-title">最佳拍摄姿势</text>
 
     <view class="pose-card">
@@ -35,7 +35,7 @@
     </view>
   </view>
 
-  <view class="bottom-actions">
+  <view class="bottom-actions" style="padding-bottom: {{actionsPaddingBottomPx}}px;">
     <view class="action-button album-button" onTap="chooseFromAlbum">
       <text class="button-icon">▣</text><text>{{choosingAlbum ? '正在打开' : '相册选择'}}</text>
     </view>

@@ -9,12 +9,41 @@
 .camera-view {
   position: absolute;
   top: 0;
-  right: 0;
-  bottom: 190rpx;
   left: 0;
+  /* width/height are bound inline from computeGuideLayout(): Alipay's <camera> is a
+     NATIVE component whose surface must be sized from an explicit box, so we must not
+     rely on `bottom` stretch + `height: auto` (that is a WeChat-DOM assumption). */
   width: 100%;
-  height: auto;
 }
+
+/* PREVIEW FILL IS NOT EXPRESSIBLE IN ACSS -- do not add a rule here.
+
+   Alipay's runtime mounts the camera preview as an inner <video> inside the native
+   <camera> host, carrying NO class attribute, and sets only an inline `width: 100%`.
+   With no height it collapses to the STREAM's intrinsic aspect ratio (measured
+   1280x720 -> 219.38px tall) while the host box is 654px, so ~2/3 of the camera area
+   stays black and the framing guide no longer lines up with the picture.
+
+   Two rules have been tried. Both are dead, and the second one broke the build:
+
+     1. `.camera-view video` -- the ACSS compiler rewrites the bare element selector
+        (`video` -> `.a-video`), so the rule can never match the classless preview.
+     2. `.camera-view > :not([class])` -- DOES NOT COMPILE. Measured 2026-09-21 with
+        `verify:alipay-builder`:
+          error[CE1000.02]: should only be one class selector, got .camera-view with class
+        The ACSS compiler accepts ONLY a single simple selector (one class or one
+        element). Descendant and child combinators, compound selectors, pseudo-classes,
+        :not() and * are all rejected. "Scope it under the component class" is not an
+        escape hatch, because scoping IS a combinator.
+
+   A compiling rule would not have been enough either -- the builder also reports
+   `warning[CW1000.03]: object-fit 不支持`.
+
+   So the fill cannot be fixed from the mini-program code: the preview lives inside a
+   native component, which page JS cannot reach via my.createSelectorQuery() either.
+   Either treat preview/host = 0.3354 as a platform constraint and align the guide to
+   the real picture box, or confirm on a physical device first -- that measurement came
+   from the simulator, which is known to diverge from device rendering. */
 
 .camera-copy {
   position: absolute;

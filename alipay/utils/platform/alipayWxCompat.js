@@ -191,10 +191,18 @@ module.exports = {
     if (platform.hasMy() && typeof my.compressImage === 'function') {
       var src = options.src || options.filePath || '';
       var quality = typeof options.quality === 'number' ? options.quality : 88;
-      var level = quality >= 90 ? 0 : (quality >= 75 ? 1 : 2);
-      return my.compressImage({
+      // Alipay's official parameter is `compressLevel` (0 best quality .. 4 smallest).
+      // The previous `level` key is not part of the Alipay contract and was silently
+      // ignored, which also dropped compressedWidth/compressedHeight and left the
+      // "resized upload copy" at its original dimensions.
+      var compressLevel = typeof options.compressLevel === 'number'
+        ? options.compressLevel
+        : (quality >= 90 ? 0 : (quality >= 75 ? 1 : (quality >= 60 ? 2 : 3)));
+      var targetWidth = Number(options.compressedWidth || options.maxWidth || 0);
+      var targetHeight = Number(options.compressedHeight || options.maxHeight || 0);
+      var request = {
         apFilePaths: [src],
-        level: level,
+        compressLevel: compressLevel,
         success: function(res) {
           if (typeof success === 'function') {
             success(normalizeTempFileResult(res));
@@ -202,7 +210,10 @@ module.exports = {
         },
         fail: options.fail,
         complete: options.complete
-      });
+      };
+      if (targetWidth > 0) request.compressedWidth = Math.round(targetWidth);
+      if (targetHeight > 0) request.compressedHeight = Math.round(targetHeight);
+      return my.compressImage(request);
     }
     var next = Object.assign({}, options, {
       success: function(res) {
