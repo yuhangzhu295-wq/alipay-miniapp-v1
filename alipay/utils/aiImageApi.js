@@ -18,6 +18,10 @@ var ID_PHOTO_PREPARE_TIMEOUT_MS = 30000;
 var ID_PHOTO_COMPOSE_TIMEOUT_MS = 60000;
 var ID_PHOTO_UPLOAD_MAX_SIDE = 1600;
 var ID_PHOTO_UPLOAD_QUALITY = 88;
+// id of the <canvas type="2d"> that pages running the id-photo flow must declare.
+// Alipay can only export a PAGE-LEVEL canvas (see canvasAdapter.createPageCanvas), so the
+// work copy is rendered on this node instead of a WeChat-style offscreen canvas.
+var ID_PHOTO_WORK_CANVAS_ID = 'idCanvas';
 
 function _safetyPurposeForEndpoint(url) {
   var endpoint = String(url || '');
@@ -350,16 +354,42 @@ function _makeUploadPreparationError(code, cause) {
 
 function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
   return new Promise(function(resolve, reject) {
+    var resolvedCanvas = null;
+    var canvasSource = 'unknown';
     try {
-      var canvas = canvasAdapter.createOffscreenCanvas(targetWidth, targetHeight);
-      var context = canvas.getContext('2d');
-      canvasAdapter.createImage(canvas, photoSrc).then(function(image) {
-        context.drawImage(image, 0, 0, targetWidth, targetHeight);
-        return canvasAdapter.exportCanvas(canvas, {
-          fileType: 'jpg',
-          quality: ID_PHOTO_UPLOAD_QUALITY / 100
+      // Prefer an Alipay-native PAGE-LEVEL <canvas type="2d"> node. Alipay's
+      // my.canvasToTempFilePath types its `canvas` parameter as `CanvasContext` and exposes
+      // no export method on OffscreenCanvas, so an offscreen canvas can never be exported
+      // here (verified: success callback returns an empty object). The page canvas is the
+      // only exportable canvas on this platform — see canvasAdapter.createPageCanvas().
+      canvasAdapter.resolveWorkCanvas({
+        pageCanvasId: ID_PHOTO_WORK_CANVAS_ID,
+        width: targetWidth,
+        height: targetHeight
+      }).then(function(entry) {
+        resolvedCanvas = entry.canvas;
+        canvasSource = entry.source;
+        var context = entry.context || resolvedCanvas.getContext('2d');
+        return canvasAdapter.createImage(resolvedCanvas, photoSrc).then(function(image) {
+          context.drawImage(image, 0, 0, targetWidth, targetHeight);
+          return canvasAdapter.exportCanvas(resolvedCanvas, {
+            x: 0,
+            y: 0,
+            width: targetWidth,
+            height: targetHeight,
+            destWidth: targetWidth,
+            destHeight: targetHeight,
+            fileType: 'jpg',
+            quality: ID_PHOTO_UPLOAD_QUALITY / 100
+          });
         });
       }).then(function(res) {
+        console.log('[id-photo-copy] work copy exported', {
+          canvasSource: canvasSource,
+          uploadPathScheme: String(res && res.tempFilePath || '').split(':')[0] || 'relative',
+          destWidth: targetWidth,
+          destHeight: targetHeight
+        });
         resolve(res.tempFilePath);
       }).catch(function(err) {
         console.error('[id-photo-copy] export failed', {
@@ -369,8 +399,10 @@ function _createIdPhotoUploadWorkCopy(photoSrc, targetWidth, targetHeight) {
           errMsg: err && err.errMsg,
           rawResultType: err && err.rawResultType,
           rawResultKeys: err && err.rawResultKeys,
-          canvasWidth: Number(canvas && canvas.width || targetWidth),
-          canvasHeight: Number(canvas && canvas.height || targetHeight),
+          canvasSource: canvasSource,
+          pageCanvasId: ID_PHOTO_WORK_CANVAS_ID,
+          canvasWidth: Number(resolvedCanvas && resolvedCanvas.width || targetWidth),
+          canvasHeight: Number(resolvedCanvas && resolvedCanvas.height || targetHeight),
           destWidth: targetWidth,
           destHeight: targetHeight,
           fileType: 'jpg',

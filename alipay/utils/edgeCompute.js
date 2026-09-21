@@ -16,6 +16,41 @@ function getFeatureFlags() {
   };
 }
 
+/**
+ * Whether an offscreen canvas can be EXPORTED to a temp file on this platform.
+ *
+ * The mere existence of createOffscreenCanvas is NOT the capability the edge routes need:
+ * they render offscreen and then export, so what matters is whether an export method is
+ * reachable from that canvas. Alipay's OffscreenCanvas has none — measured at runtime,
+ * `toTempFilePath` and `export` are both undefined and `my.canvasToTempFilePath({canvas})`
+ * resolves with an empty object, so no temp path is ever produced. Claiming the capability
+ * there makes chooseExecutionRoute pick a route that is guaranteed to fail, and the caller
+ * then pays a full wasted attempt (image load + draw + failed export) before falling back
+ * to the cloud.
+ *
+ * The probe is deliberately conservative: it requires a DIRECT export method on the
+ * canvas object itself (`toTempFilePath` / `export`). Alipay offers neither, and the
+ * generic fallback `canvasToTempFilePath({canvas})` is not a substitute there — it
+ * reports `success` while handing back no path. Platforms whose offscreen canvas does
+ * expose a direct export method keep the edge route enabled.
+ *
+ * The probe canvas is 1x1 and is created once, then memoised.
+ */
+var _offscreenExportable = null;
+function canExportOffscreenCanvas() {
+  if (_offscreenExportable !== null) return _offscreenExportable;
+  _offscreenExportable = false;
+  try {
+    if (!wx || typeof wx.createOffscreenCanvas !== 'function') return _offscreenExportable;
+    var probe = wx.createOffscreenCanvas({ type: '2d', width: 1, height: 1 });
+    if (!probe) return _offscreenExportable;
+    _offscreenExportable = (typeof probe.toTempFilePath === 'function') || (typeof probe.export === 'function');
+  } catch (err) {
+    _offscreenExportable = false;
+  }
+  return _offscreenExportable;
+}
+
 function getCapabilities() {
   var sys = {};
   try {
@@ -24,7 +59,7 @@ function getCapabilities() {
   var totalMemory = Number(sys.memorySize || sys.totalMemory || 0);
   var memoryClass = totalMemory >= 0 ? (totalMemory >= 768 ? 'high' : (totalMemory >= 512 ? 'medium' : 'low')) : 'unknown';
   return {
-    canvas: !!(wx && wx.createOffscreenCanvas),
+    canvas: canExportOffscreenCanvas(),
     worker: !!(wx && wx.createWorker),
     wasm: !!(typeof WebAssembly !== 'undefined'),
     memoryClass: memoryClass,

@@ -34,6 +34,10 @@ Page({
     statusText: '上传照片后自动生成',
     preparedId: '',
     preparedKey: '',
+    // 'fast' = quick matting result, 'detail' = hair-retouch (fine matting) result.
+    // Switching background colour must NOT re-run the fine-matting inference when the
+    // current foreground is already the detail-refined one.
+    preparedQuality: '',
     foregroundUrl: '',
     sourceId: '',
     detailJobId: '',
@@ -69,15 +73,50 @@ Page({
     };
   },
 
+  /**
+   * The server-built foreground layer for local (edge) background compose.
+   *
+   * `foregroundUrl` is produced ONLY by /api/id-photo/prepare, which returns it at the top
+   * level (and mirrors it into `debug.foregroundUrl`). There is no server route for
+   * `/prepared/<id>/foreground` — measured: it answers 404 — and /api/id-photo/detail-jobs
+   * returns no foreground at all. So this must never be synthesised from a preparedId:
+   * a fabricated URL only buys a wasted 404 fetch, and in the detail (hair-retouch) flow
+   * there is genuinely no server foreground to point at.
+   *
+   * `preparedId` is kept in the signature because every call site passes it, but it is
+   * deliberately not used to build a URL.
+   */
   getPreparedForegroundUrl: function(preparedId, prepared) {
-    var url = prepared && prepared.foregroundUrl ? prepared.foregroundUrl : '';
-    if (!url && preparedId) {
-      url = '/api/id-photo/prepared/' + encodeURIComponent(preparedId) + '/foreground';
-    }
+    var url = (prepared && (prepared.foregroundUrl || (prepared.debug && prepared.debug.foregroundUrl))) || '';
     if (url && url.indexOf('http') !== 0) {
       url = apiConfig.getApiBaseUrl() + (url.charAt(0) === '/' ? url : '/' + url);
     }
     return url;
+  },
+
+  /**
+   * Identity of the current prepare result. Two calls produce the same key iff the
+   * already-prepared foreground can be reused for a new background colour.
+   *
+   * Every code path that yields a preparedId MUST persist the matching key, otherwise
+   * `hasPrepared` in generatePhoto() stays false and switching the background colour
+   * re-runs the whole prepare + detail pipeline (re-upload + re-inference) instead of
+   * a single compose.
+   */
+  buildPrepareKey: function(photoSrc, payload) {
+    payload = payload || {};
+    var spec = this.data.currentSpec || {};
+    var src = (photoSrc === undefined || photoSrc === null) ? this.data.photoSrc : photoSrc;
+    var specId = payload.specId !== undefined ? payload.specId : this.getBackendSpecId(spec);
+    var widthPx = payload.widthPx !== undefined ? payload.widthPx : (spec.widthPx || 295);
+    var heightPx = payload.heightPx !== undefined ? payload.heightPx : (spec.heightPx || 413);
+    var composition = payload.composition !== undefined
+      ? payload.composition
+      : (spec.backendComposition || spec.composition || 'head_shoulder');
+    var hairRetouch = payload.hairRetouch !== undefined
+      ? payload.hairRetouch
+      : (this.data.hairRetouch || false);
+    return [src, specId, widthPx, heightPx, composition, hairRetouch].join('|');
   },
 
   composePreparedResult: function(options) {
@@ -207,6 +246,7 @@ Page({
       statusText: '上传照片后自动生成',
       preparedId: '',
       preparedKey: '',
+      preparedQuality: '',
       foregroundUrl: '',
       sourceId: '',
       detailJobId: '',
@@ -268,6 +308,7 @@ Page({
           statusText: '制作时间较长，请稍后重试或重新上传。',
           preparedId: wasPreparing ? '' : that.data.preparedId,
           preparedKey: wasPreparing ? '' : that.data.preparedKey,
+          preparedQuality: wasPreparing ? '' : that.data.preparedQuality,
           resultImage: '',
           resultPreviewSrc: '',
           resultRemoteUrl: '',
@@ -318,6 +359,7 @@ Page({
         statusText: '照片已载入，正在制作',
         preparedId: '',
         preparedKey: '',
+        preparedQuality: '',
         sourceId: '',
         detailJobId: '',
         detailJobStatus: '',
@@ -508,14 +550,11 @@ Page({
       hairRetouch: that.data.hairRetouch || false
     };
     var requestToken = Date.now() + '_' + requestBgColorId;
-    var prepareKey = [
-      requestPhotoSrc,
-      requestPayload.specId,
-      requestPayload.widthPx,
-      requestPayload.heightPx,
-      requestPayload.composition,
-      requestPayload.hairRetouch
-    ].join('|');
+    var prepareKey = that.buildPrepareKey(requestPhotoSrc, requestPayload);
+    // Capture the identity of THIS request. The async prepare/detail completion handlers
+    // must persist this exact key, not one re-derived from page state that the user may
+    // have changed (spec / hair-retouch toggle) while the request was in flight.
+    that.pendingPrepareKey = prepareKey;
     var hasPrepared = that.data.preparedId && that.data.preparedKey === prepareKey;
     var currentRoute = that.getCurrentRouteForLog();
     that.currentGenerateToken = requestToken;
@@ -582,7 +621,7 @@ Page({
         if (isExpired && hasPrepared && attempt === 0) {
           console.warn('[id-photo-fe] preparedId expired or invalid, re-preparing source...');
           hasPrepared = false;
-          that.setData({ preparedId: '', preparedKey: '', foregroundUrl: '' });
+          that.setData({ preparedId: '', preparedKey: '', preparedQuality: '', foregroundUrl: '' });
           return aiImageApi.prepareIdPhotoV2(requestPhotoSrc, Object.assign({}, requestPayload, {
             onStage: function(stage) {
               var labels = {
@@ -600,6 +639,7 @@ Page({
             that.setData({
               preparedId: newPrepared.preparedId,
               preparedKey: prepareKey,
+              preparedQuality: 'fast',
               sourceId: newPrepared.sourceId || that.data.sourceId,
               foregroundUrl: that.getPreparedForegroundUrl(newPrepared.preparedId, newPrepared)
             });
@@ -645,6 +685,11 @@ Page({
         that.setData({
           preparedId: prepared.preparedId,
           preparedKey: prepareKey,
+          // This block also runs when hasPrepared reused an existing preparedId. Only a
+          // genuine fresh prepare downgrades the quality back to 'fast'; on reuse the
+          // existing (possibly 'detail') quality must be preserved, otherwise the
+          // compose callback would wrongly re-create the fine-matting job.
+          preparedQuality: hasPrepared ? (that.data.preparedQuality || 'fast') : 'fast',
           sourceId: prepared.sourceId || that.data.sourceId,
           foregroundUrl: that.getPreparedForegroundUrl(prepared.preparedId, prepared)
         });
@@ -699,7 +744,10 @@ Page({
           if (that.data.outputTab === 'layout') {
             that.generateLayoutPhoto();
           }
-          if (that.data.hairRetouch) that.startDetailRetouch();
+          // Only refine when the current foreground is not already the detail result.
+          // A background-colour switch reuses the same foreground, so re-running the
+          // fine-matting inference would repeat identical server work for nothing.
+          if (that.data.hairRetouch && that.data.preparedQuality !== 'detail') that.startDetailRetouch();
         });
       })
       .catch(function(err) {
@@ -726,6 +774,14 @@ Page({
           message = '生成接口不可用，请检查本地服务。';
         } else if (err && (err.code === 'INVALID_ID_PHOTO_INPUT' || err.code === 'INVALID_INPUT_NOT_REAL_PERSON' || err.code === 'FACE_NOT_FOUND' || err.code === 'NO_FACE_DETECTED')) {
           message = '请上传清晰的真人正面照片。';
+        } else if (err && err.code === 'IMAGE_TOO_BLURRY') {
+          message = '图片清晰度较低，建议更换更清晰的正面照片。';
+        } else if (err && (err.code === 'ID_PHOTO_POSE_NOT_FRONTAL' || err.code === 'POSE_NOT_FRONTAL')) {
+          message = '请上传面向镜头、头部端正的真人正面照片。';
+        } else if (err && (err.code === 'MULTIPLE_FACES' || err.code === 'MULTIPLE_FACES_DETECTED')) {
+          message = '检测到多个人脸，请上传单人照片。';
+        } else if (err && (err.code === 'SHOULDER_MISSING' || err.code === 'ID_PHOTO_SHOULDER_MISSING')) {
+          message = '照片肩部区域不足，建议上传包含头部和双肩的半身照。';
         } else if (err && err.code === 'PREPARE_FAILED') {
           message = '人像预处理失败，请重新上传清晰正面照片。';
         } else if (err && err.code === 'MASK_QUALITY_FAILED') {
@@ -771,6 +827,9 @@ Page({
           sourceId: (err && err.sourceId) || that.data.sourceId,
           preparedId: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedId,
           preparedKey: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedKey,
+          // Keep the quality marker consistent with the prepare identity: if the key is
+          // dropped, the cached 'detail' marker must not survive it.
+          preparedQuality: (err && err.code === 'PREPARE_FAILED') ? '' : that.data.preparedQuality,
           resultImage: '',
           resultPreviewSrc: '',
           resultRemoteUrl: '',
@@ -881,6 +940,14 @@ Page({
             failureKind: '',
             failureMessage: '',
             preparedId: job.preparedId,
+            // Persist the prepare identity alongside the preparedId: without it
+            // hasPrepared is always false and every background switch re-runs
+            // prepare + detail (re-upload + re-inference) instead of one compose.
+            preparedKey: that.pendingPrepareKey || that.buildPrepareKey(),
+            // This preparedId came from a fine-matting (hair-retouch) job: the composed
+            // output is already refined, so a later colour switch only needs a compose.
+            preparedQuality: 'detail',
+            foregroundUrl: that.getPreparedForegroundUrl(job.preparedId, {}),
             resultImage: result.tempFilePath,
             resultPreviewSrc: result.previewUrl || result.finalImageUrl || result.tempFilePath,
             resultRemoteUrl: result.finalImageUrl || result.remoteUrl || '',

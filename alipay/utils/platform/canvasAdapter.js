@@ -39,6 +39,44 @@ function createOffscreenCanvas(width, height) {
   return canvas;
 }
 
+/**
+ * Resolve a PAGE-LEVEL <canvas type="2d"> node by id and size its backing store.
+ *
+ * WHY THIS EXISTS (Alipay has no offscreen-export equivalent):
+ *   Alipay's official API table types `my.canvasToTempFilePath`'s `canvas` parameter as
+ *   `canvas?: CanvasContext` — i.e. a canvas obtained from a real page <canvas> component,
+ *   NOT an OffscreenCanvas. `my.createOffscreenCanvas` is documented to return an
+ *   `OffscreenCanvas` and the API table exposes NO export method on it (no
+ *   `toTempFilePath`). Measured at runtime: calling `my.canvasToTempFilePath({canvas})`
+ *   with an OffscreenCanvas invokes `success` with an EMPTY object (`keys: []`), so no
+ *   temp path is ever produced.
+ *
+ *   Therefore the WeChat strategy ("wx.createOffscreenCanvas + canvas.toTempFilePath")
+ *   cannot be reproduced on Alipay. The Alipay-native equivalent is to take the node of a
+ *   real page canvas via `my.createSelectorQuery().select('#id').node()` (which is also
+ *   exactly what the deprecated `my._createCanvas` now tells you to do) and export THAT.
+ *
+ * Source: <Alipay IDE>\resources\app\extensions\alipay.minicode-<v>\
+ *         node_modules\@alipay\mini-language-server\dist\data\default\mini-api.json
+ *
+ * The canvas may be styled 1px x 1px off-screen: for a 2d canvas the backing store size is
+ * set by `canvas.width` / `canvas.height`, which is independent of the CSS box.
+ */
+function createPageCanvas(canvasId, width, height) {
+  return getCanvas2D(null, canvasId).then(function(entry) {
+    var canvas = entry.canvas;
+    var w = Math.max(1, Math.round(Number(width || 0) || entry.width || 1));
+    var h = Math.max(1, Math.round(Number(height || 0) || entry.height || 1));
+    try {
+      canvas.width = w;
+      canvas.height = h;
+    } catch (err) {}
+    var context = canvas.getContext('2d');
+    if (!context) throw new Error('Alipay page Canvas 2D context unavailable: ' + canvasId);
+    return { canvas: canvas, context: context, width: w, height: h, source: 'page-canvas' };
+  });
+}
+
 function createImage(canvas, path) {
   return new Promise(function(resolve, reject) {
     try {
@@ -85,6 +123,21 @@ function exportCanvas(canvas, options) {
         ));
       }
     });
+    // my.canvasToTempFilePath declares x/y/width/height/destWidth/destHeight as REQUIRED
+    // (optional:false) in the official API table. Supply them from the canvas backing store
+    // when the caller did not, so the export is always fully specified.
+    try {
+      var cw = Math.max(1, Math.round(Number(canvas && canvas.width || 0) || 1));
+      var ch = Math.max(1, Math.round(Number(canvas && canvas.height || 0) || 1));
+      if (next.x === undefined) next.x = 0;
+      if (next.y === undefined) next.y = 0;
+      if (next.width === undefined) next.width = cw;
+      if (next.height === undefined) next.height = ch;
+      if (next.destWidth === undefined) next.destWidth = next.width;
+      if (next.destHeight === undefined) next.destHeight = next.height;
+      if (next.fileType === undefined) next.fileType = 'png';
+      if (next.quality === undefined) next.quality = 1;
+    } catch (err) {}
     try {
       if (canvas && typeof canvas.toTempFilePath === 'function') {
         canvas.toTempFilePath(next);
@@ -95,6 +148,35 @@ function exportCanvas(canvas, options) {
       reject(err);
     }
   });
+}
+
+/**
+ * Create a canvas suitable for a one-shot render + export, preferring an Alipay-native
+ * page-level canvas node (the only exportable canvas on this platform) and falling back to
+ * an offscreen canvas only when no page canvas is reachable.
+ *
+ * @param {Object}  opts
+ * @param {string=} opts.pageCanvasId  id of a <canvas type="2d"> declared on the CURRENT page
+ * @param {number}  opts.width         target backing-store width
+ * @param {number}  opts.height        target backing-store height
+ */
+function resolveWorkCanvas(opts) {
+  opts = opts || {};
+  var width = Math.max(1, Math.round(Number(opts.width || 1)));
+  var height = Math.max(1, Math.round(Number(opts.height || 1)));
+  var pageCanvasId = opts.pageCanvasId;
+  if (pageCanvasId && platform.hasMy() && typeof my.createSelectorQuery === 'function') {
+    return createPageCanvas(pageCanvasId, width, height).catch(function(err) {
+      // Page canvas unreachable (wrong page, not yet rendered, or selector query refused).
+      // Record why, then degrade to the offscreen path so the caller sees one consistent
+      // error shape instead of two different failure modes.
+      var fallback = createOffscreenCanvas(width, height);
+      fallback.__pageCanvasError = err;
+      return { canvas: fallback, context: fallback.getContext('2d'), width: width, height: height, source: 'offscreen-fallback' };
+    });
+  }
+  var offscreen = createOffscreenCanvas(width, height);
+  return Promise.resolve({ canvas: offscreen, context: offscreen.getContext('2d'), width: width, height: height, source: 'offscreen' });
 }
 
 function getCanvasSize(canvas) {
@@ -109,8 +191,10 @@ function release(canvas) {
 module.exports = {
   getCanvas2D: getCanvas2D,
   createOffscreenCanvas: createOffscreenCanvas,
+  createPageCanvas: createPageCanvas,
   createImage: createImage,
   exportCanvas: exportCanvas,
+  resolveWorkCanvas: resolveWorkCanvas,
   getCanvasSize: getCanvasSize,
   release: release
 };

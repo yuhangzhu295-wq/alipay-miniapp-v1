@@ -6,7 +6,11 @@
 }
 
 .hidden-canvas {
-  position: fixed;
+  /* Off-screen work canvas for the id-photo upload copy.
+     NOTE: `position: fixed` is NOT used here on purpose — the Alipay simulator does not
+     paint position:fixed elements, and a non-painted canvas may not rasterise, which would
+     make my.canvasToTempFilePath export nothing. `absolute` is painted normally. */
+  position: absolute;
   left: -9999rpx;
   top: -9999rpx;
 }
