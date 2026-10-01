@@ -2061,7 +2061,12 @@ def compose_prepared_id_photo(prepared_id, bg_color="", bg_color_name="", output
         "topPaddingRatio": head_geometry["topMarginRatio"],
         "headHeightRatio": head_geometry["heightRatio"],
         "headRatio": head_geometry["heightRatio"],
+        # Keep the legacy report on the same final-image head measurement.
+        # The Alipay migration dropped this assignment, so headWidthRatio fell back
+        # to a different measurement and the quality gate rejected photos WeChat accepts.
+        "headWidthRatio": head_geometry["widthRatio"],
         "profileHeadWidthRatio": head_geometry["widthRatio"],
+        "headWidthMeasurementSource": head_geometry["widthMeasurementSource"],
         "chinBottomRatio": head_geometry["chinBottomRatio"],
         "shoulderWidthRatio": shoulder_geometry["widthRatio"],
         "shoulderObserved": bool(shoulder_geometry["observed"]),
