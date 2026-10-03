@@ -92,7 +92,18 @@ function convertMarkup(input, rel) {
   ];
   for (const [from, to] of replacements) text = text.replace(from, to);
   text = text.replace(/\sopen-type="chooseAvatar"/g, '');
-  return enhanceAlipayHomeMarkup(wrapDirectViewText(text), rel || '');
+  return enhanceAlipayHomeMarkup(enhanceAlipayCameraMarkup(wrapDirectViewText(text), rel || ''), rel || '');
+}
+
+// Alipay's <camera> requires an explicit id, and my.createCameraContext(cameraId)
+// must be called with that exact id. The WeChat source declares the camera without
+// an id (wx.createCameraContext() needs none), so inject a stable id here.
+const ALIPAY_CAMERA_ID = 'idPhotoCamera';
+
+function enhanceAlipayCameraMarkup(text, rel) {
+  const normalized = rel.replace(/\\/g, '/');
+  if (!/id-camera\.wxml$/.test(normalized)) return text;
+  return text.replace(/<camera(\s)/g, '<camera id="' + ALIPAY_CAMERA_ID + '"$1');
 }
 
 function findTagEnd(text, start) {
@@ -905,7 +916,13 @@ module.exports = {
   getSetting: function(options) { return platform.callMy('getSetting', options); },
   authorize: function(options) { return platform.callMy('authorize', options); },
   openSetting: function(options) { return platform.callMy('openSetting', options); },
-  createCameraContext: function() { return platform.hasMy() && my.createCameraContext ? my.createCameraContext() : null; },
+  // Alipay requires my.createCameraContext(cameraId); wx.createCameraContext() takes none.
+  // Default to the injected camera id when the caller passes nothing, so the
+  // migrated page code keeps working unchanged.
+  createCameraContext: function(cameraId) {
+    if (!platform.hasMy() || !my.createCameraContext) return null;
+    return my.createCameraContext(cameraId || '${ALIPAY_CAMERA_ID}');
+  },
   createSelectorQuery: function() { return platform.hasMy() && my.createSelectorQuery ? my.createSelectorQuery() : null; },
   createWorker: function(path) { return platform.hasMy() && my.createWorker ? my.createWorker(path) : null; },
   createOffscreenCanvas: function(options) { return platform.hasMy() && my.createOffscreenCanvas ? my.createOffscreenCanvas(options) : null; },

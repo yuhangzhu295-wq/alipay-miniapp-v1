@@ -1,6 +1,7 @@
 <view class="camera-page">
   <block a:if="{{cameraMode === 'live' && !cameraError && cameraVisible}}">
     <camera
+      id="idPhotoCamera"
       class="camera-view"
       style="width: {{cameraWidthPx}}px; height: {{cameraHeightPx}}px;"
       device-position="{{cameraPosition}}"

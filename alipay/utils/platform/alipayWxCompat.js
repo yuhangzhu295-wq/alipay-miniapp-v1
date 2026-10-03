@@ -169,7 +169,12 @@ module.exports = {
   getSetting: function(options) { return platform.callMy('getSetting', options); },
   authorize: function(options) { return platform.callMy('authorize', options); },
   openSetting: function(options) { return platform.callMy('openSetting', options); },
-  createCameraContext: function() { return platform.hasMy() && my.createCameraContext ? my.createCameraContext() : null; },
+  // Alipay requires my.createCameraContext(cameraId); wx.createCameraContext() takes none.
+  // Default to the camera id declared in id-camera.axml so the page code is unchanged.
+  createCameraContext: function(cameraId) {
+    if (!platform.hasMy() || !my.createCameraContext) return null;
+    return my.createCameraContext(cameraId || 'idPhotoCamera');
+  },
   createSelectorQuery: function() { return platform.hasMy() && my.createSelectorQuery ? my.createSelectorQuery() : null; },
   createWorker: function(path) { return platform.hasMy() && my.createWorker ? my.createWorker(path) : null; },
   createOffscreenCanvas: function(options) { return platform.hasMy() && my.createOffscreenCanvas ? my.createOffscreenCanvas(options) : null; },
