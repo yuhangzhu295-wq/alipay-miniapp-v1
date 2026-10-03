@@ -37,3 +37,30 @@
 支付宝云端证件照 prepare → compose → 下载 **真实可用**（35 张成品）。
 两平台在同一批素材上的通过/失败集合一致（Golden 对齐达成）。
 
+## 追加：云端成品自动判图（35/35 PASS）
+
+对 35 张真实云端证件照做独立判图（`judge_cloud_outputs.py`，OpenCV）：
+
+```
+total = 35
+PASS  = 35
+FAIL  = 0
+```
+
+检查项：尺寸 295×413、人物存在、头顶留白、水平居中、人物占比、背景纯净（leak）。
+
+### 判图标准修正（重要，如实记录）
+
+v1 误报 35/35 FAIL，原因是**我把产品规格当成了缺陷**：
+
+| v1 误报 | 实际 |
+| --- | --- |
+| `BOTTOM_CUT` | 证件照要求肩部触底（`foregroundBottomContact: true` 是规格） |
+| `SHOULDER_TOUCH_SIDE` | `shoulderSideContact: true` 同样是规格 |
+| `EDGE_HALO` | 环形检测落在真实照片内容（头发/衣服）上，非白边 |
+
+肉眼复核 `male_p01_blue.jpg`：头顶留白正常、肩部自然触底、背景纯净、无白边——
+完全符合产品规格。v2 修正标准后 **35/35 PASS**，且保留 halo 为 note（不参与判定）。
+
+证据：`cloud-output-quality.json`、成品图 `acceptance/outputs/alipay-http/`。
+

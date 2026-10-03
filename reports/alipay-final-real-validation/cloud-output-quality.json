@@ -1,0 +1,849 @@
+{
+  "total": 35,
+  "counts": {
+    "PASS": 35,
+    "FAIL": 0
+  },
+  "rows": [
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.259"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6107,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p03",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p03_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.31"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.603,
+      "personBox": {
+        "x": 0,
+        "y": 46,
+        "w": 295,
+        "h": 367
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 46,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p03",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p03_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.26"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.614,
+      "personBox": {
+        "x": 0,
+        "y": 44,
+        "w": 295,
+        "h": 369
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 44,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p03",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p03_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.341"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6051,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p03",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p03_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.247"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6184,
+      "personBox": {
+        "x": 0,
+        "y": 43,
+        "w": 295,
+        "h": 370
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 43,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p03",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p03_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.457"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6675,
+      "personBox": {
+        "x": 0,
+        "y": 33,
+        "w": 295,
+        "h": 380
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 33,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p09",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p09_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.463"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6157,
+      "personBox": {
+        "x": 0,
+        "y": 33,
+        "w": 295,
+        "h": 380
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 33,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p09",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p09_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.275"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6733,
+      "personBox": {
+        "x": 0,
+        "y": 33,
+        "w": 295,
+        "h": 380
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 33,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p09",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p09_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.177"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.687,
+      "personBox": {
+        "x": 0,
+        "y": 33,
+        "w": 295,
+        "h": 380
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 33,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p09",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p09_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.257"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6822,
+      "personBox": {
+        "x": 0,
+        "y": 32,
+        "w": 295,
+        "h": 381
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 32,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "female_p09",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\female_p09_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.198"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5605,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p01",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p01_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.465"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5371,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p01",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p01_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.163"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5632,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p01",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p01_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.239"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5577,
+      "personBox": {
+        "x": 0,
+        "y": 45,
+        "w": 295,
+        "h": 368
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 45,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p01",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p01_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.137"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5651,
+      "personBox": {
+        "x": 0,
+        "y": 44,
+        "w": 295,
+        "h": 369
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 44,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p01",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p01_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.15"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5673,
+      "personBox": {
+        "x": 0,
+        "y": 33,
+        "w": 295,
+        "h": 380
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 33,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p04",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p04_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.452"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.4679,
+      "personBox": {
+        "x": 0,
+        "y": 32,
+        "w": 295,
+        "h": 381
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 32,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p04",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p04_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.123"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5684,
+      "personBox": {
+        "x": 0,
+        "y": 32,
+        "w": 295,
+        "h": 381
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 32,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p04",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p04_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.171"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5647,
+      "personBox": {
+        "x": 0,
+        "y": 32,
+        "w": 295,
+        "h": 381
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 32,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p04",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p04_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.084"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5688,
+      "personBox": {
+        "x": 0,
+        "y": 31,
+        "w": 295,
+        "h": 382
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 31,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p04",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p04_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.133"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5953,
+      "personBox": {
+        "x": 0,
+        "y": 35,
+        "w": 295,
+        "h": 378
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 35,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p06",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p06_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.301"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.574,
+      "personBox": {
+        "x": 0,
+        "y": 35,
+        "w": 295,
+        "h": 378
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 35,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p06",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p06_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.11"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5958,
+      "personBox": {
+        "x": 0,
+        "y": 35,
+        "w": 295,
+        "h": 378
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 35,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p06",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p06_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.156"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5929,
+      "personBox": {
+        "x": 0,
+        "y": 36,
+        "w": 295,
+        "h": 377
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 36,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p06",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p06_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.089"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.597,
+      "personBox": {
+        "x": 0,
+        "y": 35,
+        "w": 295,
+        "h": 378
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 35,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p06",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p06_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.12"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6112,
+      "personBox": {
+        "x": 0,
+        "y": 34,
+        "w": 295,
+        "h": 379
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 34,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p07",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p07_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.439"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.4929,
+      "personBox": {
+        "x": 0,
+        "y": 34,
+        "w": 295,
+        "h": 379
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 34,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p07",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p07_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.101"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6111,
+      "personBox": {
+        "x": 0,
+        "y": 34,
+        "w": 295,
+        "h": 379
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 34,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p07",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p07_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.129"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6106,
+      "personBox": {
+        "x": 0,
+        "y": 34,
+        "w": 295,
+        "h": 379
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 34,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p07",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p07_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.191"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.5379,
+      "personBox": {
+        "x": 0,
+        "y": 34,
+        "w": 295,
+        "h": 379
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 34,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p07",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p07_white.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.175"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6415,
+      "personBox": {
+        "x": 0,
+        "y": 40,
+        "w": 295,
+        "h": 373
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 40,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p08",
+      "color": "blue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p08_blue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.505"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6104,
+      "personBox": {
+        "x": 0,
+        "y": 40,
+        "w": 295,
+        "h": 373
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 40,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p08",
+      "color": "gray",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p08_gray.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.151"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6428,
+      "personBox": {
+        "x": 0,
+        "y": 39,
+        "w": 295,
+        "h": 374
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 39,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p08",
+      "color": "lightBlue",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p08_lightBlue.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.202"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6393,
+      "personBox": {
+        "x": 0,
+        "y": 40,
+        "w": 295,
+        "h": 373
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 40,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p08",
+      "color": "red",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p08_red.jpg"
+    },
+    {
+      "verdict": "PASS",
+      "reasons": [],
+      "notes": [
+        "halo_reported=0.15"
+      ],
+      "width": 295,
+      "height": 413,
+      "personRatio": 0.6437,
+      "personBox": {
+        "x": 0,
+        "y": 39,
+        "w": 295,
+        "h": 374
+      },
+      "centerErrorRatio": 0.0,
+      "backgroundLeakRatio": 0.0,
+      "headTopGapPx": 39,
+      "bottomContact": true,
+      "shoulderSideContact": true,
+      "sampleId": "male_p08",
+      "color": "white",
+      "file": "C:\\Users\\zyu33\\Documents\\RecoveredProjects\\acceptance\\outputs\\alipay-http\\male_p08_white.jpg"
+    }
+  ]
+}
