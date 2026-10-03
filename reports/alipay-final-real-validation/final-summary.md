@@ -61,3 +61,14 @@
 `ID_PHOTO_FORCE_HIVISION` 又把它掩盖成 ready。已补齐 Hivision 树（仅 staging），
 本地验证 `hivision_available()=(True,'installed')`；服务重启验证因终端会话断开未完成。
 
+## 追加：支付宝云端证件照 E2E 已打通
+
+staging 修复后经公网 HTTPS 复测（20 张真实素材）：
+
+```hivisionAvailable=true（4 个模型）```、content-safety 20/20 PASS、
+prepare **8/20 通过**、**35 张真实云端证件照成品下载**。
+
+剩余 12 张失败与本地纯函数层结果一致（同一批图本地也是 8/20），
+即两平台行为一致，剩余失败为产品构图门禁策略而非缺陷。
+
+详见 `13-alipay-cloud-e2e.md`。
