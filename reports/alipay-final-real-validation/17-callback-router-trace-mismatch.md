@@ -51,3 +51,34 @@ outputs PASS) and re-exercised after the sync up to the async
 content-safety gate. The remaining blocker for a green staging E2E is
 the trace-match integration above - a focused next step, not an
 algorithm problem.
+
+## Session update (2026-10-07, continued debugging)
+
+Further tracing narrowed the mismatch precisely:
+
+1. Staging backend writes registry records to
+   /var/lib/photo-generator/alipay-staging/content_security_registry.json
+   (mode 644, world-readable, updated with each submission).
+2. The callback-router's ROUTES[STAGING] registry path has been
+   corrected to that exact file (patch applied, service restarted).
+3. A fresh submission (test01.jpg) wrote a record with
+   sourceEnvironment=staging-edge-v1 (after adding
+   WECHAT_CONTENT_SECURITY_ENVIRONMENT=staging-edge-v1 to staging env -
+   it had defaulted to "production", mislabeling every record).
+4. WeChat's callback ARRIVED (signatureValid=true) and its
+   traceIdHash (sha256[:16] of the decrypted trace_id) EXACTLY equals
+   sha256 of the stored record's traceId (7512f2529d5144b1 verified).
+
+So the callback trace and the stored trace ARE identical, the file is
+readable, yet the router still reports taskMatched=false /
+UNKNOWN_TRACE. That leaves only the router's _read_records() parsing
+step between a working loop - the remaining session hit OrcaTerm
+terminal instability (SSH channel hangs) before that function could be
+read and compared against the actual file format.
+
+Current staging health: /api/health 200, capabilities 200.
+
+Next session (with stable terminal): read _read_records(), compare its
+expected JSON structure against the actual file (likely a records-list
+vs dict mismatch or a status filter), apply the one-line fix, restart
+router, rerun the full E2E. Everything else is verified.
