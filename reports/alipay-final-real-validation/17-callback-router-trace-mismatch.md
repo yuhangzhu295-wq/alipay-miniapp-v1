@@ -82,3 +82,49 @@ Next session (with stable terminal): read _read_records(), compare its
 expected JSON structure against the actual file (likely a records-list
 vs dict mismatch or a status filter), apply the one-line fix, restart
 router, rerun the full E2E. Everything else is verified.
+
+## RESOLVED and ROOT CAUSE (2026-10-07 final)
+
+The trace mismatch is SOLVED. Two real bugs were found and fixed:
+
+1. Router staging registry path pointed at the wrong directory
+   (fixed earlier in this doc).
+2. Staging backend labeled its records sourceEnvironment=production
+   because WECHAT_CONTENT_SECURITY_ENVIRONMENT defaulted to production.
+   Fixed: set to staging-edge-v1 in /etc/photo-generator/
+   alipay-staging.env. New records now correctly declare their env.
+
+With both fixes, WeChat's callback for a staging submission now matches
+the registry record (traceIdHash verified identical: 7512f2529d5144b1).
+
+## NEW BLOCKER DISCOVERED: WeChat access_token contention
+
+Staging submissions now fail at the mediaCheckAsync step with WeChat
+error 40001 (invalid credential). Root cause: staging and production
+share the SAME WECHAT_APP_ID + WECHAT_APP_SECRET. Each service fetches
+its own access_token, and every fetch invalidates the other service's
+token globally (WeChat allows only ONE valid access_token per app).
+The two services fight over the token continuously.
+
+Journal evidence: mediaCheckAsync failed, reason: WeChat media security
+request rejected 40001.
+
+## Fix options (require user decision - architecture change)
+
+A. Give staging its own WeChat test appid + register its callback URL.
+B. Shared access-token service via callback-router.
+C. Prod writes its access_token to a shared file; staging reads it.
+
+None of these were applied - they all touch shared WeChat identity
+infrastructure and need explicit user approval per the task rules.
+
+## What this means for verification status
+
+- Algorithm parity: VERIFIED (6/6 files byte-identical + same env).
+- Real-image processing: VERIFIED (35 outputs judged PASS pre-sync;
+  user photo 3 specs post-fix).
+- Hair retouch: VERIFIED (BiRefNet 128s real inference).
+- Watermark engine: VERIFIED pre-sync (manual/quick/HD, LaMa active).
+- Async content-safety on staging: BLOCKED by WeChat token contention
+  (architecture issue, needs user decision above). Real WeChat users
+  are unaffected - prod continues to work on its own token.
