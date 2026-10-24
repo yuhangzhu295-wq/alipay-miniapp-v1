@@ -1295,28 +1295,24 @@ def _extend_small_lower_panel_gaps(result, layer, face_box, max_gap_ratio=0.05):
         left_gap = left
         right_gap = w - right
         if 0 < left_gap <= max_gap_px and left_gap <= right - left:
-            edge = -1
-            for off in range(0, min(14, right - left)):
-                if opaque[row, left + off]:
-                    edge = left + off
-                    break
-            if edge >= 0:
-                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge]]
-                base = result_arr[rows, edge].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge].astype(np.float32)
+            edge_ok = any(opaque[row, max(0, left - k)] for k in range(0, min(3, left)))
+            if edge_ok:
+                edge = next(k for k in range(0, min(3, left)) if opaque[row, max(0, left - k)])
+                edge_x = left - edge
+                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge_x]]
+                base = result_arr[rows, edge_x].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge_x].astype(np.float32)
                 for x in range(0, left):
                     result_arr[row, x] = base
                     layer_arr[row, x, 3] = 255
                 extended_pixels += int(left_gap)
                 observed_max_gap = max(observed_max_gap, int(left_gap))
         if 0 < right_gap <= max_gap_px and right_gap <= right - left:
-            edge = -1
-            for off in range(0, min(14, right - left)):
-                if opaque[row, right - 1 - off]:
-                    edge = right - 1 - off
-                    break
-            if edge >= 0:
-                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge]]
-                base = result_arr[rows, edge].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge].astype(np.float32)
+            edge_ok = any(opaque[row, min(w - 1, right - 1 + k)] for k in range(0, min(3, w - right + 1)))
+            if edge_ok:
+                edge = next(k for k in range(0, min(3, w - right + 1)) if opaque[row, min(w - 1, right - 1 + k)])
+                edge_x = min(w - 1, right - 1 + edge)
+                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge_x]]
+                base = result_arr[rows, edge_x].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge_x].astype(np.float32)
                 for x in range(right, w):
                     result_arr[row, x] = base
                     layer_arr[row, x, 3] = 255
