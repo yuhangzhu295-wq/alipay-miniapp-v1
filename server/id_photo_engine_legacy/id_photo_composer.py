@@ -1286,6 +1286,7 @@ def _extend_small_lower_panel_gaps(result, layer, face_box, max_gap_ratio=0.05):
     observed_max_gap = 0
 
     binary = alpha > 48
+    opaque = alpha >= 250
     for row in range(max(0, lower_start), h):
         span = _alpha_row_span(binary, row, center_x)
         if not span or span[1] - span[0] < min_body_span:
@@ -1294,24 +1295,33 @@ def _extend_small_lower_panel_gaps(result, layer, face_box, max_gap_ratio=0.05):
         left_gap = left
         right_gap = w - right
         if 0 < left_gap <= max_gap_px and left_gap <= right - left:
-            edge = max(left - 1, 0)
-            base = result_arr[row, edge].astype(np.float32)
-            base_layer = layer_arr[row, edge].astype(np.float32)
-            for k, x in enumerate(reversed(range(0, left)), start=1):
-                result_arr[row, x] = base
-                layer_arr[row, x] = base_layer
-            extended_pixels += int(left_gap)
-            observed_max_gap = max(observed_max_gap, int(left_gap))
+            edge = -1
+            for off in range(0, min(14, right - left)):
+                if opaque[row, left + off]:
+                    edge = left + off
+                    break
+            if edge >= 0:
+                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge]]
+                base = result_arr[rows, edge].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge].astype(np.float32)
+                for x in range(0, left):
+                    result_arr[row, x] = base
+                    layer_arr[row, x, 3] = 255
+                extended_pixels += int(left_gap)
+                observed_max_gap = max(observed_max_gap, int(left_gap))
         if 0 < right_gap <= max_gap_px and right_gap <= right - left:
-            edge = min(right - 1, w - 1)
-            base = result_arr[row, edge].astype(np.float32)
-            base_layer = layer_arr[row, edge].astype(np.float32)
-            for k, x in enumerate(range(right, w), start=1):
-                t = k / float(right_gap + 1)
-                result_arr[row, x] = base
-                layer_arr[row, x] = base_layer
-            extended_pixels += int(right_gap)
-            observed_max_gap = max(observed_max_gap, int(right_gap))
+            edge = -1
+            for off in range(0, min(14, right - left)):
+                if opaque[row, right - 1 - off]:
+                    edge = right - 1 - off
+                    break
+            if edge >= 0:
+                rows = [r for r in (row - 2, row - 1, row, row + 1, row + 2) if 0 <= r < h and opaque[r, edge]]
+                base = result_arr[rows, edge].mean(axis=0).astype(np.float32) if rows else result_arr[row, edge].astype(np.float32)
+                for x in range(right, w):
+                    result_arr[row, x] = base
+                    layer_arr[row, x, 3] = 255
+                extended_pixels += int(right_gap)
+                observed_max_gap = max(observed_max_gap, int(right_gap))
 
     return Image.fromarray(result_arr, "RGB"), Image.fromarray(layer_arr, "RGBA"), {
         "lowerPanelContactExtendedPixels": int(extended_pixels),
