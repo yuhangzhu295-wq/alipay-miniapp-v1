@@ -1294,17 +1294,22 @@ def _extend_small_lower_panel_gaps(result, layer, face_box, max_gap_ratio=0.05):
         left_gap = left
         right_gap = w - right
         if 0 < left_gap <= max_gap_px and left_gap <= right - left:
-            dst = np.arange(0, left, dtype=np.int32)
-            src = np.clip(2 * left - 1 - dst, left, right - 1)
-            result_arr[row, dst] = result_arr[row, src]
-            layer_arr[row, dst] = layer_arr[row, src]
+            edge = max(left - 1, 0)
+            base = result_arr[row, edge].astype(np.float32)
+            base_layer = layer_arr[row, edge].astype(np.float32)
+            for k, x in enumerate(reversed(range(0, left)), start=1):
+                result_arr[row, x] = base
+                layer_arr[row, x] = base_layer
             extended_pixels += int(left_gap)
             observed_max_gap = max(observed_max_gap, int(left_gap))
         if 0 < right_gap <= max_gap_px and right_gap <= right - left:
-            dst = np.arange(right, w, dtype=np.int32)
-            src = np.clip(2 * right - 1 - dst, left, right - 1)
-            result_arr[row, dst] = result_arr[row, src]
-            layer_arr[row, dst] = layer_arr[row, src]
+            edge = min(right - 1, w - 1)
+            base = result_arr[row, edge].astype(np.float32)
+            base_layer = layer_arr[row, edge].astype(np.float32)
+            for k, x in enumerate(range(right, w), start=1):
+                t = k / float(right_gap + 1)
+                result_arr[row, x] = base
+                layer_arr[row, x] = base_layer
             extended_pixels += int(right_gap)
             observed_max_gap = max(observed_max_gap, int(right_gap))
 
