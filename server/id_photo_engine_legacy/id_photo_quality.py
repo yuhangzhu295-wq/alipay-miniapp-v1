@@ -1012,13 +1012,20 @@ def build_quality_report(
     foreground_leak_limit = 0.10 if neutral_gray_bg else 0.02
     gray_halo_limit = 0.06 if neutral_gray_bg else 0.035
     hair_halo_limit = 0.065 if neutral_gray_bg else 0.025
+    # RO-04: white backgrounds were previously exempt from edge-halo
+    # gating, which let gray/dark rim residue pass on pure-white ID photos.
+    # White backgrounds are the most sensitive to gray residue, so they now
+    # use a dedicated (slightly relaxed but still enforced) gray-halo limit.
+    if pure_white_bg:
+        gray_halo_limit = max(gray_halo_limit, 0.05)
+        hair_halo_limit = max(hair_halo_limit, 0.045)
     edge_failed = (
         halo["edgeWhiteHaloRatio"] > 0.015
         or halo["hairEdgeHaloRatio"] > hair_halo_limit
         or halo["foregroundLeakRatio"] > foreground_leak_limit
-        or (halo["edgeGrayHaloRatio"] > gray_halo_limit and not pure_white_bg)
+        or halo["edgeGrayHaloRatio"] > gray_halo_limit
     )
-    if (not pure_white_bg) and edge_failed:
+    if edge_failed:
         fail_reasons.append("ID_PHOTO_EDGE_HALO")
         score -= 18
     face_hole_failed = (
