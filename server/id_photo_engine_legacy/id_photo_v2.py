@@ -1733,8 +1733,9 @@ def _prepare_cutout(
         _cw = _dcw(img_bytes and _decode_img_for_compliance(img_bytes), face["faceBox"])
         if _cw:
             quality["complianceWarnings"] = _cw
-    except Exception:
-        pass
+    except Exception as _cw_err:
+        import sys as _sys
+        print("[ro03] compliance check failed:", _cw_err, file=_sys.stderr, flush=True)
     debug = {
         "faceDetector": face.get("engine", "unknown"),
         "mattingEngine": matting.get("engine"),
