@@ -124,11 +124,23 @@ def _looks_like_illustration(bgr, face_box=None):
             patch_sat = float(np.mean(patch_hsv[:, :, 1]))
             if patch_flat < 0.66 and patch_texture > 5.8 and patch_gray_std > 32:
                 return False
-            if patch_flat > 0.72 and patch_sat > 34 and edge_density > 0.035:
+            # Illustration faces are flat rendered color blocks: near-zero
+            # texture.  Real portrait faces keep visible skin texture even
+            # after heavy beauty smoothing (RO-02: zj_ref_07 patch texture
+            # ~3.1 while rendered faces sit below ~1.5).
+            if patch_flat > 0.94 and patch_texture < 1.5:
                 return True
+            # A detected face with visible skin texture is photographic
+            # evidence: pure ID-photo backgrounds inflate the global flat
+            # ratio, so a textured face vetoes the illustration verdict
+            # (RO-02: zj_ref_07 skin texture ~3.1).
+            if patch_texture > 2.5:
+                return False
 
-    return (flat_ratio > 0.70 and sat_mean > 35 and edge_density > 0.01) or (
-        flat_ratio > 0.62 and sat_mean > 42 and edge_density > 0.035
+    return (
+        flat_ratio > 0.80 and sat_mean > 35 and edge_density > 0.01
+    ) or (
+        flat_ratio > 0.72 and sat_mean > 42 and edge_density > 0.035
     )
 
 
