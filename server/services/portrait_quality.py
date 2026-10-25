@@ -122,7 +122,7 @@ def _detect_compliance_warnings(bgr, face_box):
         right_energy = float(np.mean(edges[:, pw // 2 :] > 0))
         if min(left_energy, right_energy) > 0.005:
             asym = abs(left_energy - right_energy) / max(left_energy, right_energy)
-            if asym > 0.55:
+            if asym > 0.40:
                 warnings.append("POSE_YAW_SUSPECTED")
         # --- expression: bright tooth region inside lower mouth band ---
         mouth = pg[int(ph * 0.62): int(ph * 0.88), int(pw * 0.25): int(pw * 0.75)]
@@ -135,7 +135,7 @@ def _detect_compliance_warnings(bgr, face_box):
         brow = pg[int(ph * 0.22): int(ph * 0.42), int(pw * 0.15): int(pw * 0.85)]
         if brow.size:
             dark_cov = float(np.mean(brow < 70))
-            if dark_cov > 0.45:
+            if dark_cov > 0.30:
                 warnings.append("BROW_EYE_OCCLUSION_SUSPECTED")
     except Exception:
         pass
