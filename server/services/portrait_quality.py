@@ -98,6 +98,50 @@ def _local_std(gray):
     return np.sqrt(np.maximum(sq_mean - mean * mean, 0))
 
 
+def _detect_compliance_warnings(bgr, face_box):
+    """Soft compliance checks (RO-03): pose / expression / occlusion.
+
+    Never rejects -- only records warnings so the client can advise the
+    user.  Uses OpenCV-only signals; no new dependencies."""
+    warnings = []
+    try:
+        h, w = bgr.shape[:2]
+        x, y, fw, fh = face_box
+        x1, y1 = max(0, x), max(0, y)
+        x2, y2 = min(w, x + fw), min(h, y + fh)
+        if x2 <= x1 or y2 <= y1:
+            return warnings
+        patch = bgr[y1:y2, x1:x2]
+        pg = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+        ph, pw = pg.shape[:2]
+        if ph < 40 or pw < 40:
+            return warnings
+        # --- pose yaw: left-vs-right half facial edge-energy symmetry ---
+        edges = cv2.Canny(pg, 60, 140)
+        left_energy = float(np.mean(edges[:, : pw // 2] > 0))
+        right_energy = float(np.mean(edges[:, pw // 2 :] > 0))
+        if min(left_energy, right_energy) > 0.005:
+            asym = abs(left_energy - right_energy) / max(left_energy, right_energy)
+            if asym > 0.55:
+                warnings.append("POSE_YAW_SUSPECTED")
+        # --- expression: bright tooth region inside lower mouth band ---
+        mouth = pg[int(ph * 0.62): int(ph * 0.88), int(pw * 0.25): int(pw * 0.75)]
+        if mouth.size:
+            bright = float(np.mean(mouth > 200))
+            dark_cavity = float(np.mean(mouth < 60))
+            if bright > 0.10 and dark_cavity > 0.02:
+                warnings.append("EXPRESSION_TEETH_VISIBLE")
+        # --- occlusion: dark coverage over brow band (upper 25-45%) ---
+        brow = pg[int(ph * 0.22): int(ph * 0.42), int(pw * 0.15): int(pw * 0.85)]
+        if brow.size:
+            dark_cov = float(np.mean(brow < 70))
+            if dark_cov > 0.45:
+                warnings.append("BROW_EYE_OCCLUSION_SUSPECTED")
+    except Exception:
+        pass
+    return warnings
+
+
 def _looks_like_illustration(bgr, face_box=None):
     h, w = bgr.shape[:2]
     scale = min(1.0, 320.0 / max(w, h))
@@ -219,6 +263,10 @@ def validate_portrait_input(img_bytes, task="changeBg"):
     quality["realPerson"] = True
     quality["inputType"] = "real_person"
     quality["code"] = "OK"
+    # RO-03 soft compliance warnings (never reject here).
+    compliance = _detect_compliance_warnings(bgr, main)
+    if compliance:
+        quality["complianceWarnings"] = compliance
     return quality
 
 
