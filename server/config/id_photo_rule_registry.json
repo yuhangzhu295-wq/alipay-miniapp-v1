@@ -1,0 +1,256 @@
+{
+ "_meta": {
+  "version": "2026-10-25-v1",
+  "purpose": "RO-03 rule engine official registry (supervisor requirement)",
+  "verification_status": "web_searched_2026-10-25",
+  "sources_consulted": [
+   "mnhub.top",
+   "yantian.gov.cn",
+   "ntce.neea.edu.cn",
+   "banshi.beijing.gov.cn",
+   "ywtb.mps.gov.cn GA482"
+  ]
+ },
+ "specs": {
+  "one-inch": {
+   "name": "一寸照",
+   "official_status": "通用商品尺寸，非单一法定国标",
+   "physical_mm": [
+    25,
+    35
+   ],
+   "pixels_300dpi": [
+    295,
+    413
+   ],
+   "bg_colors": [
+    "blue",
+    "white",
+    "red"
+   ],
+   "rule_source": "https://www.mnhub.top/guide/id-photo-guide/",
+   "requires_human_confirmation": true,
+   "notes": "工作证/简历/通用报名，以实际报名页要求为准"
+  },
+  "two-inch": {
+   "name": "二寸照",
+   "official_status": "通用商品尺寸",
+   "physical_mm": [
+    35,
+    49
+   ],
+   "pixels_300dpi": [
+    413,
+    579
+   ],
+   "bg_colors": [
+    "blue",
+    "white",
+    "red"
+   ],
+   "rule_source": "https://www.mnhub.top/guide/id-photo-guide/",
+   "requires_human_confirmation": true
+  },
+  "small-one-inch": {
+   "name": "小一寸",
+   "official_status": "通用尺寸",
+   "physical_mm": [
+    22,
+    32
+   ],
+   "pixels_300dpi": [
+    260,
+    378
+   ],
+   "bg_colors": [
+    "blue",
+    "white"
+   ],
+   "rule_source": "https://www.mnhub.top/guide/id-photo-guide/"
+  },
+  "large-one-inch": {
+   "name": "大一寸",
+   "official_status": "通用尺寸（护照/签证33x48mm）",
+   "physical_mm": [
+    33,
+    48
+   ],
+   "pixels_300dpi": [
+    390,
+    567
+   ],
+   "bg_colors": [
+    "blue",
+    "white"
+   ],
+   "rule_source": "https://www.mnhub.top/guide/id-photo-guide/"
+  },
+  "small-two-inch": {
+   "name": "小二寸",
+   "official_status": "通用尺寸",
+   "physical_mm": [
+    33,
+    48
+   ],
+   "pixels_300dpi": [
+    413,
+    531
+   ],
+   "bg_colors": [
+    "blue",
+    "white"
+   ],
+   "rule_source": "https://m.bejson.com/image/spec/"
+  },
+  "teacher-exam": {
+   "name": "教师资格证",
+   "official_status": "中国教师资格网/各省认定公告",
+   "physical_mm": [
+    25,
+    35
+   ],
+   "pixels": [
+    295,
+    413
+   ],
+   "bg_colors": [
+    "white"
+   ],
+   "format": "JPG",
+   "max_file_kb": 190,
+   "head_shoulders_visible": true,
+   "no_hat_no_sunglasses": true,
+   "rule_source": "https://www.yantian.gov.cn/cn/service/jypx/jszgrd/jszgrdsx/content/post_11238096.html",
+   "verified": true
+  },
+  "driver-license-cn": {
+   "name": "机动车驾驶证",
+   "official_status": "公安行业标准GA482-2026（2026-06-01实施）",
+   "physical_mm": [
+    22,
+    32
+   ],
+   "pixels_300dpi": [
+    260,
+    378
+   ],
+   "bg_colors": [
+    "white"
+   ],
+   "head_width_mm": [
+    14,
+    16
+   ],
+   "head_length_mm": [
+    19,
+    22
+   ],
+   "photo_age_months": 6,
+   "no_uniform_no_hat_no_sunglasses": true,
+   "ears_visible": true,
+   "rule_source": "https://ywtb.mps.gov.cn/gabzh/portal/stdDetail/320401",
+   "verified": true
+  },
+  "civil-service-exam": {
+   "name": "国家公务员考试",
+   "official_status": "国家公务员局年度公告（2寸/蓝底，每年以公告为准）",
+   "pixels": [
+    413,
+    531
+   ],
+   "bg_colors": [
+    "blue"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  },
+  "cet-exam": {
+   "name": "英语四六级",
+   "official_status": "全国大学英语四六级考试报名网",
+   "pixels": [
+    390,
+    567
+   ],
+   "bg_colors": [
+    "blue"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  },
+  "computer-exam": {
+   "name": "计算机等级考试",
+   "official_status": "NCRE报名系统",
+   "pixels": [
+    390,
+    567
+   ],
+   "bg_colors": [
+    "blue"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  },
+  "resume-headshot": {
+   "name": "简历照片",
+   "official_status": "非法定，通用商务规格",
+   "pixels": [
+    295,
+    413
+   ],
+   "bg_colors": [
+    "gray",
+    "white",
+    "blue"
+   ],
+   "rule_source": "通用行业规格"
+  },
+  "student_image": {
+   "name": "大学生图像信息采集",
+   "official_status": "学信网图像采集标准",
+   "pixels": [
+    480,
+    640
+   ],
+   "bg_colors": [
+    "blue"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  },
+  "accounting": {
+   "name": "会计资格",
+   "official_status": "财政部会计资格评价中心",
+   "pixels": [
+    295,
+    413
+   ],
+   "bg_colors": [
+    "blue",
+    "white"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  },
+  "selfstudy": {
+   "name": "自学考试",
+   "official_status": "各省教育考试院",
+   "pixels": [
+    295,
+    413
+   ],
+   "bg_colors": [
+    "blue"
+   ],
+   "rule_source": "PENDING_VERIFICATION",
+   "requires_human_confirmation": true
+  }
+ },
+ "global_rules": {
+  "color_photo_required": true,
+  "frontal_facing": true,
+  "no_headwear_except_religious": true,
+  "no_sunglasses": true,
+  "no_heavy_retouch_no_face_reshaping": true,
+  "disclaimer": "自动检测不能保证政府机关受理；最终以各办证机关审核为准"
+ }
+}
