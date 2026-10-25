@@ -1305,6 +1305,13 @@ def _validate_basic_template(outfit, actual_image_type, purpose, composition):
     return outfit_id
 
 
+def _decode_img_for_compliance(img_bytes):
+    import cv2 as _cv2
+    import numpy as _np
+    arr = _np.frombuffer(img_bytes, _np.uint8)
+    return _cv2.imdecode(arr, _cv2.IMREAD_COLOR)
+
+
 def _prepare_cutout(
     img_bytes,
     purpose="official_id_photo",
@@ -1720,6 +1727,14 @@ def _prepare_cutout(
         "mattingModel": matting.get("model"),
         "hairRetouchRequested": bool(hair_retouch),
     }
+    # RO-03 soft compliance warnings (pose / expression / occlusion).
+    try:
+        from services.portrait_quality import _detect_compliance_warnings as _dcw
+        _cw = _dcw(img_bytes and _decode_img_for_compliance(img_bytes), face["faceBox"])
+        if _cw:
+            quality["complianceWarnings"] = _cw
+    except Exception:
+        pass
     debug = {
         "faceDetector": face.get("engine", "unknown"),
         "mattingEngine": matting.get("engine"),
